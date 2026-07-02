@@ -1,0 +1,6 @@
+{
+  "name": "Surveillance BOQ Engine",
+  "description": "An advanced engineering tool for generating Bills of Quantities (BOQ) for professional surveillance infrastructure, supporting real-time calculations, custom parameters, and structural reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
