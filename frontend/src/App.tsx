@@ -392,7 +392,9 @@ export default function App() {
         const data = await res.json();
         
         // Extract floor indices where cabinets are placed
-        const cabinetFloorIndices = data.map((item: any) => item.floorIndex);
+        const cabinetFloorIndices = data
+          .filter((item: any) => item.isCabinetPlaced)
+          .map((item: any) => item.floorIndex);
         setCabinetPlacements(cabinetFloorIndices);
 
         // Map backend results by floorIndex
@@ -408,27 +410,28 @@ export default function App() {
                   const updatedFloors = t.floorsData.map((f) => {
                     if (backendMap.has(f.floorIndex)) {
                       const backendInfo = backendMap.get(f.floorIndex);
-                      return {
-                        ...f,
-                        sw24Count: backendInfo.sw24Count ?? 0,
-                        sw16Count: backendInfo.sw16Count ?? 0,
-                        upsType: backendInfo.upsCount === 1 ? "1K" : (backendInfo.upsCount === 2 ? "2K" : "None"),
-                        pduCount: backendInfo.pduCount ?? 0,
-                        convCount: backendInfo.convCount ?? 0,
-                        cameraQuantityInCabinet: backendInfo.cameraQuantityInCabinet ?? 0,
-                      };
-                    } else {
-                      // Non-cabinet floor: clear cabinet equipment quantities
-                      return {
-                        ...f,
-                        sw24Count: 0,
-                        sw16Count: 0,
-                        upsType: "None",
-                        pduCount: 0,
-                        convCount: 0,
-                        cameraQuantityInCabinet: 0,
-                      };
+                      if (backendInfo.isCabinetPlaced) {
+                        return {
+                          ...f,
+                          sw24Count: backendInfo.sw24Count ?? 0,
+                          sw16Count: backendInfo.sw16Count ?? 0,
+                          upsType: backendInfo.upsCount === 1 ? "1K" : (backendInfo.upsCount === 2 ? "2K" : "None"),
+                          pduCount: backendInfo.pduCount ?? 0,
+                          convCount: backendInfo.convCount ?? 0,
+                          cameraQuantityInCabinet: backendInfo.cameraQuantityInCabinet ?? 0,
+                        };
+                      }
                     }
+                    // Non-cabinet floor: clear cabinet equipment quantities
+                    return {
+                      ...f,
+                      sw24Count: 0,
+                      sw16Count: 0,
+                      upsType: "None",
+                      pduCount: 0,
+                      convCount: 0,
+                      cameraQuantityInCabinet: 0,
+                    };
                   });
                   return {
                     ...t,

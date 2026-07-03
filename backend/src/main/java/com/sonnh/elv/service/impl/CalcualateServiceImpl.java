@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -31,55 +32,64 @@ public class CalcualateServiceImpl implements CalculateService {
                 .findById(UUID.fromString("a2b0a797-8ff2-4a79-ac5d-78525bd25e90")).get();
         Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
         calculateCabinetPlacementUitls(dto, mapResult, config);
-
-        int pivot = 0;
-        Integer horizontalDistance = dto.getHorizontalDistance().intValue();
-        Integer verticalDistance = dto.getVerticalDistance().intValue();
-        int pivotResult = config.getConditionLength() - horizontalDistance;
-        while (pivotResult > 0) {
-            pivotResult -= verticalDistance;
-            if (pivotResult > 0) {
-                pivot++;
-            }
-        }
-
-        calculateCameraQuantityInCabinet(pivot, mapResult, dto);
+        calculateCameraQuantityInCabinet(mapResult, dto);
         calculateSwichPOE(mapResult, config);
         calculateUPS(mapResult, config);
         calculateConverter(mapResult, config);
         calculatePDU(mapResult, config);
-
-        List<CalculateBOQResponseDTO> result = new ArrayList<>();
-        for (FloorRequest floor : dto.getFloors()) {
-            boolean isPlaced = mapResult.containsKey(floor.getFloorIndex());
-            CalculateBOQResponseDTO.CalculateBOQResponseDTOBuilder builder = CalculateBOQResponseDTO.builder()
-                    .floorIndex(floor.getFloorIndex())
-                    .label(floor.getLabel())
-                    .camerasCount(floor.getCamerasCount())
-                    .isCabinetPlaced(isPlaced);
-
-            if (isPlaced) {
-                CabinetEquipmentDTO cabinet = mapResult.get(floor.getFloorIndex());
-                builder.fromIndex(cabinet.getFrom())
-                        .toIndex(cabinet.getTo())
-                        .cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
-                        .sw24Count(cabinet.getSw24Quantity())
-                        .sw16Count(cabinet.getSw16Quantity())
-                        .upsCount(cabinet.getUps())
-                        .pduCount(cabinet.getPdu())
-                        .convCount(cabinet.getConverter());
-            } else {
-                builder.cameraQuantityInCabinet(0)
-                        .sw24Count(0)
-                        .sw16Count(0)
-                        .upsCount(0)
-                        .pduCount(0)
-                        .convCount(0);
-            }
-            result.add(builder.build());
+        for (Integer key : mapResult.keySet()) {
+            System.out.println("key: " + key + " value: " + mapResult.get(key).toString());
         }
 
-        return result;
+        // int pivot = 0;
+        // Integer horizontalDistance = dto.getHorizontalDistance().intValue();
+        // Integer verticalDistance = dto.getVerticalDistance().intValue();
+        // int pivotResult = config.getConditionLength() - horizontalDistance;
+        // while (pivotResult > 0) {
+        // pivotResult -= verticalDistance;
+        // if (pivotResult > 0) {
+        // pivot++;
+        // }
+        // }
+
+        // calculateCameraQuantityInCabinet(pivot, mapResult, dto);
+        // calculateSwichPOE(mapResult, config);
+        // calculateUPS(mapResult, config);
+        // calculateConverter(mapResult, config);
+        // calculatePDU(mapResult, config);
+
+        // List<CalculateBOQResponseDTO> result = new ArrayList<>();
+        // for (FloorRequest floor : dto.getFloors()) {
+        // boolean isPlaced = mapResult.containsKey(floor.getFloorIndex());
+        // CalculateBOQResponseDTO.CalculateBOQResponseDTOBuilder builder =
+        // CalculateBOQResponseDTO.builder()
+        // .floorIndex(floor.getFloorIndex())
+        // .label(floor.getLabel())
+        // .camerasCount(floor.getCamerasCount())
+        // .isCabinetPlaced(isPlaced);
+
+        // if (isPlaced) {
+        // CabinetEquipmentDTO cabinet = mapResult.get(floor.getFloorIndex());
+        // builder.fromIndex(cabinet.getFrom())
+        // .toIndex(cabinet.getTo())
+        // .cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
+        // .sw24Count(cabinet.getSw24Quantity())
+        // .sw16Count(cabinet.getSw16Quantity())
+        // .upsCount(cabinet.getUps())
+        // .pduCount(cabinet.getPdu())
+        // .convCount(cabinet.getConverter());
+        // } else {
+        // builder.cameraQuantityInCabinet(0)
+        // .sw24Count(0)
+        // .sw16Count(0)
+        // .upsCount(0)
+        // .pduCount(0)
+        // .convCount(0);
+        // }
+        // result.add(builder.build());
+        // }
+
+        return null;
     }
 
     // public MyCalculateResDto
@@ -375,17 +385,18 @@ public class CalcualateServiceImpl implements CalculateService {
     }
 
     // -----------------------------------------------------
-    public Map<Integer, CabinetEquipmentDTO> calculateCameraQuantityInCabinet(int pivot,
+    public Map<Integer, CabinetEquipmentDTO> calculateCameraQuantityInCabinet(
             Map<Integer, CabinetEquipmentDTO> mapResult,
             CalculateBOQRequestDTO dto) {
-        for (Map.Entry<Integer, CabinetEquipmentDTO> entry : mapResult.entrySet()) {
-            CabinetEquipmentDTO cabinet = entry.getValue();
+        for (Integer key : mapResult.keySet()) {
             int total = 0;
-            for (int i = cabinet.getFrom(); i <= cabinet.getTo() && i < dto.getFloors().size(); i++) {
+            for (int i = mapResult.get(key).getFrom(); i <= mapResult.get(key).getTo(); i++) {
                 total += dto.getFloors().get(i).getCamerasCount();
             }
-            cabinet.setCameraQuantityInCabinet(total);
+            mapResult.get(key).setCameraQuantityInCabinet(total);
+            total = 0;
         }
+
         return mapResult;
     }
 
