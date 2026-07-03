@@ -195,75 +195,74 @@ public class CalcualateServiceImpl implements CalculateService {
         cabinetIndex = pivot - 1;
         System.out.println("pivot: " + pivot);
         // case thường
-        if (cabinetIndex >= dto.getFloors().size()) {
-            maxFloorInRange = dto.getFloors().size() - 1;
-            cabinetIndex = maxFloorInRange;
-            to = maxFloorInRange;
-        } else {
-            maxFloorInRange += pivot * 2 - 1;
-            to = maxFloorInRange;
-        }
-        if (maxFloorInRange >= dto.getFloors().size()) {
-            flag = maxFloorInRange;
-            maxFloorInRange = dto.getFloors().size() - 1;
-            to = maxFloorInRange;
+        if (!dto.getRackType().equals("2U")) {
             if (cabinetIndex >= dto.getFloors().size()) {
-                if (cabinetIndex <= flag) {
-                    cabinetIndex = maxFloorInRange;
-                } else {
-                    cabinetIndex = from + pivot - 1;
+                maxFloorInRange = dto.getFloors().size() - 1;
+                cabinetIndex = maxFloorInRange;
+                to = maxFloorInRange;
+            } else {
+                maxFloorInRange += pivot * 2 - 1;
+                to = maxFloorInRange;
+            }
+            if (maxFloorInRange >= dto.getFloors().size()) {
+                flag = maxFloorInRange;
+                maxFloorInRange = dto.getFloors().size() - 1;
+                to = maxFloorInRange;
+                if (cabinetIndex >= dto.getFloors().size()) {
+                    if (cabinetIndex <= flag) {
+                        cabinetIndex = maxFloorInRange;
+                    } else {
+                        cabinetIndex = from + pivot - 1;
+                    }
                 }
             }
-        }
-        for (FloorRequest floor : dto.getFloors()) {
-            if (floor.getFloorIndex() < from) {
-                continue;
-            }
-            System.out.println("--------------------------------");
-            System.out.println("maxFloorInRange: " + maxFloorInRange);
-            System.out.println("cabinetIndex: " + cabinetIndex);
-            if (from < dto.getFloors().size() && floor.getFloorIndex() == cabinetIndex) {
-                System.out.println("Put vao map");
-                CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
-                cabinetEquipmentDTO.setFrom(from);
-                cabinetEquipmentDTO.setTo(to);
-                mapResult.put(floor.getFloorIndex(), cabinetEquipmentDTO);
-                from = maxFloorInRange + 1;
-                maxFloorInRange += pivot * 2 - 1;
-                cabinetIndex = from + pivot - 1;
-                to = maxFloorInRange;
-
-                if (maxFloorInRange >= dto.getFloors().size()) {
-                    flag = maxFloorInRange;
-                    maxFloorInRange = dto.getFloors().size() - 1;
+            for (FloorRequest floor : dto.getFloors()) {
+                if (floor.getFloorIndex() < from) {
+                    continue;
+                }
+                System.out.println("--------------------------------");
+                System.out.println("maxFloorInRange: " + maxFloorInRange);
+                System.out.println("cabinetIndex: " + cabinetIndex);
+                if (from < dto.getFloors().size() && floor.getFloorIndex() == cabinetIndex) {
+                    System.out.println("Put vao map");
+                    CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
+                    cabinetEquipmentDTO.setFrom(from);
+                    cabinetEquipmentDTO.setTo(to);
+                    mapResult.put(floor.getFloorIndex(), cabinetEquipmentDTO);
+                    from = maxFloorInRange + 1;
+                    maxFloorInRange += pivot * 2 - 1;
+                    cabinetIndex = from + pivot - 1;
                     to = maxFloorInRange;
-                    if (cabinetIndex >= dto.getFloors().size()) {
-                        // cabinetIndex = from + pivot - 1;
-                        if (cabinetIndex <= flag) {
-                            System.out.println("cabinetIndex trong special case: " + cabinetIndex);
-                            System.out.println("maxFloorInRange trong special case: " + maxFloorInRange);
-                            System.out.println("chay vao day");
-                            cabinetIndex = maxFloorInRange;
-                        } else {
-                            cabinetIndex = from + pivot - 1;
+
+                    if (maxFloorInRange >= dto.getFloors().size()) {
+                        flag = maxFloorInRange;
+                        maxFloorInRange = dto.getFloors().size() - 1;
+                        to = maxFloorInRange;
+                        if (cabinetIndex >= dto.getFloors().size()) {
+                            // cabinetIndex = from + pivot - 1;
+                            if (cabinetIndex <= flag) {
+                                System.out.println("cabinetIndex trong special case: " + cabinetIndex);
+                                System.out.println("maxFloorInRange trong special case: " + maxFloorInRange);
+                                System.out.println("chay vao day");
+                                cabinetIndex = maxFloorInRange;
+                            } else {
+                                cabinetIndex = from + pivot - 1;
+                            }
                         }
                     }
                 }
             }
-        }
-
-        // case 2U
-
-        // init
-        maxFloorInRange = 0;
-        cabinetIndex = 0;
-        from = 0;
-        to = 0;
-        cabinetIndex = 0;
-        cabinetIndex = pivot - 1;
-
-        if (dto.getRackType().equals("2U")) {
+        } else {
+            // case 2U
             System.out.println("case 2U");
+
+            // init
+            maxFloorInRange = 0;
+            cabinetIndex = 0;
+            from = 0;
+            to = 0;
+            cabinetIndex = pivot - 1;
+
             if (cabinetIndex >= dto.getFloors().size()) {
                 maxFloorInRange = dto.getFloors().size() - 1;
                 cabinetIndex = maxFloorInRange;
