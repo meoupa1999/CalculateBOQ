@@ -375,7 +375,8 @@ public class CalcualateServiceImpl implements CalculateService {
     }
 
     // -----------------------------------------------------
-    public Map<Integer, CabinetEquipmentDTO> calculateCameraQuantityInCabinet(int pivot, Map<Integer, CabinetEquipmentDTO> mapResult,
+    public Map<Integer, CabinetEquipmentDTO> calculateCameraQuantityInCabinet(int pivot,
+            Map<Integer, CabinetEquipmentDTO> mapResult,
             CalculateBOQRequestDTO dto) {
         for (Map.Entry<Integer, CabinetEquipmentDTO> entry : mapResult.entrySet()) {
             CabinetEquipmentDTO cabinet = entry.getValue();
