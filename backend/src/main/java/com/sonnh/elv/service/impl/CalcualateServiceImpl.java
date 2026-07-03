@@ -41,55 +41,50 @@ public class CalcualateServiceImpl implements CalculateService {
             System.out.println("key: " + key + " value: " + mapResult.get(key).toString());
         }
 
-        // int pivot = 0;
-        // Integer horizontalDistance = dto.getHorizontalDistance().intValue();
-        // Integer verticalDistance = dto.getVerticalDistance().intValue();
-        // int pivotResult = config.getConditionLength() - horizontalDistance;
-        // while (pivotResult > 0) {
-        // pivotResult -= verticalDistance;
-        // if (pivotResult > 0) {
-        // pivot++;
-        // }
-        // }
+        List<CalculateBOQResponseDTO> result = new ArrayList<>();
+        for (FloorRequest floor : dto.getFloors()) {
+            boolean isPlaced = mapResult.containsKey(floor.getFloorIndex());
+            CalculateBOQResponseDTO.CalculateBOQResponseDTOBuilder builder = CalculateBOQResponseDTO.builder()
+                    .floorIndex(floor.getFloorIndex())
+                    .label(floor.getLabel())
+                    .camerasCount(floor.getCamerasCount())
+                    .isCabinetPlaced(isPlaced);
 
-        // calculateCameraQuantityInCabinet(pivot, mapResult, dto);
-        // calculateSwichPOE(mapResult, config);
-        // calculateUPS(mapResult, config);
-        // calculateConverter(mapResult, config);
-        // calculatePDU(mapResult, config);
+            // Find covering cabinet range
+            CabinetEquipmentDTO coveringCabinet = null;
+            for (Map.Entry<Integer, CabinetEquipmentDTO> entry : mapResult.entrySet()) {
+                CabinetEquipmentDTO cab = entry.getValue();
+                if (floor.getFloorIndex() >= cab.getFrom() && floor.getFloorIndex() <= cab.getTo()) {
+                    coveringCabinet = cab;
+                    break;
+                }
+            }
 
-        // List<CalculateBOQResponseDTO> result = new ArrayList<>();
-        // for (FloorRequest floor : dto.getFloors()) {
-        // boolean isPlaced = mapResult.containsKey(floor.getFloorIndex());
-        // CalculateBOQResponseDTO.CalculateBOQResponseDTOBuilder builder =
-        // CalculateBOQResponseDTO.builder()
-        // .floorIndex(floor.getFloorIndex())
-        // .label(floor.getLabel())
-        // .camerasCount(floor.getCamerasCount())
-        // .isCabinetPlaced(isPlaced);
+            if (coveringCabinet != null) {
+                builder.fromIndex(coveringCabinet.getFrom())
+                       .toIndex(coveringCabinet.getTo());
+            }
 
-        // if (isPlaced) {
-        // CabinetEquipmentDTO cabinet = mapResult.get(floor.getFloorIndex());
-        // builder.fromIndex(cabinet.getFrom())
-        // .toIndex(cabinet.getTo())
-        // .cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
-        // .sw24Count(cabinet.getSw24Quantity())
-        // .sw16Count(cabinet.getSw16Quantity())
-        // .upsCount(cabinet.getUps())
-        // .pduCount(cabinet.getPdu())
-        // .convCount(cabinet.getConverter());
-        // } else {
-        // builder.cameraQuantityInCabinet(0)
-        // .sw24Count(0)
-        // .sw16Count(0)
-        // .upsCount(0)
-        // .pduCount(0)
-        // .convCount(0);
-        // }
-        // result.add(builder.build());
-        // }
+            if (isPlaced) {
+                CabinetEquipmentDTO cabinet = mapResult.get(floor.getFloorIndex());
+                builder.cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
+                        .sw24Count(cabinet.getSw24Quantity())
+                        .sw16Count(cabinet.getSw16Quantity())
+                        .upsCount(cabinet.getUps())
+                        .pduCount(cabinet.getPdu())
+                        .convCount(cabinet.getConverter());
+            } else {
+                builder.cameraQuantityInCabinet(0)
+                        .sw24Count(0)
+                        .sw16Count(0)
+                        .upsCount(0)
+                        .pduCount(0)
+                        .convCount(0);
+            }
+            result.add(builder.build());
+        }
 
-        return null;
+        return result;
     }
 
     // public MyCalculateResDto
