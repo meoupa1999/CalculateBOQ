@@ -203,7 +203,22 @@ public class CalcualateServiceImpl implements CalculateService {
             maxFloorInRange += pivot * 2 - 1;
             to = maxFloorInRange;
         }
+        if (maxFloorInRange >= dto.getFloors().size()) {
+            flag = maxFloorInRange;
+            maxFloorInRange = dto.getFloors().size() - 1;
+            to = maxFloorInRange;
+            if (cabinetIndex >= dto.getFloors().size()) {
+                if (cabinetIndex <= flag) {
+                    cabinetIndex = maxFloorInRange;
+                } else {
+                    cabinetIndex = from + pivot - 1;
+                }
+            }
+        }
         for (FloorRequest floor : dto.getFloors()) {
+            if (floor.getFloorIndex() < from) {
+                continue;
+            }
             System.out.println("--------------------------------");
             System.out.println("maxFloorInRange: " + maxFloorInRange);
             System.out.println("cabinetIndex: " + cabinetIndex);
@@ -231,6 +246,126 @@ public class CalcualateServiceImpl implements CalculateService {
                             cabinetIndex = maxFloorInRange;
                         } else {
                             cabinetIndex = from + pivot - 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        // case 2U
+
+        // init
+        maxFloorInRange = 0;
+        cabinetIndex = 0;
+        from = 0;
+        to = 0;
+        cabinetIndex = 0;
+        cabinetIndex = pivot - 1;
+
+        if (dto.getRackType().equals("2U")) {
+            System.out.println("case 2U");
+            if (cabinetIndex >= dto.getFloors().size()) {
+                maxFloorInRange = dto.getFloors().size() - 1;
+                cabinetIndex = maxFloorInRange;
+                to = maxFloorInRange;
+            } else {
+                maxFloorInRange += pivot * 2 - 1;
+                to = maxFloorInRange;
+            }
+            if (maxFloorInRange >= dto.getFloors().size()) {
+                flag = maxFloorInRange;
+                maxFloorInRange = dto.getFloors().size() - 1;
+                to = maxFloorInRange;
+                if (cabinetIndex >= dto.getFloors().size()) {
+                    if (cabinetIndex <= flag) {
+                        cabinetIndex = maxFloorInRange;
+                    } else {
+                        cabinetIndex = from + pivot - 1;
+                    }
+                }
+            }
+            int totalCamera2U = 0;
+            for (FloorRequest floor : dto.getFloors()) {
+                if (floor.getFloorIndex() < from) {
+                    continue;
+                }
+                System.out.println("cabinetIndex: " + cabinetIndex);
+                System.out.println("maxFloorInRange: " + maxFloorInRange);
+                if (from < dto.getFloors().size() && floor.getFloorIndex() == to) {
+                    totalCamera2U += floor.getCamerasCount();
+                    if (totalCamera2U <= 20) {
+                        System.out.println("Put vao map");
+                        CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
+                        cabinetEquipmentDTO.setFrom(from);
+                        cabinetEquipmentDTO.setTo(to);
+                        mapResult.put(cabinetIndex, cabinetEquipmentDTO);
+                        from = maxFloorInRange + 1;
+                        maxFloorInRange += pivot * 2 - 1;
+                        cabinetIndex = from + pivot - 1;
+                        to = maxFloorInRange;
+                        totalCamera2U = 0;
+
+                        if (maxFloorInRange >= dto.getFloors().size()) {
+                            flag = maxFloorInRange;
+                            maxFloorInRange = dto.getFloors().size() - 1;
+                            to = maxFloorInRange;
+                            if (cabinetIndex >= dto.getFloors().size()) {
+                                if (cabinetIndex <= flag) {
+                                    System.out.println("cabinetIndex trong special case: " + cabinetIndex);
+                                    System.out.println("maxFloorInRange trong special case: " + maxFloorInRange);
+                                    System.out.println("chay vao day");
+                                    cabinetIndex = maxFloorInRange;
+                                } else {
+                                    cabinetIndex = from + pivot - 1;
+                                }
+                            }
+                        }
+                    } else {
+                        System.out.println("Vượt quá 20 camera, dat tu som");
+                        if (to - 1 >= from) {
+                            CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
+                            cabinetEquipmentDTO.setFrom(from);
+                            cabinetEquipmentDTO.setTo(to - 1);
+                            mapResult.put(from + (to - 1 - from) / 2, cabinetEquipmentDTO);
+                        }
+
+                        CabinetEquipmentDTO lastCabinet = new CabinetEquipmentDTO();
+                        lastCabinet.setFrom(to);
+                        lastCabinet.setTo(to);
+                        mapResult.put(to, lastCabinet);
+
+                        from = to + 1;
+                        totalCamera2U = 0;
+                    }
+                } else if (from < dto.getFloors().size() && floor.getFloorIndex() < maxFloorInRange) {
+                    if (totalCamera2U + floor.getCamerasCount() <= 20) {
+                        totalCamera2U += floor.getCamerasCount();
+                    } else {
+                        CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
+                        to = floor.getFloorIndex() - 1;
+                        if (to < from) {
+                            to = from;
+                        }
+                        cabinetEquipmentDTO.setFrom(from);
+                        cabinetEquipmentDTO.setTo(to);
+                        mapResult.put(from + (to - from) / 2, cabinetEquipmentDTO);
+                        from = floor.getFloorIndex();
+                        totalCamera2U = floor.getCamerasCount();
+                        cabinetIndex = from + pivot - 1;
+                        maxFloorInRange = from + pivot * 2 - 1;
+
+                        to = maxFloorInRange;
+                        if (maxFloorInRange >= dto.getFloors().size()) {
+                            flag = maxFloorInRange;
+                            maxFloorInRange = dto.getFloors().size() - 1;
+                            to = maxFloorInRange;
+                            if (cabinetIndex >= dto.getFloors().size()) {
+                                if (cabinetIndex <= flag) {
+                                    cabinetIndex = maxFloorInRange;
+                                } else {
+                                    cabinetIndex = from + pivot - 1;
+                                }
+                            }
                         }
                     }
                 }
