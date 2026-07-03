@@ -397,6 +397,15 @@ export default function App() {
           .map((item: any) => item.floorIndex);
         setCabinetPlacements(cabinetFloorIndices);
 
+        // Get cabinet ranges
+        const cabinetRanges = data
+          .filter((item: any) => item.isCabinetPlaced)
+          .map((item: any) => ({
+            floorIndex: item.floorIndex,
+            fromIndex: item.fromIndex,
+            toIndex: item.toIndex,
+          }));
+
         // Map backend results by floorIndex
         const backendMap = new Map<number, any>();
         data.forEach((item: any) => backendMap.set(item.floorIndex, item));
@@ -408,6 +417,10 @@ export default function App() {
               const updatedTowers = p.towers.map((t) => {
                 if (t.id === activeTowerId) {
                   const updatedFloors = t.floorsData.map((f) => {
+                    const coveringCabinet = cabinetRanges.find(
+                      (c: any) => f.floorIndex >= c.fromIndex && f.floorIndex <= c.toIndex
+                    );
+
                     if (backendMap.has(f.floorIndex)) {
                       const backendInfo = backendMap.get(f.floorIndex);
                       if (backendInfo.isCabinetPlaced) {
@@ -419,6 +432,9 @@ export default function App() {
                           pduCount: backendInfo.pduCount ?? 0,
                           convCount: backendInfo.convCount ?? 0,
                           cameraQuantityInCabinet: backendInfo.cameraQuantityInCabinet ?? 0,
+                          isCabinetPlaced: true,
+                          fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
+                          toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
                         };
                       }
                     }
@@ -431,6 +447,9 @@ export default function App() {
                       pduCount: 0,
                       convCount: 0,
                       cameraQuantityInCabinet: 0,
+                      isCabinetPlaced: false,
+                      fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
+                      toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
                     };
                   });
                   return {
@@ -1983,22 +2002,54 @@ const handleAddGlobalInventory = () => {
                                 const upperFloors = floors.filter(f => f.label.startsWith("Tầng") && !f.label.includes("Mái"));
                                 const basementFloors = floors.filter(f => f.label.startsWith("B"));
 
-                                // Sort upper floors descending: e.g. Tầng 5, Tầng 4, Tầng 3
                                 const sortedUpperFloors = [...upperFloors].sort((a, b) => {
                                   const numA = parseInt(a.label.replace("Tầng", "").trim()) || 0;
                                   const numB = parseInt(b.label.replace("Tầng", "").trim()) || 0;
                                   return numB - numA;
                                 });
 
-                                // Sort basement floors ascending: e.g. B1, B2
                                 const sortedBasementFloors = [...basementFloors].sort((a, b) => {
                                   const numA = parseInt(a.label.replace("B", "").trim()) || 0;
                                   const numB = parseInt(b.label.replace("B", "").trim()) || 0;
                                   return numA - numB;
                                 });
 
+                                const cabinetRangesMap = new Map<string, {fromIndex: number, toIndex: number}>();
+                                floors.forEach(f => {
+                                  if (f.fromIndex !== undefined && f.toIndex !== undefined) {
+                                    const key = `${f.fromIndex}-${f.toIndex}`;
+                                    cabinetRangesMap.set(key, { fromIndex: f.fromIndex, toIndex: f.toIndex });
+                                  }
+                                });
+                                const cabinetRanges = Array.from(cabinetRangesMap.values())
+                                  .sort((a, b) => a.fromIndex - b.fromIndex);
+
+                                const rangeColors = [
+                                  { bg: 'bg-indigo-50/20 hover:bg-indigo-100/40', border: 'border-l-4 border-indigo-500/80', labelBg: 'bg-indigo-50 text-indigo-700 border border-indigo-200/60' },
+                                  { bg: 'bg-teal-50/20 hover:bg-teal-100/40', border: 'border-l-4 border-teal-500/80', labelBg: 'bg-teal-50 text-teal-700 border border-teal-200/60' },
+                                  { bg: 'bg-amber-50/20 hover:bg-amber-100/40', border: 'border-l-4 border-amber-500/80', labelBg: 'bg-amber-50 text-amber-700 border border-amber-200/60' },
+                                  { bg: 'bg-rose-50/20 hover:bg-rose-100/40', border: 'border-l-4 border-rose-500/80', labelBg: 'bg-rose-50 text-rose-700 border border-rose-200/60' },
+                                  { bg: 'bg-sky-50/20 hover:bg-sky-100/40', border: 'border-l-4 border-sky-500/80', labelBg: 'bg-sky-50 text-sky-700 border border-sky-200/60' },
+                                  { bg: 'bg-violet-50/20 hover:bg-violet-100/40', border: 'border-l-4 border-violet-500/80', labelBg: 'bg-violet-50 text-violet-700 border border-violet-200/60' },
+                                  { bg: 'bg-emerald-50/20 hover:bg-emerald-100/40', border: 'border-l-4 border-emerald-500/80', labelBg: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' }
+                                ];
+
+                                const getRangeStyle = (f: FloorData) => {
+                                  if (f.fromIndex === undefined || f.toIndex === undefined) {
+                                    return { bg: 'hover:bg-slate-50/80', border: '', labelBg: 'bg-slate-100 text-slate-400 border border-slate-200' };
+                                  }
+                                  const idx = cabinetRanges.findIndex(
+                                    r => r.fromIndex === f.fromIndex && r.toIndex === f.toIndex
+                                  );
+                                  if (idx === -1) {
+                                    return { bg: 'hover:bg-slate-50/80', border: '', labelBg: 'bg-slate-100 text-slate-400 border border-slate-200' };
+                                  }
+                                  return rangeColors[idx % rangeColors.length];
+                                };
+
                                 const renderRow = (f: FloorData) => {
                                   const isCabinetPlaced = cabinetPlacements.includes(f.floorIndex);
+                                  const styleGroup = getRangeStyle(f);
 
                                   return (
                                     <tr 
@@ -2006,17 +2057,8 @@ const handleAddGlobalInventory = () => {
                                       className={`transition ${
                                         selectedFloorIndexes.includes(f.floorIndex) 
                                           ? 'bg-[#E8EAF6]/30' 
-                                          : isCabinetPlaced 
-                                          ? 'hover:bg-pink-100/60' 
-                                          : 'hover:bg-slate-50/80'
-                                      }`}
-                                      style={{
-                                        backgroundColor: selectedFloorIndexes.includes(f.floorIndex)
-                                          ? undefined
-                                          : isCabinetPlaced
-                                          ? '#fce4ec'
-                                          : undefined
-                                      }}
+                                          : styleGroup.bg
+                                      } ${styleGroup.border}`}
                                     >
                                     <td className="py-2 px-4 text-center">
                                       <input
@@ -2028,7 +2070,17 @@ const handleAddGlobalInventory = () => {
                                       />
                                     </td>
                                     <td className="py-2 px-4 font-semibold text-[#191c1e]">
-                                      {f.label}
+                                      <div className="flex items-center gap-2">
+                                        <span>{f.label}</span>
+                                        {isCabinetPlaced && (
+                                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-[#1A237E]/10 text-[#1A237E] border border-[#1A237E]/20" title="Tầng đặt tủ rack">
+                                            <svg className="w-3.5 h-3.5 text-[#1A237E]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                                            </svg>
+                                            RACK
+                                          </span>
+                                        )}
+                                      </div>
                                     </td>
                                     
                                     {/* Editable Camera Count */}
@@ -2071,18 +2123,22 @@ const handleAddGlobalInventory = () => {
                                     </td>
 
                                     {/* Calculated Cab length / Total ports column */}
-                                    <td className="py-2 px-3">
-                                      <div className={`px-2 py-1 font-mono text-xs font-semibold text-center border rounded inline-block min-w-[130px] ${
-                                        isCabinetPlaced 
-                                          ? "text-[#1A237E] bg-[#E8EAF6] border-[#1A237E]/20" 
-                                          : "text-slate-300 bg-slate-50 border-slate-100"
-                                      }`}>
-                                        {isCabinetPlaced 
-                                          ? (f.cableLength > 0
+                                    <td className="py-2 px-3 text-center">
+                                      {isCabinetPlaced ? (
+                                        <div className="px-2 py-1 font-mono text-xs font-semibold text-center border rounded inline-block min-w-[130px] text-[#1A237E] bg-[#E8EAF6] border-[#1A237E]/20">
+                                          {f.cableLength > 0
                                             ? `Tủ (${f.cameraQuantityInCabinet ?? 0} Cam) - ${f.cableLength}m` 
-                                            : `Tủ (${f.cameraQuantityInCabinet ?? 0} Cam)`)
-                                          : "-"}
-                                      </div>
+                                            : `Tủ (${f.cameraQuantityInCabinet ?? 0} Cam)`}
+                                        </div>
+                                      ) : (
+                                        f.fromIndex !== undefined && f.toIndex !== undefined ? (
+                                          <div className={`px-2 py-0.5 font-mono text-[10px] font-semibold text-center border rounded inline-block min-w-[130px] ${styleGroup.labelBg}`}>
+                                            Cáp về Tủ (Lầu {f.fromIndex} - {f.toIndex})
+                                          </div>
+                                        ) : (
+                                          <span className="text-slate-300">-</span>
+                                        )
+                                      )}
                                     </td>
 
                                     {/* SW24 read-only calculated */}

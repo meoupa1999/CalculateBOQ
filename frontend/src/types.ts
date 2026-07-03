@@ -16,6 +16,9 @@ export interface FloorData {
   pduCount: number;
   convCount: number;
   cameraQuantityInCabinet?: number;
+  fromIndex?: number;
+  toIndex?: number;
+  isCabinetPlaced?: boolean;
 }
 
 export interface SiteParameters {
