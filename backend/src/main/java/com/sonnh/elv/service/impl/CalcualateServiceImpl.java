@@ -27,59 +27,59 @@ public class CalcualateServiceImpl implements CalculateService {
 
     @Override
     public List<CalculateBOQResponseDTO> calculateBOQ(CalculateBOQRequestDTO dto) {
-        // int count = 0;
-
         Config config = configRepository
                 .findById(UUID.fromString("a2b0a797-8ff2-4a79-ac5d-78525bd25e90")).get();
-        Map<Integer, CabinetEquipmentDTO> mapResult = new HashMap<>();
-        Map<Integer, CabinetEquipmentDTO> camaQuantityInCabinet = calculateCabinetPlacementUitls(dto, mapResult,
-                config);
-        // int pivot = cabinetPlacementIndex.getPivot();
-        for (Integer key : camaQuantityInCabinet.keySet()) {
-            System.out.println(key + " : " + camaQuantityInCabinet.get(key).toString());
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
+        calculateCabinetPlacementUitls(dto, mapResult, config);
+
+        int pivot = 0;
+        Integer horizontalDistance = dto.getHorizontalDistance().intValue();
+        Integer verticalDistance = dto.getVerticalDistance().intValue();
+        int pivotResult = config.getConditionLength() - horizontalDistance;
+        while (pivotResult > 0) {
+            pivotResult -= verticalDistance;
+            if (pivotResult > 0) {
+                pivot++;
+            }
         }
 
+        calculateCameraQuantityInCabinet(pivot, mapResult, dto);
+        calculateSwichPOE(mapResult, config);
+        calculateUPS(mapResult, config);
+        calculateConverter(mapResult, config);
+        calculatePDU(mapResult, config);
+
         List<CalculateBOQResponseDTO> result = new ArrayList<>();
-        // Map<Integer, CabinetEquipmentDTO> cameraQuantityInCabinet =
-        // calculateCameraQuantityInCabinet(pivot,
-        // cabinetPlacementIndex.getResult(), dto);
-        // calculateSwichPOE(cameraQuantityInCabinet, config);
-        // calculateUPS(cameraQuantityInCabinet, config);
-        // calculateConverter(cameraQuantityInCabinet, config);
-        // calculatePDU(cameraQuantityInCabinet, config);
+        for (FloorRequest floor : dto.getFloors()) {
+            boolean isPlaced = mapResult.containsKey(floor.getFloorIndex());
+            CalculateBOQResponseDTO.CalculateBOQResponseDTOBuilder builder = CalculateBOQResponseDTO.builder()
+                    .floorIndex(floor.getFloorIndex())
+                    .label(floor.getLabel())
+                    .camerasCount(floor.getCamerasCount())
+                    .isCabinetPlaced(isPlaced);
 
-        // for (Integer key : cameraQuantityInCabinet.keySet()) {
-        // System.out.println("lầu " + key + " : " +
-        // cameraQuantityInCabinet.get(key).getSw16Quantity() + " sw16"
-        // + " , " + cameraQuantityInCabinet.get(key).getSw24Quantity() + " sw24");
-        // }
-
-        // // add field vô result
-
-        // for (FloorRequest floor : dto.getFloors()) {
-        // for (Integer index : cabinetPlacementIndex.getResult()) {
-        // if (floor.getFloorIndex().equals(index)) {
-        // result.add(CalculateBOQResponseDTO.builder()
-        // .floorIndex(index)
-        // .camerasCount(floor.getCamerasCount())
-        // .cameraQuantityInCabinet(cameraQuantityInCabinet.get(index).getCameraQuantityInCabinet())
-        // .sw16Count(cameraQuantityInCabinet.get(index).getSw16Quantity())
-        // .sw24Count(cameraQuantityInCabinet.get(index).getSw24Quantity())
-        // .upsCount(cameraQuantityInCabinet.get(index).getUps())
-        // .pduCount(cameraQuantityInCabinet.get(index).getPdu())
-        // .convCount(cameraQuantityInCabinet.get(index).getConverter())
-        // .build());
-        // }
-
-        // }
-        // }
-        // for (CalculateBOQResponseDTO calculateBOQResponseDTO : result) {
-        // System.out.println(calculateBOQResponseDTO.toString());
-        // System.out.println("--------------------------");
-        // }
+            if (isPlaced) {
+                CabinetEquipmentDTO cabinet = mapResult.get(floor.getFloorIndex());
+                builder.fromIndex(cabinet.getFrom())
+                        .toIndex(cabinet.getTo())
+                        .cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
+                        .sw24Count(cabinet.getSw24Quantity())
+                        .sw16Count(cabinet.getSw16Quantity())
+                        .upsCount(cabinet.getUps())
+                        .pduCount(cabinet.getPdu())
+                        .convCount(cabinet.getConverter());
+            } else {
+                builder.cameraQuantityInCabinet(0)
+                        .sw24Count(0)
+                        .sw16Count(0)
+                        .upsCount(0)
+                        .pduCount(0)
+                        .convCount(0);
+            }
+            result.add(builder.build());
+        }
 
         return result;
-
     }
 
     // public MyCalculateResDto
@@ -375,60 +375,17 @@ public class CalcualateServiceImpl implements CalculateService {
     }
 
     // -----------------------------------------------------
-    public Map<Integer, CabinetEquipmentDTO> calculateCameraQuantityInCabinet(int pivot, List<Integer> cabinetPlacement,
+    public Map<Integer, CabinetEquipmentDTO> calculateCameraQuantityInCabinet(int pivot, Map<Integer, CabinetEquipmentDTO> mapResult,
             CalculateBOQRequestDTO dto) {
-        Map<Integer, CabinetEquipmentDTO> myMap = new HashMap<>();
-
-        // Khởi tạo trước các phần tử trong map để tránh NullPointerException khi gọi ở
-        // ngoài
-        for (Integer index : cabinetPlacement) {
-            CabinetEquipmentDTO defaultDto = new CabinetEquipmentDTO();
-            defaultDto.setCameraQuantityInCabinet(0);
-            defaultDto.setSw24Quantity(0);
-            defaultDto.setSw16Quantity(0);
-            defaultDto.setUps(0);
-            defaultDto.setPdu(0);
-            defaultDto.setConverter(0);
-            myMap.put(index, defaultDto);
-        }
-
-        int myIndex = 0;
-        int cansosanh = 0;
-        int indexCount = 0;
-        for (Integer index : cabinetPlacement) {
-            indexCount++;
+        for (Map.Entry<Integer, CabinetEquipmentDTO> entry : mapResult.entrySet()) {
+            CabinetEquipmentDTO cabinet = entry.getValue();
             int total = 0;
-            // Thêm điều kiện i < dto.getFloors().size() để bảo vệ tránh Out Of Bound
-            for (int i = myIndex; i < index + pivot && i < dto.getFloors().size(); i++) {
-                cansosanh = index + pivot - 2;
-                if (cansosanh > dto.getFloorsCount()) {
-                    System.out.println("Trường hợp db đổi cansosanh");
-                    cansosanh = dto.getFloorsCount() - 1;
-                }
-                System.out.println("myindex : " + myIndex);
-                System.out.println(" cansosanh : " + cansosanh);
-                System.out.println("i: " + i);
-                if (i < cansosanh) {
-                    total += dto.getFloors().get(i).getCamerasCount();
-                    System.out.println("tính tổng nè ");
-                }
-                if (i == cansosanh && indexCount == cabinetPlacement.size()) {
-                    total += dto.getFloors().get(i).getCamerasCount();
-                    System.out.println("tính tổng nè đặc biệt");
-                }
-                if (i == cansosanh) {
-                    System.out.println("put vào map ở index " + index);
-                    CabinetEquipmentDTO cabinetEquipmentDTO = myMap.get(index);
-                    if (cabinetEquipmentDTO != null) {
-                        cabinetEquipmentDTO.setCameraQuantityInCabinet(total);
-                    }
-                    myIndex = i;
-                    total = 0;
-                    break;
-                }
+            for (int i = cabinet.getFrom(); i <= cabinet.getTo() && i < dto.getFloors().size(); i++) {
+                total += dto.getFloors().get(i).getCamerasCount();
             }
+            cabinet.setCameraQuantityInCabinet(total);
         }
-        return myMap;
+        return mapResult;
     }
 
     public Map<Integer, CabinetEquipmentDTO> calculateSwichPOE(Map<Integer, CabinetEquipmentDTO> mapResult,

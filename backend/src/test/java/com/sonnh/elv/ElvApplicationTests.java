@@ -43,7 +43,7 @@ class ElvApplicationTests {
                 .horizontalDistance(52.0).verticalDistance(5.0)
                 .rackType("Standard").floors(floors).build();
 
-        Map<Integer, CabinetEquipmentDTO> mapResult = new HashMap<>();
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
         Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
 
         System.out.println("--- TEST 1: Standard Rack Normal ---");
@@ -68,7 +68,7 @@ class ElvApplicationTests {
                 .horizontalDistance(52.0).verticalDistance(5.0)
                 .rackType("Standard").floors(floors).build();
 
-        Map<Integer, CabinetEquipmentDTO> mapResult = new HashMap<>();
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
         Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
 
         System.out.println("--- TEST 2: Standard Rack Single Floor ---");
@@ -92,7 +92,7 @@ class ElvApplicationTests {
                 .horizontalDistance(52.0).verticalDistance(5.0)
                 .rackType("Standard").floors(floors).build();
 
-        Map<Integer, CabinetEquipmentDTO> mapResult = new HashMap<>();
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
         Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
 
         System.out.println("--- TEST 3: Standard Rack Pivot >= Size ---");
@@ -120,7 +120,7 @@ class ElvApplicationTests {
                 .horizontalDistance(52.0).verticalDistance(5.0)
                 .rackType("2U").floors(floors).build();
 
-        Map<Integer, CabinetEquipmentDTO> mapResult = new HashMap<>();
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
         Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
 
         System.out.println("--- TEST 4: 2U Rack Standard No Exceed ---");
@@ -151,7 +151,7 @@ class ElvApplicationTests {
                 .horizontalDistance(52.0).verticalDistance(5.0)
                 .rackType("2U").floors(floors).build();
 
-        Map<Integer, CabinetEquipmentDTO> mapResult = new HashMap<>();
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
         Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
 
         System.out.println("--- TEST 5: 2U Rack Early Placement Exceed 20 ---");
@@ -186,7 +186,7 @@ class ElvApplicationTests {
                 .horizontalDistance(52.0).verticalDistance(5.0)
                 .rackType("2U").floors(floors).build();
 
-        Map<Integer, CabinetEquipmentDTO> mapResult = new HashMap<>();
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
         Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
 
         System.out.println("--- TEST 6: 2U Rack Exceed At Cabinet Index ---");
@@ -224,7 +224,7 @@ class ElvApplicationTests {
                 .horizontalDistance(52.0).verticalDistance(5.0)
                 .rackType("2U").floors(floors).build();
 
-        Map<Integer, CabinetEquipmentDTO> mapResult = new HashMap<>();
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
         Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
 
         System.out.println("--- TEST 7: 2U Rack Multiple Exceeds ---");
@@ -265,7 +265,7 @@ class ElvApplicationTests {
                 .horizontalDistance(52.0).verticalDistance(4.0) // pivot = 4
                 .rackType("2U").floors(floors).build();
 
-        Map<Integer, CabinetEquipmentDTO> mapResult = new HashMap<>();
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
         Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
 
         System.out.println("--- TEST 8: 2U Rack Pivot >= Size ---");
@@ -293,7 +293,7 @@ class ElvApplicationTests {
                 .horizontalDistance(52.0).verticalDistance(4.0) // pivot = 4
                 .rackType("2U").floors(floors).build();
 
-        Map<Integer, CabinetEquipmentDTO> mapResult = new HashMap<>();
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
         Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
 
         System.out.println("--- TEST 9: 2U Rack Pivot >= Size With Exceed ---");
@@ -324,7 +324,7 @@ class ElvApplicationTests {
                 .horizontalDistance(52.0).verticalDistance(5.0)
                 .rackType("2U").floors(floors).build();
 
-        Map<Integer, CabinetEquipmentDTO> mapResult = new HashMap<>();
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
         Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
 
         System.out.println("--- TEST 10: 2U Rack Constant Overloads ---");
