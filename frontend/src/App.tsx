@@ -2131,13 +2131,7 @@ const handleAddGlobalInventory = () => {
                                             : `Tủ (${f.cameraQuantityInCabinet ?? 0} Cam)`}
                                         </div>
                                       ) : (
-                                        f.fromIndex !== undefined && f.toIndex !== undefined ? (
-                                          <div className={`px-2 py-0.5 font-mono text-[10px] font-semibold text-center border rounded inline-block min-w-[130px] ${styleGroup.labelBg}`}>
-                                            Cáp về Tủ (Lầu {f.fromIndex} - {f.toIndex})
-                                          </div>
-                                        ) : (
-                                          <span className="text-slate-300">-</span>
-                                        )
+                                        <span className="text-slate-300">-</span>
                                       )}
                                     </td>
 
