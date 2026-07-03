@@ -2025,13 +2025,13 @@ const handleAddGlobalInventory = () => {
                                   .sort((a, b) => a.fromIndex - b.fromIndex);
 
                                 const rangeColors = [
-                                  { bg: 'bg-indigo-50/20 hover:bg-indigo-100/40', border: 'border-l-4 border-indigo-500/80', labelBg: 'bg-indigo-50 text-indigo-700 border border-indigo-200/60' },
-                                  { bg: 'bg-teal-50/20 hover:bg-teal-100/40', border: 'border-l-4 border-teal-500/80', labelBg: 'bg-teal-50 text-teal-700 border border-teal-200/60' },
-                                  { bg: 'bg-amber-50/20 hover:bg-amber-100/40', border: 'border-l-4 border-amber-500/80', labelBg: 'bg-amber-50 text-amber-700 border border-amber-200/60' },
-                                  { bg: 'bg-rose-50/20 hover:bg-rose-100/40', border: 'border-l-4 border-rose-500/80', labelBg: 'bg-rose-50 text-rose-700 border border-rose-200/60' },
-                                  { bg: 'bg-sky-50/20 hover:bg-sky-100/40', border: 'border-l-4 border-sky-500/80', labelBg: 'bg-sky-50 text-sky-700 border border-sky-200/60' },
-                                  { bg: 'bg-violet-50/20 hover:bg-violet-100/40', border: 'border-l-4 border-violet-500/80', labelBg: 'bg-violet-50 text-violet-700 border border-violet-200/60' },
-                                  { bg: 'bg-emerald-50/20 hover:bg-emerald-100/40', border: 'border-l-4 border-emerald-500/80', labelBg: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' }
+                                  { bg: 'bg-indigo-50 hover:bg-indigo-100/70', border: 'border-l-4 border-indigo-500/80', labelBg: 'bg-indigo-100 text-indigo-700 border border-indigo-200' },
+                                  { bg: 'bg-teal-50 hover:bg-teal-100/70', border: 'border-l-4 border-teal-500/80', labelBg: 'bg-teal-100 text-teal-700 border border-teal-200' },
+                                  { bg: 'bg-amber-50 hover:bg-amber-100/70', border: 'border-l-4 border-amber-500/80', labelBg: 'bg-amber-100 text-amber-700 border border-amber-200' },
+                                  { bg: 'bg-rose-50 hover:bg-rose-100/70', border: 'border-l-4 border-rose-500/80', labelBg: 'bg-rose-100 text-rose-700 border border-rose-200' },
+                                  { bg: 'bg-sky-50 hover:bg-sky-100/70', border: 'border-l-4 border-sky-500/80', labelBg: 'bg-sky-100 text-sky-700 border border-sky-200' },
+                                  { bg: 'bg-violet-50 hover:bg-violet-100/70', border: 'border-l-4 border-violet-500/80', labelBg: 'bg-violet-100 text-violet-700 border border-violet-200' },
+                                  { bg: 'bg-emerald-50 hover:bg-emerald-100/70', border: 'border-l-4 border-emerald-500/80', labelBg: 'bg-emerald-100 text-emerald-700 border border-emerald-200' }
                                 ];
 
                                 const getRangeStyle = (f: FloorData) => {
