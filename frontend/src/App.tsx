@@ -445,9 +445,14 @@ export default function App() {
             return p;
           })
         );
+      } else {
+        const localPlacements = localCalculateCabinetPlacement(floorsCount, horizontalDistance, verticalDistance);
+        setCabinetPlacements(localPlacements.map(lvl => basementsCount + lvl - 1));
       }
     } catch (err) {
       console.error("Error fetching cabinet placement", err);
+      const localPlacements = localCalculateCabinetPlacement(floorsCount, horizontalDistance, verticalDistance);
+      setCabinetPlacements(localPlacements.map(lvl => basementsCount + lvl - 1));
     }
   };
 
@@ -490,7 +495,8 @@ export default function App() {
       addToast("Khoảng cách ngang/dọc phải lớn hơn 0!", "error");
       return;
     }
-    const newCabinetPlacements = localCalculateCabinetPlacement(tempFloors, tempH, tempV);
+    const localPlacements = localCalculateCabinetPlacement(tempFloors, tempH, tempV);
+    const newCabinetPlacements = localPlacements.map(lvl => tempBasements + lvl - 1);
     setCabinetPlacements(newCabinetPlacements);
 
     // Perform BOQ calculation
@@ -1989,10 +1995,7 @@ const handleAddGlobalInventory = () => {
                                 });
 
                                 const renderRow = (f: FloorData) => {
-                                  const match = f.label.match(/Tầng\s+(\d+)/);
-                                  const isUpperFloor = match !== null && !f.label.includes("Mái");
-                                  const physicalFloorNum = isUpperFloor ? parseInt(match[1]) : null;
-                                  const isCabinetPlaced = physicalFloorNum !== null && cabinetPlacements.includes(physicalFloorNum);
+                                  const isCabinetPlaced = cabinetPlacements.includes(f.floorIndex);
 
                                   return (
                                     <tr 

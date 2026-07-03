@@ -4,7 +4,7 @@
  */
 
 export interface FloorData {
-  floorIndex: number; // 1-based
+  floorIndex: number; // 0-based
   label: string; // e.g., "Tầng 1"
   camerasCount: number;
   domeCount: number;

@@ -11,6 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CalculateBOQResponseDTO {
     private Integer floorIndex;
+    private Integer fromIndex;
+    private Integer toIndex;
+    private Boolean isCabinetPlaced;
     private String label;
     private Integer camerasCount;
     private Integer domeCount;

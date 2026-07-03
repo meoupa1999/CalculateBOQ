@@ -31,138 +31,216 @@ public class CalcualateServiceImpl implements CalculateService {
 
         Config config = configRepository
                 .findById(UUID.fromString("a2b0a797-8ff2-4a79-ac5d-78525bd25e90")).get();
-        MyCalculateResDto cabinetPlacementIndex = calculateCabinetPlacementUitls(dto, config);
-        int pivot = cabinetPlacementIndex.getPivot();
+        Map<Integer, CabinetEquipmentDTO> mapResult = new HashMap<>();
+        Map<Integer, CabinetEquipmentDTO> camaQuantityInCabinet = calculateCabinetPlacementUitls(dto, mapResult,
+                config);
+        // int pivot = cabinetPlacementIndex.getPivot();
+        for (Integer key : camaQuantityInCabinet.keySet()) {
+            System.out.println(key + " : " + camaQuantityInCabinet.get(key).toString());
+        }
+
         List<CalculateBOQResponseDTO> result = new ArrayList<>();
-        Map<Integer, CabinetEquipmentDTO> cameraQuantityInCabinet = calculateCameraQuantityInCabinet(pivot,
-                cabinetPlacementIndex.getResult(), dto);
-        calculateSwichPOE(cameraQuantityInCabinet, config);
-        calculateUPS(cameraQuantityInCabinet, config);
-        calculateConverter(cameraQuantityInCabinet, config);
-        calculatePDU(cameraQuantityInCabinet, config);
+        // Map<Integer, CabinetEquipmentDTO> cameraQuantityInCabinet =
+        // calculateCameraQuantityInCabinet(pivot,
+        // cabinetPlacementIndex.getResult(), dto);
+        // calculateSwichPOE(cameraQuantityInCabinet, config);
+        // calculateUPS(cameraQuantityInCabinet, config);
+        // calculateConverter(cameraQuantityInCabinet, config);
+        // calculatePDU(cameraQuantityInCabinet, config);
 
-        for (Integer key : cameraQuantityInCabinet.keySet()) {
-            System.out.println("lầu " + key + " : " + cameraQuantityInCabinet.get(key).getSw16Quantity() + " sw16"
-                    + " , " + cameraQuantityInCabinet.get(key).getSw24Quantity() + " sw24");
-        }
+        // for (Integer key : cameraQuantityInCabinet.keySet()) {
+        // System.out.println("lầu " + key + " : " +
+        // cameraQuantityInCabinet.get(key).getSw16Quantity() + " sw16"
+        // + " , " + cameraQuantityInCabinet.get(key).getSw24Quantity() + " sw24");
+        // }
 
-        // add field vô result
+        // // add field vô result
 
-        for (FloorRequest floor : dto.getFloors()) {
-            for (Integer index : cabinetPlacementIndex.getResult()) {
-                if (floor.getFloorIndex().equals(index)) {
-                    result.add(CalculateBOQResponseDTO.builder()
-                            .floorIndex(index)
-                            .camerasCount(floor.getCamerasCount())
-                            .cameraQuantityInCabinet(cameraQuantityInCabinet.get(index).getCameraQuantityInCabinet())
-                            .sw16Count(cameraQuantityInCabinet.get(index).getSw16Quantity())
-                            .sw24Count(cameraQuantityInCabinet.get(index).getSw24Quantity())
-                            .upsCount(cameraQuantityInCabinet.get(index).getUps())
-                            .pduCount(cameraQuantityInCabinet.get(index).getPdu())
-                            .convCount(cameraQuantityInCabinet.get(index).getConverter())
-                            .build());
-                }
+        // for (FloorRequest floor : dto.getFloors()) {
+        // for (Integer index : cabinetPlacementIndex.getResult()) {
+        // if (floor.getFloorIndex().equals(index)) {
+        // result.add(CalculateBOQResponseDTO.builder()
+        // .floorIndex(index)
+        // .camerasCount(floor.getCamerasCount())
+        // .cameraQuantityInCabinet(cameraQuantityInCabinet.get(index).getCameraQuantityInCabinet())
+        // .sw16Count(cameraQuantityInCabinet.get(index).getSw16Quantity())
+        // .sw24Count(cameraQuantityInCabinet.get(index).getSw24Quantity())
+        // .upsCount(cameraQuantityInCabinet.get(index).getUps())
+        // .pduCount(cameraQuantityInCabinet.get(index).getPdu())
+        // .convCount(cameraQuantityInCabinet.get(index).getConverter())
+        // .build());
+        // }
 
-            }
-        }
-        for (CalculateBOQResponseDTO calculateBOQResponseDTO : result) {
-            System.out.println(calculateBOQResponseDTO.toString());
-            System.out.println("--------------------------");
-        }
+        // }
+        // }
+        // for (CalculateBOQResponseDTO calculateBOQResponseDTO : result) {
+        // System.out.println(calculateBOQResponseDTO.toString());
+        // System.out.println("--------------------------");
+        // }
 
         return result;
 
     }
 
-    public MyCalculateResDto calculateCabinetPlacementUitls(CalculateBOQRequestDTO dto, Config config) {
-        MyCalculateResDto myCalculateResDto = new MyCalculateResDto();
-        for (FloorRequest floor : dto.getFloors()) {
-            System.out.println("floor: " + floor.getFloorIndex() + " có " + floor.getCamerasCount() + " camera");
-        }
-        List<Integer> result = new ArrayList<>();
-        // Config config = configRepository
-        // .findById(UUID.fromString("a2b0a797-8ff2-4a79-ac5d-78525bd25e90")).get();
-        int quantity = dto.getFloorsCount();
-        int subquantity = quantity;
-        int count = 0;
-        Double width = dto.getHorizontalDistance();
-        Double height = dto.getVerticalDistance();
-        int condition = config.getConditionLength();
-        Double total = width;
-        int pivot = 0;
+    // public MyCalculateResDto
+    // calculateCabinetPlacementUitls(CalculateBOQRequestDTO dto, Config config) {
+    // MyCalculateResDto myCalculateResDto = new MyCalculateResDto();
+    // for (FloorRequest floor : dto.getFloors()) {
+    // System.out.println("floor: " + floor.getFloorIndex() + " có " +
+    // floor.getCamerasCount() + " camera");
+    // }
+    // List<Integer> result = new ArrayList<>();
+    // // Config config = configRepository
+    // // .findById(UUID.fromString("a2b0a797-8ff2-4a79-ac5d-78525bd25e90")).get();
+    // int quantity = dto.getFloorsCount();
+    // int subquantity = quantity;
+    // int count = 0;
+    // Double width = dto.getHorizontalDistance();
+    // Double height = dto.getVerticalDistance();
+    // int condition = config.getConditionLength();
+    // Double total = width;
+    // int pivot = 0;
 
-        while (total < condition) {
-            total += height;
-            if (total <= condition) {
+    // while (total < condition) {
+    // total += height;
+    // if (total <= condition) {
+    // pivot++;
+    // }
+    // System.out.println("total: " + total);
+    // }
+    // System.out.println("pivot: " + pivot);
+
+    // while (count <= quantity) {
+    // subquantity -= (pivot * 2) + 1;
+    // if (subquantity < 0) {
+    // count += ((quantity - count) / 2) + 1;
+    // System.out.println("count2: " + count);
+    // result.add(count);
+    // break;
+    // }
+    // count += pivot;
+    // System.out.println("count: " + count);
+    // result.add(count);
+    // count += pivot - 1;
+    // }
+    // int floorIndex = 0;
+    // int twoUTotal = 0;
+    // int tempPivot = (pivot * 2 - 1);
+    // int twoUCount = 0;
+    // List<Integer> twoUResult = new ArrayList<>();
+    // if (dto.getRackType().equals("2U")) {
+    // System.out.println("------------------------------");
+    // System.out.println("2U nè");
+
+    // for (FloorRequest floor : dto.getFloors()) {
+    // floorIndex++;
+    // twoUCount++;
+    // twoUTotal += floor.getCamerasCount();
+    // System.out.println("--------------------------------");
+    // System.out.println("floorIndex: " + floorIndex);
+    // System.out.println("twoUTotal: " + twoUTotal);
+    // System.out.println("tempPivot: " + tempPivot);
+
+    // if (floorIndex == tempPivot || twoUTotal >= config.getSw24MaxPortUse()) {
+    // System.out.println("chạy vào đây");
+    // twoUResult.add(floorIndex - (twoUCount / 2));
+    // twoUTotal = 0;
+    // twoUCount = 0;
+    // if (tempPivot < quantity) {
+    // tempPivot += (pivot * 2 - 1);
+    // }
+    // continue;
+    // }
+    // if (tempPivot > quantity && twoUTotal <= config.getSw24MaxPortUse() &&
+    // floorIndex == quantity) {
+    // twoUResult.add(floorIndex - (twoUCount / 2));
+    // break;
+    // }
+    // if (tempPivot > quantity && twoUTotal >= config.getSw24MaxPortUse()) {
+    // twoUResult.add(floorIndex);
+    // break;
+    // }
+    // System.out.println("--------------------------------");
+    // }
+    // myCalculateResDto.setResult(twoUResult);
+    // myCalculateResDto.setPivot(pivot);
+    // System.out.println("twoUResult: " + twoUResult);
+    // return myCalculateResDto;
+    // }
+    // myCalculateResDto.setResult(result);
+    // myCalculateResDto.setPivot(pivot);
+    // System.out.println("------------------------------");
+    // System.out.println("result: " + result);
+    // return myCalculateResDto;
+    // }
+
+    public Map<Integer, CabinetEquipmentDTO> calculateCabinetPlacementUitls(CalculateBOQRequestDTO dto,
+            Map<Integer, CabinetEquipmentDTO> mapResult, Config config) {
+        // tính pivot
+        int pivot = 0;
+        int maxFloorInRange = 0;
+        int cabinetIndex = 0;
+        int from = 0;
+        int to = 0;
+        int flag = 0;
+        Integer horizontalDistance = dto.getHorizontalDistance().intValue();
+        Integer verticalDistance = dto.getVerticalDistance().intValue();
+        int pivotResult = config.getConditionLength() - horizontalDistance;
+        while (pivotResult > 0) {
+            pivotResult -= verticalDistance;
+            if (pivotResult > 0) {
                 pivot++;
             }
-            System.out.println("total: " + total);
         }
+        cabinetIndex = pivot - 1;
         System.out.println("pivot: " + pivot);
-
-        while (count <= quantity) {
-            subquantity -= (pivot * 2) + 1;
-            if (subquantity < 0) {
-                count += ((quantity - count) / 2) + 1;
-                System.out.println("count2: " + count);
-                result.add(count);
-                break;
-            }
-            count += pivot;
-            System.out.println("count: " + count);
-            result.add(count);
-            count += pivot - 1;
+        // case thường
+        if (cabinetIndex >= dto.getFloors().size()) {
+            maxFloorInRange = dto.getFloors().size() - 1;
+            cabinetIndex = maxFloorInRange;
+            to = maxFloorInRange;
+        } else {
+            maxFloorInRange += pivot * 2 - 1;
+            to = maxFloorInRange;
         }
-        int floorIndex = 0;
-        int twoUTotal = 0;
-        int tempPivot = (pivot * 2 - 1);
-        int twoUCount = 0;
-        List<Integer> twoUResult = new ArrayList<>();
-        if (dto.getRackType().equals("2U")) {
-            System.out.println("------------------------------");
-            System.out.println("2U nè");
+        for (FloorRequest floor : dto.getFloors()) {
+            System.out.println("--------------------------------");
+            System.out.println("maxFloorInRange: " + maxFloorInRange);
+            System.out.println("cabinetIndex: " + cabinetIndex);
+            if (from < dto.getFloors().size() && floor.getFloorIndex() == cabinetIndex) {
+                System.out.println("Put vao map");
+                CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
+                cabinetEquipmentDTO.setFrom(from);
+                cabinetEquipmentDTO.setTo(to);
+                mapResult.put(floor.getFloorIndex(), cabinetEquipmentDTO);
+                from = maxFloorInRange + 1;
+                maxFloorInRange += pivot * 2 - 1;
+                cabinetIndex = from + pivot - 1;
+                to = maxFloorInRange;
 
-            for (FloorRequest floor : dto.getFloors()) {
-                floorIndex++;
-                twoUCount++;
-                twoUTotal += floor.getCamerasCount();
-                System.out.println("--------------------------------");
-                System.out.println("floorIndex: " + floorIndex);
-                System.out.println("twoUTotal: " + twoUTotal);
-                System.out.println("tempPivot: " + tempPivot);
-
-                if (floorIndex == tempPivot || twoUTotal >= config.getSw24MaxPortUse()) {
-                    System.out.println("chạy vào đây");
-                    twoUResult.add(floorIndex - (twoUCount / 2));
-                    twoUTotal = 0;
-                    twoUCount = 0;
-                    if (tempPivot < quantity) {
-                        tempPivot += (pivot * 2 - 1);
+                if (maxFloorInRange >= dto.getFloors().size()) {
+                    flag = maxFloorInRange;
+                    maxFloorInRange = dto.getFloors().size() - 1;
+                    to = maxFloorInRange;
+                    if (cabinetIndex >= dto.getFloors().size()) {
+                        // cabinetIndex = from + pivot - 1;
+                        if (cabinetIndex <= flag) {
+                            System.out.println("cabinetIndex trong special case: " + cabinetIndex);
+                            System.out.println("maxFloorInRange trong special case: " + maxFloorInRange);
+                            System.out.println("chay vao day");
+                            cabinetIndex = maxFloorInRange;
+                        } else {
+                            cabinetIndex = from + pivot - 1;
+                        }
                     }
-                    continue;
                 }
-                if (tempPivot > quantity && twoUTotal <= config.getSw24MaxPortUse() && floorIndex == quantity) {
-                    twoUResult.add(floorIndex - (twoUCount / 2));
-                    break;
-                }
-                if (tempPivot > quantity && twoUTotal >= config.getSw24MaxPortUse()) {
-                    twoUResult.add(floorIndex);
-                    break;
-                }
-                System.out.println("--------------------------------");
             }
-            myCalculateResDto.setResult(twoUResult);
-            myCalculateResDto.setPivot(pivot);
-            System.out.println("twoUResult: " + twoUResult);
-            return myCalculateResDto;
         }
-        myCalculateResDto.setResult(result);
-        myCalculateResDto.setPivot(pivot);
-        System.out.println("------------------------------");
-        System.out.println("result: " + result);
-        return myCalculateResDto;
+
+        return mapResult;
     }
 
+    // -----------------------------------------------------
     public Map<Integer, CabinetEquipmentDTO> calculateCameraQuantityInCabinet(int pivot, List<Integer> cabinetPlacement,
             CalculateBOQRequestDTO dto) {
         Map<Integer, CabinetEquipmentDTO> myMap = new HashMap<>();

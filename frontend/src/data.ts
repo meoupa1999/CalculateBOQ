@@ -251,7 +251,7 @@ export function calculateProjectBOQ(
 
   // First pass: build floors with basic camera counts and level mapping
   const tempFloorsList = labels.map((label, idx) => {
-    const floorIndex = idx + 1; // 1-based ordering
+    const floorIndex = idx; // 0-based ordering
     
     // Find matching floor in existingFloorsData to preserve user input
     const existing = existingFloorsData?.find(
@@ -377,8 +377,8 @@ export function calculateProjectBOQ(
       // PDU selection
       const pduCount = (totalCams > 0) ? hardwareLogic.pduPerRack : 0;
 
-      // Converter selection: 1 Converter on remote floors (floorIndex > 1) if fiber is used and has cameras served
-      const convCount = (f.floorIndex > 1 && totalCams > 0 && siteParams.uplinkType === "Fiber") ? 1 : 0;
+      // Converter selection: 1 Converter on remote floors (floorIndex !== basementsCount) if fiber is used and has cameras served
+      const convCount = (f.floorIndex !== basementsCount && totalCams > 0 && siteParams.uplinkType === "Fiber") ? 1 : 0;
 
       // Cable calculation (including horizontal runs and vertical runs for all served cameras, plus vertical backbone)
       let cableLength = 0;
@@ -436,16 +436,16 @@ export const INITIAL_PROJECTS: Project[] = [
         siteParams: { ...DEFAULT_SITE_PARAMS },
         hardwareLogic: { ...DEFAULT_HARDWARE_LOGIC },
         floorsData: [
-          { floorIndex: 1, label: "Tầng 1", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
-          { floorIndex: 2, label: "Tầng 2", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
-          { floorIndex: 3, label: "Tầng 3", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
-          { floorIndex: 4, label: "Tầng 4", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
-          { floorIndex: 5, label: "Tầng 5", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
-          { floorIndex: 6, label: "Tầng 6", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
-          { floorIndex: 7, label: "Tầng 7", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
-          { floorIndex: 8, label: "Tầng 8", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
-          { floorIndex: 9, label: "Tầng 9", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
-          { floorIndex: 10, label: "Tầng 10", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
+          { floorIndex: 0, label: "Tầng 1", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
+          { floorIndex: 1, label: "Tầng 2", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
+          { floorIndex: 2, label: "Tầng 3", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
+          { floorIndex: 3, label: "Tầng 4", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
+          { floorIndex: 4, label: "Tầng 5", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
+          { floorIndex: 5, label: "Tầng 6", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
+          { floorIndex: 6, label: "Tầng 7", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
+          { floorIndex: 7, label: "Tầng 8", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
+          { floorIndex: 8, label: "Tầng 9", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
+          { floorIndex: 9, label: "Tầng 10", camerasCount: 20, domeCount: 10, bulletCount: 10, cableLength: 40, sw24Count: 2, sw16Count: 0, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
         ],
         customPrices: {},
       }
@@ -486,10 +486,10 @@ export const INITIAL_PROJECTS: Project[] = [
           cabinetSizeDefault: "6U",
         },
         floorsData: [
-          { floorIndex: 1, label: "Xưởng A", camerasCount: 32, domeCount: 10, bulletCount: 22, cableLength: 80, sw24Count: 1, sw16Count: 1, upsType: "2K", pduCount: 1, convCount: 0, cameraQuantityInCabinet: 0 },
-          { floorIndex: 2, label: "Xưởng B", camerasCount: 28, domeCount: 8, bulletCount: 20, cableLength: 70, sw24Count: 1, sw16Count: 1, upsType: "2K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
-          { floorIndex: 3, label: "Kho Thành Phẩm", camerasCount: 16, domeCount: 4, bulletCount: 12, cableLength: 40, sw24Count: 0, sw16Count: 1, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
-          { floorIndex: 4, label: "Khối Văn Phòng", camerasCount: 24, domeCount: 18, bulletCount: 6, cableLength: 60, sw24Count: 1, sw16Count: 0, upsType: "2K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
+          { floorIndex: 0, label: "Xưởng A", camerasCount: 32, domeCount: 10, bulletCount: 22, cableLength: 80, sw24Count: 1, sw16Count: 1, upsType: "2K", pduCount: 1, convCount: 0, cameraQuantityInCabinet: 0 },
+          { floorIndex: 1, label: "Xưởng B", camerasCount: 28, domeCount: 8, bulletCount: 20, cableLength: 70, sw24Count: 1, sw16Count: 1, upsType: "2K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
+          { floorIndex: 2, label: "Kho Thành Phẩm", camerasCount: 16, domeCount: 4, bulletCount: 12, cableLength: 40, sw24Count: 0, sw16Count: 1, upsType: "1K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
+          { floorIndex: 3, label: "Khối Văn Phòng", camerasCount: 24, domeCount: 18, bulletCount: 6, cableLength: 60, sw24Count: 1, sw16Count: 0, upsType: "2K", pduCount: 1, convCount: 1, cameraQuantityInCabinet: 0 },
         ],
         customPrices: {},
       }

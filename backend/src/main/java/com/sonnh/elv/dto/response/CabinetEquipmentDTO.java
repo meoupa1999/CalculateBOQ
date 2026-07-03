@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CabinetEquipmentDTO {
     private Integer cameraQuantityInCabinet;
+    private Integer from;
+    private Integer to;
     private Integer sw24Quantity;
     private Integer sw16Quantity;
     private Integer ups;
