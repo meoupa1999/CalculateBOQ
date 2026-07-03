@@ -206,7 +206,7 @@ public class CalcualateServiceImpl implements CalculateService {
                 cabinetIndex = maxFloorInRange;
                 to = maxFloorInRange;
             } else {
-                maxFloorInRange += pivot * 2 - 1;
+                maxFloorInRange = from + pivot * 2 - 2;
                 to = maxFloorInRange;
             }
             if (maxFloorInRange >= dto.getFloors().size()) {
@@ -235,7 +235,7 @@ public class CalcualateServiceImpl implements CalculateService {
                     cabinetEquipmentDTO.setTo(to);
                     mapResult.put(floor.getFloorIndex(), cabinetEquipmentDTO);
                     from = maxFloorInRange + 1;
-                    maxFloorInRange += pivot * 2 - 1;
+                    maxFloorInRange = from + pivot * 2 - 2;
                     cabinetIndex = from + pivot - 1;
                     to = maxFloorInRange;
 
@@ -273,7 +273,7 @@ public class CalcualateServiceImpl implements CalculateService {
                 cabinetIndex = maxFloorInRange;
                 to = maxFloorInRange;
             } else {
-                maxFloorInRange += pivot * 2 - 1;
+                maxFloorInRange = from + pivot * 2 - 2;
                 to = maxFloorInRange;
             }
             if (maxFloorInRange >= dto.getFloors().size()) {
@@ -304,7 +304,7 @@ public class CalcualateServiceImpl implements CalculateService {
                         cabinetEquipmentDTO.setTo(to);
                         mapResult.put(cabinetIndex, cabinetEquipmentDTO);
                         from = maxFloorInRange + 1;
-                        maxFloorInRange += pivot * 2 - 1;
+                        maxFloorInRange = from + pivot * 2 - 2;
                         cabinetIndex = from + pivot - 1;
                         to = maxFloorInRange;
                         totalCamera2U = 0;
@@ -340,6 +340,21 @@ public class CalcualateServiceImpl implements CalculateService {
 
                         from = to + 1;
                         totalCamera2U = 0;
+                        cabinetIndex = from + pivot - 1;
+                        maxFloorInRange = from + pivot * 2 - 2;
+                        to = maxFloorInRange;
+                        if (maxFloorInRange >= dto.getFloors().size()) {
+                            flag = maxFloorInRange;
+                            maxFloorInRange = dto.getFloors().size() - 1;
+                            to = maxFloorInRange;
+                            if (cabinetIndex >= dto.getFloors().size()) {
+                                if (cabinetIndex <= flag) {
+                                    cabinetIndex = maxFloorInRange;
+                                } else {
+                                    cabinetIndex = from + pivot - 1;
+                                }
+                            }
+                        }
                     }
                 } else if (from < dto.getFloors().size() && floor.getFloorIndex() < maxFloorInRange) {
                     if (totalCamera2U + floor.getCamerasCount() <= 20) {
@@ -356,7 +371,7 @@ public class CalcualateServiceImpl implements CalculateService {
                         from = floor.getFloorIndex();
                         totalCamera2U = floor.getCamerasCount();
                         cabinetIndex = from + pivot - 1;
-                        maxFloorInRange = from + pivot * 2 - 1;
+                        maxFloorInRange = from + pivot * 2 - 2;
 
                         to = maxFloorInRange;
                         if (maxFloorInRange >= dto.getFloors().size()) {

@@ -50,11 +50,11 @@ class ElvApplicationTests {
         result.forEach((k, v) -> System.out.println("Tủ tại tầng " + k + " : covers " + v.getFrom() + " -> " + v.getTo()));
 
         assertTrue(result.containsKey(2));
-        assertTrue(result.containsKey(8));
+        assertTrue(result.containsKey(7));
         assertEquals(0, result.get(2).getFrom());
-        assertEquals(5, result.get(2).getTo());
-        assertEquals(6, result.get(8).getFrom());
-        assertEquals(9, result.get(8).getTo());
+        assertEquals(4, result.get(2).getTo());
+        assertEquals(5, result.get(7).getFrom());
+        assertEquals(9, result.get(7).getTo());
     }
 
     @Test
@@ -127,11 +127,11 @@ class ElvApplicationTests {
         result.forEach((k, v) -> System.out.println("Tủ tại tầng " + k + " : covers " + v.getFrom() + " -> " + v.getTo()));
 
         assertTrue(result.containsKey(2));
-        assertTrue(result.containsKey(8));
+        assertTrue(result.containsKey(7));
         assertEquals(0, result.get(2).getFrom());
-        assertEquals(5, result.get(2).getTo());
-        assertEquals(6, result.get(8).getFrom());
-        assertEquals(9, result.get(8).getTo());
+        assertEquals(4, result.get(2).getTo());
+        assertEquals(5, result.get(7).getFrom());
+        assertEquals(9, result.get(7).getTo());
     }
 
     @Test
@@ -160,13 +160,16 @@ class ElvApplicationTests {
         assertTrue(result.containsKey(1));
         assertTrue(result.containsKey(3));
         assertTrue(result.containsKey(6));
+        assertTrue(result.containsKey(9));
 
         assertEquals(0, result.get(1).getFrom());
         assertEquals(2, result.get(1).getTo());
         assertEquals(3, result.get(3).getFrom());
         assertEquals(3, result.get(3).getTo());
         assertEquals(4, result.get(6).getFrom());
-        assertEquals(9, result.get(6).getTo());
+        assertEquals(8, result.get(6).getTo());
+        assertEquals(9, result.get(9).getFrom());
+        assertEquals(9, result.get(9).getTo());
     }
 
     @Test
@@ -202,8 +205,8 @@ class ElvApplicationTests {
         assertEquals(2, result.get(2).getFrom());
         assertEquals(2, result.get(2).getTo());
         assertEquals(3, result.get(5).getFrom());
-        assertEquals(8, result.get(5).getTo());
-        assertEquals(9, result.get(9).getFrom());
+        assertEquals(7, result.get(5).getTo());
+        assertEquals(8, result.get(9).getFrom());
         assertEquals(9, result.get(9).getTo());
     }
 
