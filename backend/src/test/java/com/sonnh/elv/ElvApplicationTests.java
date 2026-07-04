@@ -350,4 +350,52 @@ class ElvApplicationTests {
         assertEquals(8, result.get(9).getFrom());
         assertEquals(9, result.get(9).getTo());
     }
+
+    @Test
+    void test11_2URackBoundaryGroupCaseB() {
+        Config config = createConfig();
+        List<FloorRequest> floors = new ArrayList<>();
+        int[] cams = {5, 24, 25, 16, 0, 4, 0, 5, 6, 0, 5, 9, 4, 4};
+        for (int i = 0; i < cams.length; i++) {
+            floors.add(FloorRequest.builder().floorIndex(i).label("Tầng " + (i + 1)).camerasCount(cams[i]).build());
+        }
+
+        CalculateBOQRequestDTO dto = CalculateBOQRequestDTO.builder()
+                .floorsCount(cams.length).basementsCount(0).hasRoof(false)
+                .horizontalDistance(52.0).verticalDistance(5.0)
+                .rackType("2U").floors(floors).build();
+
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
+        Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
+
+        System.out.println("--- TEST 11: 2U Rack Boundary Group Case B ---");
+        result.forEach((k, v) -> System.out.println("Tủ tại tầng " + k + " : covers " + v.getFrom() + " -> " + v.getTo()));
+
+        // We expect cabinets at:
+        // key 0: [0, 0] (5 cams)
+        // key 1: [1, 1] (24 cams)
+        // key 2: [2, 2] (25 cams)
+        // key 4: [3, 6] (16 + 0 + 4 + 0 = 20 cams)
+        // key 8: [7, 10] (5 + 6 + 0 + 5 = 16 cams)
+        // key 13: [11, 13] (9 + 4 + 4 = 17 cams)
+        assertTrue(result.containsKey(0));
+        assertTrue(result.containsKey(1));
+        assertTrue(result.containsKey(2));
+        assertTrue(result.containsKey(4));
+        assertTrue(result.containsKey(8));
+        assertTrue(result.containsKey(13));
+
+        assertEquals(0, result.get(0).getFrom());
+        assertEquals(0, result.get(0).getTo());
+        assertEquals(1, result.get(1).getFrom());
+        assertEquals(1, result.get(1).getTo());
+        assertEquals(2, result.get(2).getFrom());
+        assertEquals(2, result.get(2).getTo());
+        assertEquals(3, result.get(4).getFrom());
+        assertEquals(6, result.get(4).getTo());
+        assertEquals(7, result.get(8).getFrom());
+        assertEquals(10, result.get(8).getTo());
+        assertEquals(11, result.get(13).getFrom());
+        assertEquals(13, result.get(13).getTo());
+    }
 }
