@@ -191,6 +191,15 @@ public class CalcualateServiceImpl implements CalculateService {
         Integer horizontalDistance = dto.getHorizontalDistance().intValue();
         Integer verticalDistance = dto.getVerticalDistance().intValue();
         int pivotResult = config.getConditionLength() - horizontalDistance;
+        
+        int maxSize = dto.getFloors().size();
+        for (int i = dto.getFloors().size() - 1; i >= 0; i--) {
+            if (dto.getFloors().get(i).getCamerasCount() != 0) {
+                maxSize = dto.getFloors().get(i).getFloorIndex() + 1;
+                break;
+            }
+        }
+
         // tính from
 
         for (FloorRequest floor : dto.getFloors()) {
@@ -213,19 +222,19 @@ public class CalcualateServiceImpl implements CalculateService {
         System.out.println("pivot: " + pivot);
         // case thường
         if (!dto.getRackType().equals("2U")) {
-            if (cabinetIndex >= dto.getFloors().size()) {
-                maxFloorInRange = dto.getFloors().size() - 1;
+            if (cabinetIndex >= maxSize) {
+                maxFloorInRange = maxSize - 1;
                 cabinetIndex = maxFloorInRange;
                 to = maxFloorInRange;
             } else {
                 maxFloorInRange = from + pivot * 2 - 2;
                 to = maxFloorInRange;
             }
-            if (maxFloorInRange >= dto.getFloors().size()) {
+            if (maxFloorInRange >= maxSize) {
                 flag = maxFloorInRange;
-                maxFloorInRange = dto.getFloors().size() - 1;
+                maxFloorInRange = maxSize - 1;
                 to = maxFloorInRange;
-                if (cabinetIndex >= dto.getFloors().size()) {
+                if (cabinetIndex >= maxSize) {
                     if (cabinetIndex <= flag) {
                         cabinetIndex = maxFloorInRange;
                     } else {
@@ -240,7 +249,7 @@ public class CalcualateServiceImpl implements CalculateService {
                 System.out.println("--------------------------------");
                 System.out.println("maxFloorInRange: " + maxFloorInRange);
                 System.out.println("cabinetIndex: " + cabinetIndex);
-                if (from < dto.getFloors().size() && floor.getFloorIndex() == cabinetIndex) {
+                if (from < maxSize && floor.getFloorIndex() == cabinetIndex) {
                     System.out.println("Put vao map");
                     CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
                     cabinetEquipmentDTO.setFrom(from);
@@ -251,11 +260,11 @@ public class CalcualateServiceImpl implements CalculateService {
                     cabinetIndex = from + pivot - 1;
                     to = maxFloorInRange;
 
-                    if (maxFloorInRange >= dto.getFloors().size()) {
+                    if (maxFloorInRange >= maxSize) {
                         flag = maxFloorInRange;
-                        maxFloorInRange = dto.getFloors().size() - 1;
+                        maxFloorInRange = maxSize - 1;
                         to = maxFloorInRange;
-                        if (cabinetIndex >= dto.getFloors().size()) {
+                        if (cabinetIndex >= maxSize) {
                             // cabinetIndex = from + pivot - 1;
                             if (cabinetIndex <= flag) {
                                 System.out.println("cabinetIndex trong special case: " + cabinetIndex);
@@ -288,19 +297,19 @@ public class CalcualateServiceImpl implements CalculateService {
             }
             cabinetIndex = from + pivot - 1;
 
-            if (cabinetIndex >= dto.getFloors().size()) {
-                maxFloorInRange = dto.getFloors().size() - 1;
+            if (cabinetIndex >= maxSize) {
+                maxFloorInRange = maxSize - 1;
                 cabinetIndex = maxFloorInRange;
                 to = maxFloorInRange;
             } else {
                 maxFloorInRange = from + pivot * 2 - 2;
                 to = maxFloorInRange;
             }
-            if (maxFloorInRange >= dto.getFloors().size()) {
+            if (maxFloorInRange >= maxSize) {
                 flag = maxFloorInRange;
-                maxFloorInRange = dto.getFloors().size() - 1;
+                maxFloorInRange = maxSize - 1;
                 to = maxFloorInRange;
-                if (cabinetIndex >= dto.getFloors().size()) {
+                if (cabinetIndex >= maxSize) {
                     if (cabinetIndex <= flag) {
                         cabinetIndex = maxFloorInRange;
                     } else {
@@ -315,7 +324,7 @@ public class CalcualateServiceImpl implements CalculateService {
                 }
                 System.out.println("cabinetIndex: " + cabinetIndex);
                 System.out.println("maxFloorInRange: " + maxFloorInRange);
-                if (from < dto.getFloors().size() && floor.getFloorIndex() == to) {
+                if (from < maxSize && floor.getFloorIndex() == to) {
                     totalCamera2U += floor.getCamerasCount();
                     if (totalCamera2U <= 20) {
                         System.out.println("Put vao map");
@@ -329,11 +338,11 @@ public class CalcualateServiceImpl implements CalculateService {
                         to = maxFloorInRange;
                         totalCamera2U = 0;
 
-                        if (maxFloorInRange >= dto.getFloors().size()) {
+                        if (maxFloorInRange >= maxSize) {
                             flag = maxFloorInRange;
-                            maxFloorInRange = dto.getFloors().size() - 1;
+                            maxFloorInRange = maxSize - 1;
                             to = maxFloorInRange;
-                            if (cabinetIndex >= dto.getFloors().size()) {
+                            if (cabinetIndex >= maxSize) {
                                 if (cabinetIndex <= flag) {
                                     System.out.println("cabinetIndex trong special case: " + cabinetIndex);
                                     System.out.println("maxFloorInRange trong special case: " + maxFloorInRange);
@@ -358,11 +367,11 @@ public class CalcualateServiceImpl implements CalculateService {
                         cabinetIndex = from + pivot - 1;
                         maxFloorInRange = from + pivot * 2 - 2;
                         to = maxFloorInRange;
-                        if (maxFloorInRange >= dto.getFloors().size()) {
+                        if (maxFloorInRange >= maxSize) {
                             flag = maxFloorInRange;
-                            maxFloorInRange = dto.getFloors().size() - 1;
+                            maxFloorInRange = maxSize - 1;
                             to = maxFloorInRange;
-                            if (cabinetIndex >= dto.getFloors().size()) {
+                            if (cabinetIndex >= maxSize) {
                                 if (cabinetIndex <= flag) {
                                     cabinetIndex = maxFloorInRange;
                                 } else {
@@ -371,7 +380,7 @@ public class CalcualateServiceImpl implements CalculateService {
                             }
                         }
                     }
-                } else if (from < dto.getFloors().size() && floor.getFloorIndex() < maxFloorInRange) {
+                } else if (from < maxSize && floor.getFloorIndex() < maxFloorInRange) {
                     if (totalCamera2U + floor.getCamerasCount() <= 20) {
                         totalCamera2U += floor.getCamerasCount();
                     } else {
@@ -389,13 +398,14 @@ public class CalcualateServiceImpl implements CalculateService {
                         maxFloorInRange = from + pivot * 2 - 2;
 
                         to = maxFloorInRange;
-                        if (maxFloorInRange >= dto.getFloors().size()) {
+                        if (maxFloorInRange >= maxSize) {
                             flag = maxFloorInRange;
-                            maxFloorInRange = dto.getFloors().size() - 1;
+                            maxFloorInRange = maxSize - 1;
                             to = maxFloorInRange;
-                            if (cabinetIndex >= dto.getFloors().size()) {
+                            if (cabinetIndex >= maxSize) {
                                 if (cabinetIndex <= flag) {
                                     cabinetIndex = maxFloorInRange;
+                                    System.out.println("chay vao day");
                                 } else {
                                     cabinetIndex = from + pivot - 1;
                                 }
