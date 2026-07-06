@@ -308,7 +308,7 @@ public class CalcualateServiceImpl implements CalculateService {
             int quantitySw16 = 0;
             int quantitySw24 = 0;
             while (cameraQuantityInCabinet > 0) {
-                if (cameraQuantityInCabinet >= config.getSw24ConditionQuanity()) {
+                if (cameraQuantityInCabinet >= config.getSw16ConditionQuanity()) {
                     mapResult.get(key).setSw24Quantity(++quantitySw24);
                     cameraQuantityInCabinet -= config.getSw24ConditionQuanity();
                 } else {
