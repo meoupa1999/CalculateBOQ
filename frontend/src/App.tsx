@@ -1231,7 +1231,7 @@ const handleAddGlobalInventory = () => {
 
       {/* Main App Header */}
       <header className="bg-white border-b border-[#ECEFF1] sticky top-0 z-30">
-        <div className="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-none w-full mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-[#1A237E] rounded flex items-center justify-center text-white font-mono font-bold text-lg shadow-sm">
@@ -1297,7 +1297,7 @@ const handleAddGlobalInventory = () => {
       </header>
 
       {/* Main Area layout */}
-      <div className="flex-1 max-w-[1440px] w-full mx-auto px-6 py-6 flex gap-6">
+      <div className="flex-1 max-w-none w-full mx-auto px-6 py-6 flex gap-6">
         {projects.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] py-12">
             <div className="bg-white border border-[#ECEFF1] rounded-2xl p-8 max-w-md w-full shadow-lg text-center flex flex-col items-center gap-6">
@@ -1325,97 +1325,6 @@ const handleAddGlobalInventory = () => {
         ) : (
           <>
         
-        {/* Left Sidebar Menu for App Workspace */}
-        {activeTab === "app" && (
-          <aside className="w-64 flex-shrink-0 flex flex-col gap-6">
-            <div className="bg-white border border-[#ECEFF1] rounded-lg p-4">
-              <div className="flex items-center gap-2 text-xs text-[#455A64] font-medium tracking-wider uppercase mb-1">
-                <Briefcase className="w-3.5 h-3.5" />
-                <span>Dự án đang mở</span>
-              </div>
-              <h3 className="font-sans font-bold text-lg text-[#1A237E] truncate">
-                {activeProject.name}
-              </h3>
-              <p className="text-xs text-[#455A64] line-clamp-2 mt-1">
-                {activeProject.description}
-              </p>
-              
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                <div className="text-xs text-[#455A64]">
-                  Quy chuẩn hiện tại:
-                </div>
-                <div className="text-xs font-semibold px-2 py-0.5 bg-[#E8EAF6] text-[#1A237E] rounded-full">
-                  {BASE_PRESETS.find(p => p.id === activeTower?.standardPresetId)?.name.split(" ")[0] || "Tự chọn"}
-                </div>
-              </div>
-            </div>
-
-            {/* Sidebar navigation list */}
-            <nav className="bg-white border border-[#ECEFF1] rounded-lg p-2 flex flex-col gap-1">
-              <button
-                onClick={() => setActiveNav("dashboard")}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded text-sm font-medium transition ${
-                  activeNav === "dashboard" 
-                    ? "bg-[#E8EAF6] text-[#1A237E]" 
-                    : "text-[#455A64] hover:text-[#191c1e] hover:bg-slate-50"
-                }`}
-              >
-                <Layers className="w-4.5 h-4.5" />
-                <span>Dashboard</span>
-              </button>
-
-              <button
-                disabled
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded text-sm font-medium text-slate-400 opacity-50 cursor-not-allowed"
-              >
-                <Sliders className="w-4.5 h-4.5" />
-                <span>Site Parameters</span>
-              </button>
-
-              <button
-                disabled
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded text-sm font-medium text-slate-400 opacity-50 cursor-not-allowed"
-              >
-                <Cpu className="w-4.5 h-4.5" />
-                <span>Hardware Logic</span>
-              </button>
-
-              <button
-                disabled
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded text-sm font-medium text-slate-400 opacity-50 cursor-not-allowed"
-              >
-                <Coins className="w-4.5 h-4.5" />
-                <span>Cost Analysis</span>
-              </button>
-
-              <button
-                disabled
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded text-sm font-medium text-slate-400 opacity-50 cursor-not-allowed"
-              >
-                <FileText className="w-4.5 h-4.5" />
-                <span>Reports</span>
-              </button>
-            </nav>
-
-            <div className="bg-white border border-[#ECEFF1] rounded-lg p-4 flex flex-col gap-3">
-              <div className="text-xs text-[#455A64] font-medium uppercase tracking-wide">
-                Hỗ trợ kỹ thuật
-              </div>
-              <div className="text-xs text-[#455A64] leading-relaxed">
-                Hệ thống BOQ hỗ trợ tự động chia camera, tính độ dài cáp theo hệ số khoảng cách thực tế của toà nhà và phân bổ thiết bị phụ trợ.
-              </div>
-              <a
-                href="#"
-                onClick={(e) => { e.preventDefault(); addToast("Hotline trợ giúp: 1900 6899", "info"); }}
-                className="text-xs text-[#1A237E] font-semibold hover:underline flex items-center gap-1"
-              >
-                <span>Tài liệu hướng dẫn</span>
-                <ChevronRight className="w-3 h-3" />
-              </a>
-            </div>
-          </aside>
-        )}
-
         {/* Dynamic App Content Panels */}
         <main className="flex-1 flex flex-col gap-6 min-w-0">
           
@@ -1902,8 +1811,504 @@ const handleAddGlobalInventory = () => {
                         </div>
                       </div>
 
-                      {/* Detailed Interactive BOQ Sheet */}
-                      <div className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs overflow-hidden">
+                      {/* Grid Container for Excel Table (Left) and BOQ Table (Right) */}
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start w-full">
+                        
+                        {/* Excel-like BOQ Template Table (Left) */}
+                        <div className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs overflow-hidden w-full">
+                          <div className="px-6 py-4 border-b border-[#ECEFF1] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
+                            <div>
+                              <h3 className="font-sans font-bold text-base text-[#191c1e]">
+                                Khung BOQ Thiết bị &amp; Vật tư (Mẫu Excel)
+                              </h3>
+                              <p className="text-xs text-[#455A64]">
+                                Khung sườn danh mục vật tư chính, phụ kiện và nhân công lắp đặt
+                              </p>
+                            </div>
+                            <div className="text-xs font-mono text-[#1A237E] bg-[#E8EAF6] px-2.5 py-1 rounded font-bold border border-[#1A237E]/20">
+                              EXCEL SKELETON
+                            </div>
+                          </div>
+
+                          {/* Excel Grid container */}
+                          <div className="overflow-x-auto p-4 bg-slate-50/30">
+                            <div className="border border-slate-200 rounded overflow-hidden shadow-xs bg-white min-w-[850px]">
+                              
+                              {/* Spreadsheet Title Block */}
+                              <div className="border-b border-slate-200 bg-[#F8F9FA] px-4 py-3 text-center">
+                                <div className="text-sm font-sans font-bold text-[#1A237E] uppercase tracking-wide">
+                                  KHỐI LƯỢNG BOQ GÓI 62 CAMERA HÀNH LANG LÔ E2 (BLOCK H)
+                                </div>
+                              </div>
+
+                              <table className="w-full text-xs text-left border-collapse font-sans">
+                                <thead>
+                                  {/* Main Table Column Titles */}
+                                  <tr className="bg-[#E8EAED] text-[#3c4043] font-bold text-center border-b border-slate-300 divide-x divide-slate-200 select-none">
+                                    <th className="py-2 px-1 text-center w-12">STT</th>
+                                    <th className="py-2 px-2 text-left w-52">VẬT TƯ</th>
+                                    <th className="py-2 px-2 text-left w-72">MÔ TẢ</th>
+                                    <th className="py-2 px-1 w-16">Đ.VỊ</th>
+                                    <th className="py-2 px-1 w-16">SLG</th>
+                                    <th className="py-2 px-1 w-20">Nhân công</th>
+                                    <th className="py-2 px-1 w-20">Tổng công</th>
+                                    <th className="py-2 px-2 text-left w-44">GHI CHÚ</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200 font-sans">
+                                  {/* Category I Header Row */}
+                                  <tr className="bg-[#FFE0B2]/60 text-[#E65100] font-bold text-[11px] divide-x divide-slate-200">
+                                    <td colSpan={8} className="py-2.5 px-4 uppercase tracking-wide">
+                                      I. HẠNG MỤC VẬT TƯ CHÍNH VÀ GIÁM SÁT VÀ ĐỊNH TUYẾN
+                                    </td>
+                                  </tr>
+
+                                  {/* Section I Items */}
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Camera IP Dome 2MP HIKVISION DS-2CD1121G0-I
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">2</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Đầu ghi hình camera IP 32 kênh HIKVISION DS-7732NXI-K4
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">3</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Ổ Cứng 10T WESTERN
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">4</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Switch Hikvision POE 16 cổng DS-3E1318P-EI
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+
+                                  {/* Category II Header Row */}
+                                  <tr className="bg-[#FFE0B2]/60 text-[#E65100] font-bold text-[11px] divide-x divide-slate-200">
+                                    <td colSpan={8} className="py-2.5 px-4 uppercase tracking-wide">
+                                      II. HẠNG MỤC TRUYỀN DẪN
+                                    </td>
+                                  </tr>
+
+                                  {/* Section II Items */}
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Cáp quang 4FO
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">2</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Cáp mạng Cat5E
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-600 text-xs font-semibold">LS/Panduit/Comspose</td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">3</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Bộ chuyển đổi quang điện Gigabit GNETCOM 10/100/1000M GNC-2111S-20A/B
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">5</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Tủ mạng rack 10U( Có bánh xe)
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">6</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Tủ mạng rack 20U (Có bánh xe)
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">7</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      ODF 12FO SC/UPC (Full Phụ kiện)
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+
+                                  {/* Category III Header Row */}
+                                  <tr className="bg-[#FFE0B2]/60 text-[#E65100] font-bold text-[11px] divide-x divide-slate-200">
+                                    <td colSpan={8} className="py-2.5 px-4 uppercase tracking-wide">
+                                      III. HẠNG MỤC ĐIỆN
+                                    </td>
+                                  </tr>
+
+                                  {/* Section III Items */}
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Dây điện CVV 2x2.5
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">2</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Thanh nguồn PDU đa năng 6 ổ cắm 3 chấu chuẩn 19"
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-600 text-xs font-semibold">Dintek/Vietrack/TMC</td>
+                                  </tr>
+
+                                  {/* Category IV Header Row */}
+                                  <tr className="bg-[#FFE0B2]/60 text-[#E65100] font-bold text-[11px] divide-x divide-slate-200">
+                                    <td colSpan={8} className="py-2.5 px-4 uppercase tracking-wide">
+                                      IV. HẠNG MỤC NGUỒN DỰ PHÒNG
+                                    </td>
+                                  </tr>
+
+                                  {/* Section IV Items */}
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Nguồn lưu điện UPS ARES Model AR610 1000VA/800W
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">3</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Nguồn lưu điện UPS ARES Model AR630 3000VA-2400W
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+
+                                  {/* Category V Header Row */}
+                                  <tr className="bg-[#FFE0B2]/60 text-[#E65100] font-bold text-[11px] divide-x divide-slate-200">
+                                    <td colSpan={8} className="py-2.5 px-4 uppercase tracking-wide">
+                                      V. VẬT TƯ PHỤ
+                                    </td>
+                                  </tr>
+
+                                  {/* Section V Items */}
+                                  <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Vật tư phụ
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-700 text-xs">
+                                      Bao gồm ống điện, ruột gà, vít, tacke...
+                                    </td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Gói</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1.1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Vật tư phụ kết nối
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-700"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Gói</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Đầu mạng AMP Cat 5
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Dây nhảy quang SC/UPC SC/UPC 3M
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Sợi</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      ODF 4FO SC/UPC - SC/UPC (Full phụ kiện)
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Dây nhảy mạng Cat5
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Sợi</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-600 text-xs font-semibold">Dintek/AMP/Panduit</td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Thanh quản lý cáp mạng 19inch
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-600 text-xs font-semibold">Dintek/AMP/Panduit</td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1.2</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Vật tư phụ thi công
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-700"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-700 text-xs font-semibold">
+                                      Dự trù 7 triệu chưa bao gồm 1.2.1
+                                    </td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1.2.1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Ruột gà phi 20
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+
+                                  {/* Category VI Header Row */}
+                                  <tr className="bg-[#FFE0B2]/60 text-[#E65100] font-bold text-[11px] divide-x divide-slate-200">
+                                    <td colSpan={8} className="py-2.5 px-4 uppercase tracking-wide">
+                                      VI. CHI PHÍ LẮP ĐẶT
+                                    </td>
+                                  </tr>
+
+                                  {/* Section VI Items */}
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Chi phí lắp đặt
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600 text-xs">
+                                      Thi công trọn gói và hướng dẫn vận hành
+                                    </td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Gói</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1.1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Nhân công Cấu hình thiết lập
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-700"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-700 text-xs font-semibold">
+                                      6 Ngày hoặc chạy song song với triển khai hạ tầng
+                                    </td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Thiết lập cấu hình
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Hồ sơ hướng dẫn
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Kiểm thử T&C
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Dự trù Thay đổi cấu hình phát sinh
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Nghiệm thu
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Bảo hành thiết lập
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1.2</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Triển khai
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-700"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Detailed Interactive BOQ Sheet */}
+                        <div className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs overflow-hidden w-full">
                         <div className="px-6 py-4 border-b border-[#ECEFF1] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
                           <div>
                             <h3 className="font-sans font-bold text-base text-[#191c1e]">
@@ -2224,6 +2629,7 @@ const handleAddGlobalInventory = () => {
                           </table>
                         </div>
                       </div>
+                    </div>
                     </>
                   )}
 
@@ -3235,7 +3641,7 @@ const handleAddGlobalInventory = () => {
 
       {/* App Footer */}
       <footer className="bg-white border-t border-[#ECEFF1] py-4 mt-12">
-        <div className="max-w-[1440px] mx-auto px-6 flex flex-col sm:flex-row justify-between items-center text-xs text-[#455A64] gap-2">
+        <div className="max-w-none w-full mx-auto px-6 flex flex-col sm:flex-row justify-between items-center text-xs text-[#455A64] gap-2">
           <div>
             &copy; 2026 Surveillance BOQ Engine. Bản quyền thuộc Ban Nghiên cứu Phát triển Kỹ thuật Công nghệ.
           </div>
