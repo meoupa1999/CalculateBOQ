@@ -394,4 +394,36 @@ class ElvApplicationTests {
         assertEquals(11, result.get(12).getFrom());
         assertEquals(13, result.get(12).getTo());
     }
+
+    @Test
+    void test12_RooftopPlacement() {
+        Config config = createConfig();
+        List<FloorRequest> floors = new ArrayList<>();
+        
+        // 1 basement, 5 floors, 1 rooftop = 7 total floors (indices 0 to 6)
+        floors.add(FloorRequest.builder().floorIndex(0).label("B1").camerasCount(0).build()); // B1 has no cameras
+        for (int i = 1; i <= 5; i++) {
+            floors.add(FloorRequest.builder().floorIndex(i).label("Tầng " + i).camerasCount(2).build());
+        }
+        floors.add(FloorRequest.builder().floorIndex(6).label("Tầng Mái").camerasCount(2).build()); // Rooftop has cameras
+
+        CalculateBOQRequestDTO dto = CalculateBOQRequestDTO.builder()
+                .floorsCount(5).basementsCount(1).hasRoof(true)
+                .horizontalDistance(52.0).verticalDistance(4.0)
+                .rackType("Standard").floors(floors).build();
+
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
+        Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
+
+        System.out.println("--- TEST 12: Rooftop Placement ---");
+        result.forEach((k, v) -> System.out.println("Tủ tại tầng " + k + " : covers " + v.getFrom() + " -> " + v.getTo()));
+
+        // We expect:
+        // from = 1, maxSize = 7
+        // pivotResult = 70 - 52 = 18. pivot = 5. cabinetIndex = 1 + 5 - 1 = 5.
+        // cabinetIndex < maxSize, so cabinetIndex remains 5.
+        assertTrue(result.containsKey(5));
+        assertEquals(1, result.get(5).getFrom());
+        assertEquals(6, result.get(5).getTo());
+    }
 }
