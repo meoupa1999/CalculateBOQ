@@ -191,14 +191,25 @@ public class CalcualateServiceImpl implements CalculateService {
         Integer horizontalDistance = dto.getHorizontalDistance().intValue();
         Integer verticalDistance = dto.getVerticalDistance().intValue();
         int pivotResult = config.getConditionLength() - horizontalDistance;
+        // tính from
+
+        for (FloorRequest floor : dto.getFloors()) {
+            if (floor.getCamerasCount() != 0) {
+                from = floor.getFloorIndex();
+                break;
+            }
+            from++;
+        }
+        // tính pivot ( tầng cao nhất có thể đặt tủ)
         while (pivotResult >= 0) {
             pivotResult -= verticalDistance;
             if (pivotResult > 0) {
                 pivot++;
             }
         }
+        System.out.println("from: " + from);
         pivot++;
-        cabinetIndex = pivot - 1;
+        cabinetIndex = from + pivot - 1;
         System.out.println("pivot: " + pivot);
         // case thường
         if (!dto.getRackType().equals("2U")) {
@@ -264,10 +275,8 @@ public class CalcualateServiceImpl implements CalculateService {
 
             // init
             maxFloorInRange = 0;
-            cabinetIndex = 0;
-            from = 0;
             to = 0;
-            cabinetIndex = pivot - 1;
+            cabinetIndex = from + pivot - 1;
 
             if (cabinetIndex >= dto.getFloors().size()) {
                 maxFloorInRange = dto.getFloors().size() - 1;
