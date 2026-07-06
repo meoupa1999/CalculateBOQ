@@ -426,4 +426,104 @@ class ElvApplicationTests {
         assertEquals(1, result.get(3).getFrom());
         assertEquals(6, result.get(3).getTo());
     }
+
+    @Test
+    void test13_2URackPendingLastGroup() {
+        Config config = createConfig();
+        List<FloorRequest> floors = new ArrayList<>();
+        for (int i = 0; i < 25; i++) {
+            floors.add(FloorRequest.builder()
+                    .floorIndex(i)
+                    .label("Tầng " + (i + 1))
+                    .camerasCount(4)
+                    .build());
+        }
+
+        CalculateBOQRequestDTO dto = CalculateBOQRequestDTO.builder()
+                .floorsCount(25).basementsCount(0).hasRoof(false)
+                .horizontalDistance(52.0).verticalDistance(5.0)
+                .rackType("2U").floors(floors).build();
+
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
+        Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
+
+        System.out.println("--- TEST 13: 2U Rack Pending Last Group ---");
+        result.forEach((k, v) -> System.out.println("Tủ tại tầng " + k + " : covers " + v.getFrom() + " -> " + v.getTo()));
+
+        assertTrue(result.containsKey(2));
+        assertTrue(result.containsKey(7));
+        assertTrue(result.containsKey(12));
+        assertTrue(result.containsKey(17));
+        assertTrue(result.containsKey(22));
+
+        assertEquals(0, result.get(2).getFrom());
+        assertEquals(4, result.get(2).getTo());
+        assertEquals(5, result.get(7).getFrom());
+        assertEquals(9, result.get(7).getTo());
+        assertEquals(10, result.get(12).getFrom());
+        assertEquals(14, result.get(12).getTo());
+        assertEquals(15, result.get(17).getFrom());
+        assertEquals(19, result.get(17).getTo());
+        assertEquals(20, result.get(22).getFrom());
+        assertEquals(24, result.get(22).getTo());
+    }
+
+    @Test
+    void test14_2URackPendingLastGroupExceeded() {
+        Config config = createConfig();
+        List<FloorRequest> floors = new ArrayList<>();
+        // 25 floors: 0 to 19 have 4 cameras, 20 to 24 have 5 cameras
+        for (int i = 0; i < 20; i++) {
+            floors.add(FloorRequest.builder()
+                    .floorIndex(i)
+                    .label("Tầng " + (i + 1))
+                    .camerasCount(4)
+                    .build());
+        }
+        for (int i = 20; i < 25; i++) {
+            floors.add(FloorRequest.builder()
+                    .floorIndex(i)
+                    .label("Tầng " + (i + 1))
+                    .camerasCount(5)
+                    .build());
+        }
+
+        CalculateBOQRequestDTO dto = CalculateBOQRequestDTO.builder()
+                .floorsCount(25).basementsCount(0).hasRoof(false)
+                .horizontalDistance(52.0).verticalDistance(4.0) // pivot = 5
+                .rackType("2U").floors(floors).build();
+
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
+        Map<Integer, CabinetEquipmentDTO> result = calculateService.calculateCabinetPlacementUitls(dto, mapResult, config);
+
+        System.out.println("--- TEST 14: 2U Rack Pending Last Group Exceeded ---");
+        result.forEach((k, v) -> System.out.println("Tủ tại tầng " + k + " : covers " + v.getFrom() + " -> " + v.getTo()));
+
+        // We expect:
+        // Group 1: 0 -> 4 (placed at 2)
+        // Group 2: 5 -> 9 (placed at 7)
+        // Group 3: 10 -> 14 (placed at 12)
+        // Group 4: 15 -> 19 (placed at 17)
+        // Group 5: 20 -> 23 (placed at 21)
+        // Group 6: 24 -> 24 (placed at 24 - this was the bug where it was previously omitted!)
+        assertTrue(result.containsKey(2));
+        assertTrue(result.containsKey(7));
+        assertTrue(result.containsKey(12));
+        assertTrue(result.containsKey(17));
+        assertTrue(result.containsKey(21));
+        assertTrue(result.containsKey(24));
+
+        assertEquals(0, result.get(2).getFrom());
+        assertEquals(4, result.get(2).getTo());
+        assertEquals(5, result.get(7).getFrom());
+        assertEquals(9, result.get(7).getTo());
+        assertEquals(10, result.get(12).getFrom());
+        assertEquals(14, result.get(12).getTo());
+        assertEquals(15, result.get(17).getFrom());
+        assertEquals(19, result.get(17).getTo());
+        assertEquals(20, result.get(21).getFrom());
+        assertEquals(23, result.get(21).getTo());
+        assertEquals(24, result.get(24).getFrom());
+        assertEquals(24, result.get(24).getTo());
+    }
 }

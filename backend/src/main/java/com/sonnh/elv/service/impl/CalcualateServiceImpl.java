@@ -272,6 +272,14 @@ public class CalcualateServiceImpl implements CalculateService {
                     }
                 }
             }
+            if (from < maxSize) {
+                int finalTo = maxSize - 1;
+                int finalCabinetIndex = from + (finalTo - from) / 2;
+                CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
+                cabinetEquipmentDTO.setFrom(from);
+                cabinetEquipmentDTO.setTo(finalTo);
+                mapResult.put(finalCabinetIndex, cabinetEquipmentDTO);
+            }
         }
 
         return mapResult;
