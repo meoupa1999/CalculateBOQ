@@ -139,16 +139,9 @@ public class CalcualateServiceImpl implements CalculateService {
                 to = maxFloorInRange;
             }
             if (maxFloorInRange >= maxSize) {
-                flag = maxFloorInRange;
                 maxFloorInRange = maxSize - 1;
                 to = maxFloorInRange;
-                if (cabinetIndex >= maxSize) {
-                    if (cabinetIndex <= flag) {
-                        cabinetIndex = from + (maxFloorInRange - from) / 2;
-                    } else {
-                        cabinetIndex = from + pivot - 1;
-                    }
-                }
+                cabinetIndex = from + (maxFloorInRange - from) / 2;
             }
             for (FloorRequest floor : dto.getFloors()) {
                 if (floor.getFloorIndex() < from) {
@@ -169,20 +162,9 @@ public class CalcualateServiceImpl implements CalculateService {
                     to = maxFloorInRange;
 
                     if (maxFloorInRange >= maxSize) {
-                        flag = maxFloorInRange;
                         maxFloorInRange = maxSize - 1;
                         to = maxFloorInRange;
-                        if (cabinetIndex >= maxSize) {
-                            // cabinetIndex = from + pivot - 1;
-                            if (cabinetIndex <= flag) {
-                                System.out.println("cabinetIndex trong special case: " + cabinetIndex);
-                                System.out.println("maxFloorInRange trong special case: " + maxFloorInRange);
-                                System.out.println("chay vao day");
-                                cabinetIndex = from + (maxFloorInRange - from) / 2;
-                            } else {
-                                cabinetIndex = from + pivot - 1;
-                            }
-                        }
+                        cabinetIndex = from + (maxFloorInRange - from) / 2;
                     }
                 }
             }
@@ -214,16 +196,9 @@ public class CalcualateServiceImpl implements CalculateService {
                 to = maxFloorInRange;
             }
             if (maxFloorInRange >= maxSize) {
-                flag = maxFloorInRange;
                 maxFloorInRange = maxSize - 1;
                 to = maxFloorInRange;
-                if (cabinetIndex >= maxSize) {
-                    if (cabinetIndex <= flag) {
-                        cabinetIndex = from + (maxFloorInRange - from) / 2;
-                    } else {
-                        cabinetIndex = from + pivot - 1;
-                    }
-                }
+                cabinetIndex = from + (maxFloorInRange - from) / 2;
             }
             int totalCamera2U = 0;
             for (FloorRequest floor : dto.getFloors()) {
@@ -247,19 +222,9 @@ public class CalcualateServiceImpl implements CalculateService {
                         totalCamera2U = 0;
 
                         if (maxFloorInRange >= maxSize) {
-                            flag = maxFloorInRange;
                             maxFloorInRange = maxSize - 1;
                             to = maxFloorInRange;
-                            if (cabinetIndex >= maxSize) {
-                                if (cabinetIndex <= flag) {
-                                    System.out.println("cabinetIndex trong special case: " + cabinetIndex);
-                                    System.out.println("maxFloorInRange trong special case: " + maxFloorInRange);
-                                    System.out.println("chay vao day");
-                                    cabinetIndex = from + (maxFloorInRange - from) / 2;
-                                } else {
-                                    cabinetIndex = from + pivot - 1;
-                                }
-                            }
+                            cabinetIndex = from + (maxFloorInRange - from) / 2;
                         }
                     } else {
                         System.out.println("Vượt quá " + config.getSw24ConditionQuanity() + " camera, dat tu som");
@@ -276,16 +241,9 @@ public class CalcualateServiceImpl implements CalculateService {
                         maxFloorInRange = from + pivot * 2 - 2;
                         to = maxFloorInRange;
                         if (maxFloorInRange >= maxSize) {
-                            flag = maxFloorInRange;
                             maxFloorInRange = maxSize - 1;
                             to = maxFloorInRange;
-                            if (cabinetIndex >= maxSize) {
-                                if (cabinetIndex <= flag) {
-                                    cabinetIndex = from + (maxFloorInRange - from) / 2;
-                                } else {
-                                    cabinetIndex = from + pivot - 1;
-                                }
-                            }
+                            cabinetIndex = from + (maxFloorInRange - from) / 2;
                         }
                     }
                 } else if (from < maxSize && floor.getFloorIndex() < maxFloorInRange) {
@@ -307,17 +265,9 @@ public class CalcualateServiceImpl implements CalculateService {
 
                         to = maxFloorInRange;
                         if (maxFloorInRange >= maxSize) {
-                            flag = maxFloorInRange;
                             maxFloorInRange = maxSize - 1;
                             to = maxFloorInRange;
-                            if (cabinetIndex >= maxSize) {
-                                if (cabinetIndex <= flag) {
-                                    cabinetIndex = from + (maxFloorInRange - from) / 2;
-                                    System.out.println("chay vao day");
-                                } else {
-                                    cabinetIndex = from + pivot - 1;
-                                }
-                            }
+                            cabinetIndex = from + (maxFloorInRange - from) / 2;
                         }
                     }
                 }
