@@ -290,7 +290,10 @@ export function calculateProjectBOQ(
   // Determine cabinet levels using passed array or local calculation fallback
   const useCabinetPlacements = true; // Always calculate based on placement logic if available
   const cabinetLevels = (cabinetPlacements && cabinetPlacements.length > 0)
-    ? cabinetPlacements
+    ? cabinetPlacements.map(idx => {
+        const found = tempFloorsList.find(tf => tf.floorIndex === idx);
+        return found ? found.level : idx + 1;
+      })
     : localCalculateCabinetPlacement(floorsCount, horizontalDistance, verticalDistance);
 
   // Helper to find nearest cabinet level

@@ -191,12 +191,13 @@ public class CalcualateServiceImpl implements CalculateService {
         Integer horizontalDistance = dto.getHorizontalDistance().intValue();
         Integer verticalDistance = dto.getVerticalDistance().intValue();
         int pivotResult = config.getConditionLength() - horizontalDistance;
-        while (pivotResult > 0) {
+        while (pivotResult >= 0) {
             pivotResult -= verticalDistance;
             if (pivotResult > 0) {
                 pivot++;
             }
         }
+        pivot++;
         cabinetIndex = pivot - 1;
         System.out.println("pivot: " + pivot);
         // case thường
