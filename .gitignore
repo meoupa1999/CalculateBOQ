@@ -25,3 +25,7 @@ backend/*.war
 # OS temp files
 .DS_Store
 Thumbs.db
+
+# Ignored sample folder
+backend-sample/
+
