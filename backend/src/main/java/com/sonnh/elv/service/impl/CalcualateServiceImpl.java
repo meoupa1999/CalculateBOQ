@@ -132,7 +132,7 @@ public class CalcualateServiceImpl implements CalculateService {
         if (!dto.getRackType().equals("2U")) {
             if (cabinetIndex >= maxSize) {
                 maxFloorInRange = maxSize - 1;
-                cabinetIndex = maxFloorInRange;
+                cabinetIndex = from + (maxFloorInRange - from) / 2;
                 to = maxFloorInRange;
             } else {
                 maxFloorInRange = from + pivot * 2 - 2;
@@ -144,7 +144,7 @@ public class CalcualateServiceImpl implements CalculateService {
                 to = maxFloorInRange;
                 if (cabinetIndex >= maxSize) {
                     if (cabinetIndex <= flag) {
-                        cabinetIndex = maxFloorInRange;
+                        cabinetIndex = from + (maxFloorInRange - from) / 2;
                     } else {
                         cabinetIndex = from + pivot - 1;
                     }
@@ -178,7 +178,7 @@ public class CalcualateServiceImpl implements CalculateService {
                                 System.out.println("cabinetIndex trong special case: " + cabinetIndex);
                                 System.out.println("maxFloorInRange trong special case: " + maxFloorInRange);
                                 System.out.println("chay vao day");
-                                cabinetIndex = maxFloorInRange;
+                                cabinetIndex = from + (maxFloorInRange - from) / 2;
                             } else {
                                 cabinetIndex = from + pivot - 1;
                             }
@@ -207,7 +207,7 @@ public class CalcualateServiceImpl implements CalculateService {
 
             if (cabinetIndex >= maxSize) {
                 maxFloorInRange = maxSize - 1;
-                cabinetIndex = maxFloorInRange;
+                cabinetIndex = from + (maxFloorInRange - from) / 2;
                 to = maxFloorInRange;
             } else {
                 maxFloorInRange = from + pivot * 2 - 2;
@@ -219,7 +219,7 @@ public class CalcualateServiceImpl implements CalculateService {
                 to = maxFloorInRange;
                 if (cabinetIndex >= maxSize) {
                     if (cabinetIndex <= flag) {
-                        cabinetIndex = maxFloorInRange;
+                        cabinetIndex = from + (maxFloorInRange - from) / 2;
                     } else {
                         cabinetIndex = from + pivot - 1;
                     }
@@ -255,7 +255,7 @@ public class CalcualateServiceImpl implements CalculateService {
                                     System.out.println("cabinetIndex trong special case: " + cabinetIndex);
                                     System.out.println("maxFloorInRange trong special case: " + maxFloorInRange);
                                     System.out.println("chay vao day");
-                                    cabinetIndex = maxFloorInRange;
+                                    cabinetIndex = from + (maxFloorInRange - from) / 2;
                                 } else {
                                     cabinetIndex = from + pivot - 1;
                                 }
@@ -281,7 +281,7 @@ public class CalcualateServiceImpl implements CalculateService {
                             to = maxFloorInRange;
                             if (cabinetIndex >= maxSize) {
                                 if (cabinetIndex <= flag) {
-                                    cabinetIndex = maxFloorInRange;
+                                    cabinetIndex = from + (maxFloorInRange - from) / 2;
                                 } else {
                                     cabinetIndex = from + pivot - 1;
                                 }
@@ -312,7 +312,7 @@ public class CalcualateServiceImpl implements CalculateService {
                             to = maxFloorInRange;
                             if (cabinetIndex >= maxSize) {
                                 if (cabinetIndex <= flag) {
-                                    cabinetIndex = maxFloorInRange;
+                                    cabinetIndex = from + (maxFloorInRange - from) / 2;
                                     System.out.println("chay vao day");
                                 } else {
                                     cabinetIndex = from + pivot - 1;
