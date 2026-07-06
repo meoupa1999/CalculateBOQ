@@ -275,7 +275,17 @@ public class CalcualateServiceImpl implements CalculateService {
 
             // init
             maxFloorInRange = 0;
+            cabinetIndex = 0;
+            from = 0;
             to = 0;
+            // tính from
+            for (FloorRequest floor : dto.getFloors()) {
+                if (floor.getCamerasCount() != 0) {
+                    from = floor.getFloorIndex();
+                    break;
+                }
+                from++;
+            }
             cabinetIndex = from + pivot - 1;
 
             if (cabinetIndex >= dto.getFloors().size()) {
