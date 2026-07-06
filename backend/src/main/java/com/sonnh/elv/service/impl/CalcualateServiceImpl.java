@@ -87,98 +87,6 @@ public class CalcualateServiceImpl implements CalculateService {
         return result;
     }
 
-    // public MyCalculateResDto
-    // calculateCabinetPlacementUitls(CalculateBOQRequestDTO dto, Config config) {
-    // MyCalculateResDto myCalculateResDto = new MyCalculateResDto();
-    // for (FloorRequest floor : dto.getFloors()) {
-    // System.out.println("floor: " + floor.getFloorIndex() + " có " +
-    // floor.getCamerasCount() + " camera");
-    // }
-    // List<Integer> result = new ArrayList<>();
-    // // Config config = configRepository
-    // // .findById(UUID.fromString("a2b0a797-8ff2-4a79-ac5d-78525bd25e90")).get();
-    // int quantity = dto.getFloorsCount();
-    // int subquantity = quantity;
-    // int count = 0;
-    // Double width = dto.getHorizontalDistance();
-    // Double height = dto.getVerticalDistance();
-    // int condition = config.getConditionLength();
-    // Double total = width;
-    // int pivot = 0;
-
-    // while (total < condition) {
-    // total += height;
-    // if (total <= condition) {
-    // pivot++;
-    // }
-    // System.out.println("total: " + total);
-    // }
-    // System.out.println("pivot: " + pivot);
-
-    // while (count <= quantity) {
-    // subquantity -= (pivot * 2) + 1;
-    // if (subquantity < 0) {
-    // count += ((quantity - count) / 2) + 1;
-    // System.out.println("count2: " + count);
-    // result.add(count);
-    // break;
-    // }
-    // count += pivot;
-    // System.out.println("count: " + count);
-    // result.add(count);
-    // count += pivot - 1;
-    // }
-    // int floorIndex = 0;
-    // int twoUTotal = 0;
-    // int tempPivot = (pivot * 2 - 1);
-    // int twoUCount = 0;
-    // List<Integer> twoUResult = new ArrayList<>();
-    // if (dto.getRackType().equals("2U")) {
-    // System.out.println("------------------------------");
-    // System.out.println("2U nè");
-
-    // for (FloorRequest floor : dto.getFloors()) {
-    // floorIndex++;
-    // twoUCount++;
-    // twoUTotal += floor.getCamerasCount();
-    // System.out.println("--------------------------------");
-    // System.out.println("floorIndex: " + floorIndex);
-    // System.out.println("twoUTotal: " + twoUTotal);
-    // System.out.println("tempPivot: " + tempPivot);
-
-    // if (floorIndex == tempPivot || twoUTotal >= config.getSw24MaxPortUse()) {
-    // System.out.println("chạy vào đây");
-    // twoUResult.add(floorIndex - (twoUCount / 2));
-    // twoUTotal = 0;
-    // twoUCount = 0;
-    // if (tempPivot < quantity) {
-    // tempPivot += (pivot * 2 - 1);
-    // }
-    // continue;
-    // }
-    // if (tempPivot > quantity && twoUTotal <= config.getSw24MaxPortUse() &&
-    // floorIndex == quantity) {
-    // twoUResult.add(floorIndex - (twoUCount / 2));
-    // break;
-    // }
-    // if (tempPivot > quantity && twoUTotal >= config.getSw24MaxPortUse()) {
-    // twoUResult.add(floorIndex);
-    // break;
-    // }
-    // System.out.println("--------------------------------");
-    // }
-    // myCalculateResDto.setResult(twoUResult);
-    // myCalculateResDto.setPivot(pivot);
-    // System.out.println("twoUResult: " + twoUResult);
-    // return myCalculateResDto;
-    // }
-    // myCalculateResDto.setResult(result);
-    // myCalculateResDto.setPivot(pivot);
-    // System.out.println("------------------------------");
-    // System.out.println("result: " + result);
-    // return myCalculateResDto;
-    // }
-
     public Map<Integer, CabinetEquipmentDTO> calculateCabinetPlacementUitls(CalculateBOQRequestDTO dto,
             Map<Integer, CabinetEquipmentDTO> mapResult, Config config) {
         // tính pivot
@@ -191,7 +99,7 @@ public class CalcualateServiceImpl implements CalculateService {
         Integer horizontalDistance = dto.getHorizontalDistance().intValue();
         Integer verticalDistance = dto.getVerticalDistance().intValue();
         int pivotResult = config.getConditionLength() - horizontalDistance;
-        
+
         int maxSize = dto.getFloors().size();
         for (int i = dto.getFloors().size() - 1; i >= 0; i--) {
             if (dto.getFloors().get(i).getCamerasCount() != 0) {
@@ -326,7 +234,7 @@ public class CalcualateServiceImpl implements CalculateService {
                 System.out.println("maxFloorInRange: " + maxFloorInRange);
                 if (from < maxSize && floor.getFloorIndex() == to) {
                     totalCamera2U += floor.getCamerasCount();
-                    if (totalCamera2U <= 20) {
+                    if (totalCamera2U <= config.getSw24ConditionQuanity()) {
                         System.out.println("Put vao map");
                         CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
                         cabinetEquipmentDTO.setFrom(from);
@@ -354,7 +262,7 @@ public class CalcualateServiceImpl implements CalculateService {
                             }
                         }
                     } else {
-                        System.out.println("Vượt quá 20 camera, dat tu som");
+                        System.out.println("Vượt quá " + config.getSw24ConditionQuanity() + " camera, dat tu som");
                         if (to - 1 >= from) {
                             CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
                             cabinetEquipmentDTO.setFrom(from);
@@ -381,7 +289,7 @@ public class CalcualateServiceImpl implements CalculateService {
                         }
                     }
                 } else if (from < maxSize && floor.getFloorIndex() < maxFloorInRange) {
-                    if (totalCamera2U + floor.getCamerasCount() <= 20) {
+                    if (totalCamera2U + floor.getCamerasCount() <= config.getSw24ConditionQuanity()) {
                         totalCamera2U += floor.getCamerasCount();
                     } else {
                         CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
@@ -442,7 +350,7 @@ public class CalcualateServiceImpl implements CalculateService {
             int quantitySw16 = 0;
             int quantitySw24 = 0;
             while (cameraQuantityInCabinet > 0) {
-                if (cameraQuantityInCabinet >= 20) {
+                if (cameraQuantityInCabinet >= config.getSw24ConditionQuanity()) {
                     mapResult.get(key).setSw24Quantity(++quantitySw24);
                     cameraQuantityInCabinet -= config.getSw24ConditionQuanity();
                 } else {

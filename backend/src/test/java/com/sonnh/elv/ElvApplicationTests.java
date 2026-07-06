@@ -22,6 +22,8 @@ class ElvApplicationTests {
     private Config createConfig() {
         return Config.builder()
                 .conditionLength(70)
+                .sw24ConditionQuanity(20)
+                .sw16ConditionQuanity(12)
                 .sw24MaxPortUse(20)
                 .build();
     }
