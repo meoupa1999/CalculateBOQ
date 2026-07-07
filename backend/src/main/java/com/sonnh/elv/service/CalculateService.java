@@ -7,6 +7,6 @@ import com.sonnh.elv.dto.response.CalculateBOQResponseDTO;
 
 public interface CalculateService {
 
-    List<CalculateBOQResponseDTO> calculateBOQ(CalculateBOQRequestDTO dto);
+    CalculateBOQResponseDTO calculateBOQ(CalculateBOQRequestDTO dto);
 
 }

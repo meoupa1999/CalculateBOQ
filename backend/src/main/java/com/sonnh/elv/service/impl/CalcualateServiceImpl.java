@@ -21,7 +21,7 @@ public class CalcualateServiceImpl implements CalculateService {
     private final ConfigRepository configRepository;
 
     @Override
-    public List<CalculateBOQResponseDTO> calculateBOQ(CalculateBOQRequestDTO dto) {
+    public CalculateBOQResponseDTO calculateBOQ(CalculateBOQRequestDTO dto) {
         Config config = configRepository
                 .findById(UUID.fromString("a2b0a797-8ff2-4a79-ac5d-78525bd25e90")).get();
         Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
@@ -35,14 +35,30 @@ public class CalcualateServiceImpl implements CalculateService {
             System.out.println("key: " + key + " value: " + mapResult.get(key).toString());
         }
 
-        List<CalculateBOQResponseDTO> result = new ArrayList<>();
+        List<CalculateBOQResponseDTO.FloorBOQResponse> floorsList = new ArrayList<>();
+        int totalCamera = 0;
+        int totalCamDome = 0;
+        int totalCamBullet = 0;
+        int totalSw16 = 0;
+        int totalSw24 = 0;
+        int totalCabinet = 0;
+        int totalUPS = 0;
+        int totalPDU = 0;
+        int totalConverter = 0;
+
         for (FloorRequest floor : dto.getFloors()) {
             boolean isPlaced = mapResult.containsKey(floor.getFloorIndex());
-            CalculateBOQResponseDTO.CalculateBOQResponseDTOBuilder builder = CalculateBOQResponseDTO.builder()
+            CalculateBOQResponseDTO.FloorBOQResponse.FloorBOQResponseBuilder builder = CalculateBOQResponseDTO.FloorBOQResponse.builder()
                     .floorIndex(floor.getFloorIndex())
                     .label(floor.getLabel())
                     .camerasCount(floor.getCamerasCount())
+                    .domeCount(floor.getDomeCount())
+                    .bulletCount(floor.getBulletCount())
                     .isCabinetPlaced(isPlaced);
+
+            totalCamera += (floor.getCamerasCount() != null ? floor.getCamerasCount() : 0);
+            totalCamDome += (floor.getDomeCount() != null ? floor.getDomeCount() : 0);
+            totalCamBullet += (floor.getBulletCount() != null ? floor.getBulletCount() : 0);
 
             // Find covering cabinet range
             CabinetEquipmentDTO coveringCabinet = null;
@@ -61,12 +77,25 @@ public class CalcualateServiceImpl implements CalculateService {
 
             if (isPlaced) {
                 CabinetEquipmentDTO cabinet = mapResult.get(floor.getFloorIndex());
+                int sw24 = cabinet.getSw24Quantity() != null ? cabinet.getSw24Quantity() : 0;
+                int sw16 = cabinet.getSw16Quantity() != null ? cabinet.getSw16Quantity() : 0;
+                int ups = cabinet.getUps() != null ? cabinet.getUps() : 0;
+                int pdu = cabinet.getPdu() != null ? cabinet.getPdu() : 0;
+                int conv = cabinet.getConverter() != null ? cabinet.getConverter() : 0;
+
                 builder.cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
-                        .sw24Count(cabinet.getSw24Quantity())
-                        .sw16Count(cabinet.getSw16Quantity())
-                        .upsCount(cabinet.getUps())
-                        .pduCount(cabinet.getPdu())
-                        .convCount(cabinet.getConverter());
+                        .sw24Count(sw24)
+                        .sw16Count(sw16)
+                        .upsCount(ups)
+                        .pduCount(pdu)
+                        .convCount(conv);
+
+                totalSw24 += sw24;
+                totalSw16 += sw16;
+                totalUPS += ups;
+                totalPDU += pdu;
+                totalConverter += conv;
+                totalCabinet++;
             } else {
                 builder.cameraQuantityInCabinet(0)
                         .sw24Count(0)
@@ -75,10 +104,22 @@ public class CalcualateServiceImpl implements CalculateService {
                         .pduCount(0)
                         .convCount(0);
             }
-            result.add(builder.build());
+            floorsList.add(builder.build());
         }
 
-        return result;
+        return CalculateBOQResponseDTO.builder()
+                .totalCamera(totalCamera)
+                .totalCamDome(totalCamDome)
+                .totalCamBullet(totalCamBullet)
+                .totalSw16(totalSw16)
+                .totalSw24(totalSw24)
+                .totalSwichPOE(totalSw16 + totalSw24)
+                .totalCabinet(totalCabinet)
+                .totalUPS(totalUPS)
+                .totalPDU(totalPDU)
+                .totalConverter(totalConverter)
+                .floors(floorsList)
+                .build();
     }
 
     public Map<Integer, CabinetEquipmentDTO> calculateCabinetPlacementUitls(CalculateBOQRequestDTO dto,

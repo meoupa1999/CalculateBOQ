@@ -28,5 +28,7 @@ public class CalculateBOQRequestDTO {
         private Integer floorIndex;
         private String label;
         private Integer camerasCount;
+        private Integer domeCount;
+        private Integer bulletCount;
     }
 }

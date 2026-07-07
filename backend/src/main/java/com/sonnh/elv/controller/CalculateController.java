@@ -19,10 +19,10 @@ public class CalculateController {
     private final CalculateService calculateService;
 
     @PostMapping("/cabinet-placement")
-    public ResponseEntity<List<CalculateBOQResponseDTO>> getCabinetPlacement(
+    public ResponseEntity<CalculateBOQResponseDTO> getCabinetPlacement(
             @RequestBody CalculateBOQRequestDTO dto
     ) {
-        List<CalculateBOQResponseDTO> placement = calculateService.calculateBOQ(dto);
+        CalculateBOQResponseDTO placement = calculateService.calculateBOQ(dto);
         return ResponseEntity.ok(placement);
     }
 }
