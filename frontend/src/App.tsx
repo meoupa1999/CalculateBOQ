@@ -2326,6 +2326,18 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat5_1_2_1")}
                                   </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1.2.2</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Ống điện D20
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("cat5_1_2_2")}
+                                  </tr>
 
                                   {/* Category VI Header Row */}
                                   <tr className="bg-[#FFE0B2]/60 text-[#E65100] font-bold text-[11px] divide-x divide-slate-200">
