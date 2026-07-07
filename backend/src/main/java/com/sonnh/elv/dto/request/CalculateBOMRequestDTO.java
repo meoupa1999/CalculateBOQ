@@ -1,4 +1,4 @@
-package com.sonnh.elv.dto.response;
+package com.sonnh.elv.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CalculateBOMResponseDTO {
+public class CalculateBOMRequestDTO {
     private Integer totalCamera;
     private Integer totalCamDome;
     private Integer totalCamBullet;

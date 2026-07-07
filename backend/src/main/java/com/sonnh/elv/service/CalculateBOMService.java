@@ -1,8 +1,7 @@
 package com.sonnh.elv.service;
 
-import com.sonnh.elv.dto.request.CalculateBOQRequestDTO;
-import com.sonnh.elv.dto.response.CalculateBOMResponseDTO;
+import com.sonnh.elv.dto.request.CalculateBOMRequestDTO;
 
 public interface CalculateBOMService {
-    CalculateBOMResponseDTO calculateBOM(CalculateBOQRequestDTO dto);
+    void calculateBOM(CalculateBOMRequestDTO dto);
 }

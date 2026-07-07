@@ -1,8 +1,8 @@
 package com.sonnh.elv.controller;
 
 import com.sonnh.elv.dto.request.CalculateBOQRequestDTO;
+import com.sonnh.elv.dto.request.CalculateBOMRequestDTO;
 import com.sonnh.elv.dto.response.CalculateBOQResponseDTO;
-import com.sonnh.elv.dto.response.CalculateBOMResponseDTO;
 import com.sonnh.elv.service.CalculateService;
 import com.sonnh.elv.service.CalculateBOMService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,10 +30,10 @@ public class CalculateController {
     }
 
     @PostMapping("/bom")
-    public ResponseEntity<CalculateBOMResponseDTO> getBOM(
-            @RequestBody CalculateBOQRequestDTO dto
+    public ResponseEntity<Void> getBOM(
+            @RequestBody CalculateBOMRequestDTO dto
     ) {
-        CalculateBOMResponseDTO bom = calculateBOMService.calculateBOM(dto);
-        return ResponseEntity.ok(bom);
+        calculateBOMService.calculateBOM(dto);
+        return ResponseEntity.ok().build();
     }
 }
