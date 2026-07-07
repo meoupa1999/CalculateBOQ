@@ -380,9 +380,7 @@ export default function App() {
         .map(f => ({
           floorIndex: f.floorIndex,
           label: f.label,
-          camerasCount: f.camerasCount,
-          domeCount: f.domeCount,
-          bulletCount: f.bulletCount
+          camerasCount: f.camerasCount
         }));
 
       const res = await fetch(`${API_BASE}/calculate/cabinet-placement`, {
@@ -401,8 +399,7 @@ export default function App() {
         })
       });
       if (res.ok) {
-        const resultWrapper = await res.json();
-        const data = resultWrapper.floors || [];
+        const data = await res.json();
         
         // Extract floor indices where cabinets are placed
         const cabinetFloorIndices = data

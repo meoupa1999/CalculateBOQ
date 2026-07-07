@@ -2,6 +2,7 @@ package com.sonnh.elv.controller;
 
 import com.sonnh.elv.dto.request.CalculateBOQRequestDTO;
 import com.sonnh.elv.dto.response.CalculateBOQResponseDTO;
+import com.sonnh.elv.dto.response.CalculateBOMResponseDTO;
 import com.sonnh.elv.service.CalculateService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +20,18 @@ public class CalculateController {
     private final CalculateService calculateService;
 
     @PostMapping("/cabinet-placement")
-    public ResponseEntity<CalculateBOQResponseDTO> getCabinetPlacement(
+    public ResponseEntity<List<CalculateBOQResponseDTO>> getCabinetPlacement(
             @RequestBody CalculateBOQRequestDTO dto
     ) {
-        CalculateBOQResponseDTO placement = calculateService.calculateBOQ(dto);
+        List<CalculateBOQResponseDTO> placement = calculateService.calculateBOQ(dto);
         return ResponseEntity.ok(placement);
+    }
+
+    @PostMapping("/bom")
+    public ResponseEntity<CalculateBOMResponseDTO> getBOM(
+            @RequestBody CalculateBOQRequestDTO dto
+    ) {
+        CalculateBOMResponseDTO bom = calculateService.calculateBOM(dto);
+        return ResponseEntity.ok(bom);
     }
 }
