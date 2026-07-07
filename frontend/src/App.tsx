@@ -359,6 +359,7 @@ export default function App() {
 
   // State to store cabinet placement floors (indices of upper floors that have cabinets)
   const [cabinetPlacements, setCabinetPlacements] = useState<number[]>([]);
+  const [bomData, setBomData] = useState<any>(null);
 
   // Fetch cabinet placement from API
   const fetchCabinetPlacement = async (
@@ -487,6 +488,76 @@ export default function App() {
       setCabinetPlacements(localPlacements.map(lvl => basementsCount + lvl - 1));
     }
   };
+
+  const fetchBOM = async (tower: any) => {
+    if (!tower || !tower.floorsData) return;
+    try {
+      const floorsData = tower.floorsData;
+      const totalCamera = floorsData.reduce((acc: number, curr: any) => acc + (curr.camerasCount || 0), 0);
+      const totalCamDome = floorsData.reduce((acc: number, curr: any) => acc + (curr.domeCount || 0), 0);
+      const totalCamBullet = floorsData.reduce((acc: number, curr: any) => acc + (curr.bulletCount || 0), 0);
+      const totalSw16 = floorsData.reduce((acc: number, curr: any) => acc + (curr.sw16Count || 0), 0);
+      const totalSw24 = floorsData.reduce((acc: number, curr: any) => acc + (curr.sw24Count || 0), 0);
+      const totalSwichPOE = totalSw16 + totalSw24;
+      const totalCabinet = floorsData.filter((f: any) => f.isCabinetPlaced).length;
+      const totalUPS = floorsData.filter((f: any) => f.isCabinetPlaced && f.upsType !== "None").length;
+      const totalPDU = floorsData.reduce((acc: number, curr: any) => acc + (curr.pduCount || 0), 0);
+      const totalConverter = floorsData.reduce((acc: number, curr: any) => acc + (curr.convCount || 0), 0);
+
+      const floors = floorsData.map((f: any) => ({
+        floorIndex: f.floorIndex,
+        isCabinetPlaced: f.isCabinetPlaced || false,
+        label: f.label,
+        camerasCount: f.camerasCount || 0,
+        domeCount: f.domeCount || 0,
+        bulletCount: f.bulletCount || 0,
+        cameraQuantityInCabinet: f.cameraQuantityInCabinet || 0,
+        sw24Count: f.sw24Count || 0,
+        sw16Count: f.sw16Count || 0,
+        upsCount: f.upsType !== "None" ? 1 : 0,
+        pduCount: f.pduCount || 0,
+        convCount: f.convCount || 0
+      }));
+
+      const res = await fetch(`${API_BASE}/calculate/bom`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          totalCamera,
+          totalCamDome,
+          totalCamBullet,
+          totalSwichPOE,
+          totalSw16,
+          totalSw24,
+          cabinetType: tower.rackType || "2U",
+          totalCabinet,
+          totalUPS,
+          totalPDU,
+          totalConverter,
+          floors
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBomData(data);
+        addToast("Tính toán BOM thành công!", "success");
+      } else {
+        console.error("Failed to fetch BOM", res.statusText);
+        addToast("Lỗi khi tính toán BOM!", "error");
+      }
+    } catch (err) {
+      console.error("Error fetching BOM data", err);
+      addToast("Lỗi kết nối dịch vụ BOM!", "error");
+    }
+  };
+
+  useEffect(() => {
+    if (activeTower) {
+      fetchBOM(activeTower);
+    }
+  }, [activeTower?.id]);
 
   // Sync temp values when active tower changes
   useEffect(() => {
@@ -1617,7 +1688,7 @@ const handleAddGlobalInventory = () => {
                     <>
                       {/* Top Calculator Input Section */}
                       <div className="bg-white border border-[#ECEFF1] rounded-lg p-4 shadow-xs">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 items-end">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 items-end">
                           
                            {/* Floor Input */}
                           <div>
@@ -1720,6 +1791,23 @@ const handleAddGlobalInventory = () => {
                             >
                               <RefreshCw className="w-4 h-4" />
                               <span>Tính toán BOQ</span>
+                            </button>
+                          </div>
+
+                          {/* Calculate BOM Button */}
+                          <div>
+                            <button
+                              onClick={() => {
+                                if (activeTower) {
+                                  fetchBOM(activeTower);
+                                } else {
+                                  addToast("Không tìm thấy tháp để tính BOM!", "error");
+                                }
+                              }}
+                              className="w-full bg-[#E65100] hover:bg-[#E65100]/95 text-white py-2 px-4 rounded text-sm font-semibold shadow-xs transition flex items-center justify-center gap-2 h-[38px]"
+                            >
+                              <Activity className="w-4 h-4" />
+                              <span>Tính BOM</span>
                             </button>
                           </div>
 
@@ -1899,7 +1987,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.camDomeQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat1_1")}
@@ -1911,7 +1999,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.camBulletQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat1_2")}
@@ -1923,7 +2011,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.recorder32Quantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat1_3")}
@@ -1935,7 +2023,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.recorder16Quantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat1_4")}
@@ -1947,7 +2035,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.hardDiskQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat1_5")}
@@ -1959,7 +2047,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.swich24POEQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat1_6")}
@@ -1971,7 +2059,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.swich16POEQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat1_7")}
@@ -1983,7 +2071,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.swich16CISCOQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat1_8")}
@@ -1995,7 +2083,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.swich24CISCOQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat1_9")}
@@ -2007,7 +2095,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.obserScreenQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat1_10")}
@@ -2028,7 +2116,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.fiberCableQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat2_1")}
@@ -2040,7 +2128,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.cableQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat2_2")}
@@ -2052,7 +2140,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.converterQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat2_3")}
@@ -2064,7 +2152,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.cabinet2UQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat2_4")}
@@ -2076,7 +2164,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.cabinet6UQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat2_5")}
@@ -2088,7 +2176,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.cabinet10UQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat2_6")}
@@ -2100,7 +2188,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.cabinet20UQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat2_7")}
@@ -2112,7 +2200,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.cabinet32UQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat2_8")}
@@ -2124,7 +2212,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.cabinet42UQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat2_9")}
@@ -2136,7 +2224,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.odf12FOQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat2_10")}
@@ -2157,7 +2245,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.cvvCable ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat3_1")}
@@ -2169,7 +2257,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.pduQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat3_2")}
@@ -2190,7 +2278,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.ups1000Quantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat4_1")}
@@ -2202,7 +2290,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.ups3000Quantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat4_3")}
@@ -2225,7 +2313,7 @@ const handleAddGlobalInventory = () => {
                                       Bao gồm ống điện, ruột gà, vít, tacke...
                                     </td>
                                     <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Gói</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat5_1")}
@@ -2237,7 +2325,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-700"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Gói</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat5_1_1")}
@@ -2249,7 +2337,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.ampCatQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat5_1_1_sub1")}
@@ -2261,7 +2349,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Sợi</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.fiberOpticalPatchQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat5_1_1_sub2")}
@@ -2273,7 +2361,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.odf4FOQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat5_1_1_sub3")}
@@ -2285,7 +2373,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Sợi</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.patchCordQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat5_1_1_sub4")}
@@ -2297,7 +2385,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.cablemanageQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat5_1_1_sub5")}
@@ -2308,8 +2396,8 @@ const handleAddGlobalInventory = () => {
                                       Vật tư phụ thi công
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-700"></td>
-                                    <td className="py-2.5 px-1 text-center text-slate-700"></td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Gói</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat5_1_2")}
@@ -2321,7 +2409,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.chickenTubeQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat5_1_2_1")}
@@ -2333,7 +2421,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{bomData?.electricTubeQuantity ?? 0}</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat5_1_2_2")}
@@ -2356,7 +2444,7 @@ const handleAddGlobalInventory = () => {
                                       Thi công trọn gói và hướng dẫn vận hành
                                     </td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Gói</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat6_1")}
@@ -2368,7 +2456,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-700"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Công</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat6_1_1")}
@@ -2380,7 +2468,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat6_1_1_sub1")}
@@ -2392,7 +2480,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat6_1_1_sub2")}
@@ -2404,7 +2492,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat6_1_1_sub3")}
@@ -2416,7 +2504,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat6_1_1_sub4")}
@@ -2428,7 +2516,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat6_1_1_sub5")}
@@ -2440,7 +2528,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat6_1_1_sub6")}
@@ -2452,7 +2540,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-700"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Công</td>
-                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat6_1_2")}

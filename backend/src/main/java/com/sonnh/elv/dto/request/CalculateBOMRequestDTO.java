@@ -18,6 +18,7 @@ public class CalculateBOMRequestDTO {
     private Integer totalSwichPOE;
     private Integer totalSw16;
     private Integer totalSw24;
+    private String cabinetType;
     private Integer totalCabinet;
     private Integer totalUPS;
     private Integer totalPDU;
