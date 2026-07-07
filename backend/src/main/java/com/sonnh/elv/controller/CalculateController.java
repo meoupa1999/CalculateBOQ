@@ -4,6 +4,7 @@ import com.sonnh.elv.dto.request.CalculateBOQRequestDTO;
 import com.sonnh.elv.dto.response.CalculateBOQResponseDTO;
 import com.sonnh.elv.dto.response.CalculateBOMResponseDTO;
 import com.sonnh.elv.service.CalculateService;
+import com.sonnh.elv.service.CalculateBOMService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.List;
 public class CalculateController {
 
     private final CalculateService calculateService;
+    private final CalculateBOMService calculateBOMService;
 
     @PostMapping("/cabinet-placement")
     public ResponseEntity<List<CalculateBOQResponseDTO>> getCabinetPlacement(
@@ -31,7 +33,7 @@ public class CalculateController {
     public ResponseEntity<CalculateBOMResponseDTO> getBOM(
             @RequestBody CalculateBOQRequestDTO dto
     ) {
-        CalculateBOMResponseDTO bom = calculateService.calculateBOM(dto);
+        CalculateBOMResponseDTO bom = calculateBOMService.calculateBOM(dto);
         return ResponseEntity.ok(bom);
     }
 }
