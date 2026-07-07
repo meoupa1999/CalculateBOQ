@@ -1,24 +1,18 @@
 package com.sonnh.elv.service.impl;
 
 import com.sonnh.elv.data.domain.Config;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
-
 import org.springframework.stereotype.Service;
-
 import com.sonnh.elv.data.repository.ConfigRepository;
 import com.sonnh.elv.dto.request.CalculateBOQRequestDTO;
 import com.sonnh.elv.dto.request.CalculateBOQRequestDTO.FloorRequest;
 import com.sonnh.elv.dto.response.CabinetEquipmentDTO;
 import com.sonnh.elv.dto.response.CalculateBOQResponseDTO;
-import com.sonnh.elv.dto.response.MyCalculateResDto;
 import com.sonnh.elv.service.CalculateService;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -95,7 +89,7 @@ public class CalcualateServiceImpl implements CalculateService {
         int cabinetIndex = 0;
         int from = 0;
         int to = 0;
-        int flag = 0;
+        // int flag = 0;
         Integer horizontalDistance = dto.getHorizontalDistance().intValue();
         Integer verticalDistance = dto.getVerticalDistance().intValue();
         int pivotResult = config.getConditionLength() - horizontalDistance;

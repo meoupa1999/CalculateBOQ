@@ -201,6 +201,16 @@ export default function App() {
   const [newProjectFloors, setNewProjectFloors] = useState(5);
   const [newProjectPreset, setNewProjectPreset] = useState("std-commercial");
 
+  // State for left template table notes (Ghi chú)
+  const [leftTableNotes, setLeftTableNotes] = useState<Record<string, string>>({
+    cat2_2: "LS/Panduit/Comspose",
+    cat3_2: "Dintek/Vietrack/TMC",
+    cat5_1_1_sub4: "Dintek/AMP/Panduit",
+    cat5_1_1_sub5: "Dintek/AMP/Panduit",
+    cat5_1_2: "Dự trù 7 triệu chưa bao gồm 1.2.1",
+    cat6_1_1: "6 Ngày hoặc chạy song song với triển khai hạ tầng",
+  });
+
   // Toast alert notifications
   const [toasts, setToasts] = useState<{ id: string; message: string; type: "success" | "info" | "error" }[]>([]);
 
@@ -600,8 +610,11 @@ export default function App() {
   const handleUpdateFloorCell = (floorIndex: number, field: keyof FloorData, value: number | string) => {
     if (!activeTower) return;
 
+    const isSelected = selectedFloorIndexes.includes(floorIndex);
+
     const baseFloors = activeTower.floorsData.map((f) => {
-      if (f.floorIndex === floorIndex) {
+      const shouldUpdate = f.floorIndex === floorIndex || (isSelected && selectedFloorIndexes.includes(f.floorIndex));
+      if (shouldUpdate) {
         const updatedRow = { ...f, [field]: value };
         
         // If cameras count, dome or bullet count is updated, we do automatic minor adjustment of children
@@ -661,6 +674,21 @@ export default function App() {
       })
     );
 
+  };
+
+  // Helper to render editable note input cell in the Excel-like BOQ Template Table (Left)
+  const renderNoteCell = (key: string) => {
+    return (
+      <td className="py-1.5 px-2 text-slate-700">
+        <input
+          type="text"
+          value={leftTableNotes[key] || ""}
+          onChange={(e) => setLeftTableNotes(prev => ({ ...prev, [key]: e.target.value }))}
+          placeholder="-"
+          className="w-full bg-transparent hover:bg-slate-100/50 focus:bg-white border border-transparent hover:border-slate-300 focus:border-[#1A237E] rounded px-1.5 py-0.5 text-xs text-slate-700 focus:outline-none transition"
+        />
+      </td>
+    );
   };
 
   // Apply Selected Preset Standards
@@ -1874,7 +1902,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat1_1")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">2</td>
@@ -1886,7 +1914,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat1_2")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">3</td>
@@ -1898,7 +1926,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat1_3")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">4</td>
@@ -1910,7 +1938,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat1_4")}
                                   </tr>
 
                                   {/* Category II Header Row */}
@@ -1931,7 +1959,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat2_1")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">2</td>
@@ -1943,7 +1971,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-600 text-xs font-semibold">LS/Panduit/Comspose</td>
+                                    {renderNoteCell("cat2_2")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">3</td>
@@ -1955,7 +1983,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat2_3")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">5</td>
@@ -1967,7 +1995,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat2_5")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">6</td>
@@ -1979,7 +2007,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat2_6")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">7</td>
@@ -1991,7 +2019,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat2_7")}
                                   </tr>
 
                                   {/* Category III Header Row */}
@@ -2012,7 +2040,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat3_1")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">2</td>
@@ -2024,7 +2052,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-600 text-xs font-semibold">Dintek/Vietrack/TMC</td>
+                                    {renderNoteCell("cat3_2")}
                                   </tr>
 
                                   {/* Category IV Header Row */}
@@ -2045,7 +2073,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat4_1")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">3</td>
@@ -2057,7 +2085,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat4_3")}
                                   </tr>
 
                                   {/* Category V Header Row */}
@@ -2080,7 +2108,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat5_1")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1.1</td>
@@ -2092,7 +2120,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat5_1_1")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center text-slate-400">-</td>
@@ -2104,7 +2132,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat5_1_1_sub1")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center text-slate-400">-</td>
@@ -2116,7 +2144,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat5_1_1_sub2")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center text-slate-400">-</td>
@@ -2128,7 +2156,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat5_1_1_sub3")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center text-slate-400">-</td>
@@ -2140,7 +2168,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-600 text-xs font-semibold">Dintek/AMP/Panduit</td>
+                                    {renderNoteCell("cat5_1_1_sub4")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center text-slate-400">-</td>
@@ -2152,7 +2180,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-600 text-xs font-semibold">Dintek/AMP/Panduit</td>
+                                    {renderNoteCell("cat5_1_1_sub5")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1.2</td>
@@ -2164,9 +2192,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-700 text-xs font-semibold">
-                                      Dự trù 7 triệu chưa bao gồm 1.2.1
-                                    </td>
+                                    {renderNoteCell("cat5_1_2")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1.2.1</td>
@@ -2178,7 +2204,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat5_1_2_1")}
                                   </tr>
 
                                   {/* Category VI Header Row */}
@@ -2201,7 +2227,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat6_1")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1.1</td>
@@ -2213,9 +2239,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-700 text-xs font-semibold">
-                                      6 Ngày hoặc chạy song song với triển khai hạ tầng
-                                    </td>
+                                    {renderNoteCell("cat6_1_1")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center text-slate-400">-</td>
@@ -2227,7 +2251,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat6_1_1_sub1")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center text-slate-400">-</td>
@@ -2239,7 +2263,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat6_1_1_sub2")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center text-slate-400">-</td>
@@ -2251,7 +2275,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat6_1_1_sub3")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center text-slate-400">-</td>
@@ -2263,7 +2287,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat6_1_1_sub4")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center text-slate-400">-</td>
@@ -2275,7 +2299,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat6_1_1_sub5")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center text-slate-400">-</td>
@@ -2287,7 +2311,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat6_1_1_sub6")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1.2</td>
@@ -2299,7 +2323,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    <td className="py-2.5 px-2 text-slate-500"></td>
+                                    {renderNoteCell("cat6_1_2")}
                                   </tr>
                                 </tbody>
                               </table>
