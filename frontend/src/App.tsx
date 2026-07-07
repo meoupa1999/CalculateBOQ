@@ -1931,7 +1931,7 @@ const handleAddGlobalInventory = () => {
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">4</td>
                                     <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
-                                      Ổ Cứng 10T WESTERN
+                                      Đầu ghi hình camera IP 16 kênh
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
@@ -1943,7 +1943,7 @@ const handleAddGlobalInventory = () => {
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">5</td>
                                     <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
-                                      Switch Hikvision POE 24 cổng DS-3E1326P-EI
+                                      Ổ Cứng 10T WESTERN
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
@@ -1955,7 +1955,7 @@ const handleAddGlobalInventory = () => {
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">6</td>
                                     <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
-                                      Switch Hikvision POE 16 cổng DS-3E1318P-EI
+                                      Switch Hikvision POE 24 cổng DS-3E1326P-EI
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
@@ -1967,7 +1967,7 @@ const handleAddGlobalInventory = () => {
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">7</td>
                                     <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
-                                      Switch 16 port CISCO CBS110-16T-EU
+                                      Switch Hikvision POE 16 cổng DS-3E1318P-EI
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
@@ -1979,7 +1979,7 @@ const handleAddGlobalInventory = () => {
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">8</td>
                                     <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
-                                      Switch 24 port CISCO
+                                      Switch 16 port CISCO CBS110-16T-EU
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
@@ -1991,6 +1991,18 @@ const handleAddGlobalInventory = () => {
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">9</td>
                                     <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Switch 24 port CISCO
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("cat1_9")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">10</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
                                       Màn hình quan sát 43 inch SamSung(khung kê + HDMI (15m))
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
@@ -1998,7 +2010,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    {renderNoteCell("cat1_9")}
+                                    {renderNoteCell("cat1_10")}
                                   </tr>
 
                                   {/* Category II Header Row */}
