@@ -2046,9 +2046,21 @@ const handleAddGlobalInventory = () => {
                                     {renderNoteCell("cat2_3")}
                                   </tr>
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">4</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Tủ mạng rack 2U
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("cat2_4")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">5</td>
                                     <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
-                                      Tủ mạng rack 10U( Có bánh xe)
+                                      Tủ mạng rack 6U
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
@@ -2060,7 +2072,7 @@ const handleAddGlobalInventory = () => {
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">6</td>
                                     <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
-                                      Tủ mạng rack 20U (Có bánh xe)
+                                      Tủ mạng rack 10U (Có bánh xe)
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
@@ -2072,6 +2084,42 @@ const handleAddGlobalInventory = () => {
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">7</td>
                                     <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Tủ mạng rack 20U (Có bánh xe)
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("cat2_7")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">8</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Tủ mạng rack 32U
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("cat2_8")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">9</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Tủ mạng rack 42U
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("cat2_9")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">10</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
                                       ODF 12FO SC/UPC (Full Phụ kiện)
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
@@ -2079,7 +2127,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    {renderNoteCell("cat2_7")}
+                                    {renderNoteCell("cat2_10")}
                                   </tr>
 
                                   {/* Category III Header Row */}
