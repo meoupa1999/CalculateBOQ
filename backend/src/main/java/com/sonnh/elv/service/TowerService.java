@@ -1,9 +1,6 @@
 package com.sonnh.elv.service;
 
-import java.util.List;
 import java.util.UUID;
-
-import com.sonnh.elv.data.domain.Tower;
 import com.sonnh.elv.dto.request.CreateTowerReqDto;
 import com.sonnh.elv.dto.request.UpdateTowerReqDto;
 import com.sonnh.elv.dto.response.PageImplResDto;

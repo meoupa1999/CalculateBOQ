@@ -1907,7 +1907,7 @@ const handleAddGlobalInventory = () => {
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">2</td>
                                     <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
-                                      Đầu ghi hình camera IP 32 kênh HIKVISION DS-7732NXI-K4
+                                      Camera IP thân 2MP HIKVISION DS-2CD1021G0-I
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
@@ -1919,7 +1919,7 @@ const handleAddGlobalInventory = () => {
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">3</td>
                                     <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
-                                      Ổ Cứng 10T WESTERN
+                                      Đầu ghi hình camera IP 32 kênh HIKVISION DS-7732NXI-K4
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
@@ -1931,7 +1931,7 @@ const handleAddGlobalInventory = () => {
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">4</td>
                                     <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
-                                      Switch Hikvision POE 16 cổng DS-3E1318P-EI
+                                      Ổ Cứng 10T WESTERN
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
                                     <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
@@ -1939,6 +1939,54 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     {renderNoteCell("cat1_4")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">5</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Switch Hikvision POE 24 cổng DS-3E1326P-EI
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("cat1_5")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">6</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Switch Hikvision POE 16 cổng DS-3E1318P-EI
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("cat1_6")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">7</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Switch 16 port CISCO CBS110-16T-EU
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("cat1_7")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">8</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Màn hình quan sát 43 inch SamSung(khung kê + HDMI (15m))
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("cat1_8")}
                                   </tr>
 
                                   {/* Category II Header Row */}
