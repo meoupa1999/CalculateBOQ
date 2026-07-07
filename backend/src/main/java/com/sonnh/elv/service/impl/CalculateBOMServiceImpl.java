@@ -11,7 +11,6 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
 
     @Override
     public void calculateBOM(CalculateBOMRequestDTO dto) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'calculateBOM'");
+        
     }
 }
