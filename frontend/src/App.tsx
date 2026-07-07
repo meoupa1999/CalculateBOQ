@@ -1979,6 +1979,18 @@ const handleAddGlobalInventory = () => {
                                   <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
                                     <td className="py-2.5 px-1 text-center font-semibold text-slate-600">8</td>
                                     <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Switch 24 port CISCO
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("cat1_8")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">9</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
                                       Màn hình quan sát 43 inch SamSung(khung kê + HDMI (15m))
                                     </td>
                                     <td className="py-2.5 px-2 text-slate-600"></td>
@@ -1986,7 +1998,7 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
                                     <td className="py-2.5 px-1 text-center font-mono"></td>
-                                    {renderNoteCell("cat1_8")}
+                                    {renderNoteCell("cat1_9")}
                                   </tr>
 
                                   {/* Category II Header Row */}
