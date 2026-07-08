@@ -1683,6 +1683,119 @@ const handleAddGlobalInventory = () => {
                   ) : (
                     /* Full UI: Show remaining inputs + table */
                     <>
+                      {/* Summary Cards section - "Tổng quan tháp" */}
+                      <div className="flex flex-col gap-3">
+                        <h2 className="font-sans font-bold text-lg text-[#191c1e] tracking-tight">
+                          Tổng quan {activeProject.name}
+                        </h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          
+                          {/* Left Block: CAMERA SYSTEM */}
+                          <div className="bg-white border-l-4 border-l-[#1A237E] border border-y-[#ECEFF1] border-r-[#ECEFF1] rounded-r-lg p-5 flex flex-col justify-between">
+                            <div>
+                              <div className="text-xs font-bold text-[#455A64] uppercase tracking-wider mb-2">
+                                HỆ THỐNG CAMERA
+                              </div>
+                              <div className="flex items-baseline gap-2">
+                                <span className="font-sans font-extrabold text-4xl text-[#1A237E]">
+                                  {totalCamerasCount}
+                                </span>
+                                <span className="text-sm text-[#455A64] font-medium">
+                                  Tổng thiết bị
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-slate-100">
+                              <div>
+                                <div className="text-sm font-bold text-[#191c1e] font-mono">
+                                  {totalDomeCount}
+                                </div>
+                                <div className="text-xs text-[#455A64] font-medium">
+                                  Camera Dome (Bán cầu)
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-sm font-bold text-[#191c1e] font-mono">
+                                  {totalBulletCount}
+                                </div>
+                                <div className="text-xs text-[#455A64] font-medium">
+                                  Camera Thân (Bullet)
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right Block: RACK, NETWORK & ACCESSORIES */}
+                          <div className="bg-white border-l-4 border-l-[#455A64] border border-y-[#ECEFF1] border-r-[#ECEFF1] rounded-r-lg p-5">
+                            <div className="text-xs font-bold text-[#455A64] uppercase tracking-wider mb-2">
+                              TỦ, MẠNG & PHỤ KIỆN
+                            </div>
+                            <div className="flex items-baseline gap-2 mb-4">
+                              <span className="font-sans font-extrabold text-4xl text-[#455A64]">
+                                {totalSw24 + totalSw16}
+                              </span>
+                              <span className="text-sm text-[#455A64] font-medium">
+                                Switch PoE
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-y-4 gap-x-2 pt-3 border-t border-slate-100">
+                              <div>
+                                <div className="text-xs text-slate-400 font-bold uppercase tracking-wide">
+                                  TỦ RACK
+                                </div>
+                                <div className="text-base font-bold text-[#191c1e] font-mono">
+                                  {totalRacks}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-slate-400 font-bold uppercase tracking-wide">
+                                  SW24
+                                </div>
+                                <div className="text-base font-bold text-[#191c1e] font-mono">
+                                  {totalSw24}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-slate-400 font-bold uppercase tracking-wide">
+                                  SW16
+                                </div>
+                                <div className="text-base font-bold text-[#191c1e] font-mono">
+                                  {totalSw16}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-slate-400 font-bold uppercase tracking-wide">
+                                  UPS
+                                </div>
+                                <div className="text-base font-bold text-[#191c1e] font-mono">
+                                  {totalUPS1K + totalUPS2K}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-slate-400 font-bold uppercase tracking-wide">
+                                  PDU
+                                </div>
+                                <div className="text-base font-bold text-[#191c1e] font-mono">
+                                  {totalPDU}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-slate-400 font-bold uppercase tracking-wide">
+                                  CONV.
+                                </div>
+                                <div className="text-base font-bold text-[#191c1e] font-mono">
+                                  {totalConv}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+
                       {/* Top Calculator Input Section */}
                       <div className="bg-white border border-[#ECEFF1] rounded-lg p-4 shadow-xs">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 items-end">
@@ -1806,119 +1919,6 @@ const handleAddGlobalInventory = () => {
                               <Activity className="w-4 h-4" />
                               <span>Tính BOM</span>
                             </button>
-                          </div>
-
-                        </div>
-                      </div>
-
-                      {/* Summary Cards section - "Tổng quan tháp" */}
-                      <div className="flex flex-col gap-3">
-                        <h2 className="font-sans font-bold text-lg text-[#191c1e] tracking-tight">
-                          Tổng quan {activeProject.name}
-                        </h2>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          
-                          {/* Left Block: CAMERA SYSTEM */}
-                          <div className="bg-white border-l-4 border-l-[#1A237E] border border-y-[#ECEFF1] border-r-[#ECEFF1] rounded-r-lg p-5 flex flex-col justify-between">
-                            <div>
-                              <div className="text-xs font-bold text-[#455A64] uppercase tracking-wider mb-2">
-                                HỆ THỐNG CAMERA
-                              </div>
-                              <div className="flex items-baseline gap-2">
-                                <span className="font-sans font-extrabold text-4xl text-[#1A237E]">
-                                  {totalCamerasCount}
-                                </span>
-                                <span className="text-sm text-[#455A64] font-medium">
-                                  Tổng thiết bị
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-slate-100">
-                              <div>
-                                <div className="text-sm font-bold text-[#191c1e] font-mono">
-                                  {totalDomeCount}
-                                </div>
-                                <div className="text-xs text-[#455A64] font-medium">
-                                  Camera Dome (Bán cầu)
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-sm font-bold text-[#191c1e] font-mono">
-                                  {totalBulletCount}
-                                </div>
-                                <div className="text-xs text-[#455A64] font-medium">
-                                  Camera Thân (Bullet)
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Right Block: RACK, NETWORK & ACCESSORIES */}
-                          <div className="bg-white border-l-4 border-l-[#455A64] border border-y-[#ECEFF1] border-r-[#ECEFF1] rounded-r-lg p-5">
-                            <div className="text-xs font-bold text-[#455A64] uppercase tracking-wider mb-2">
-                              TỦ, MẠNG & PHỤ KIỆN
-                            </div>
-                            <div className="flex items-baseline gap-2 mb-4">
-                              <span className="font-sans font-extrabold text-4xl text-[#455A64]">
-                                {totalSw24 + totalSw16}
-                              </span>
-                              <span className="text-sm text-[#455A64] font-medium">
-                                Switch PoE
-                              </span>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-y-4 gap-x-2 pt-3 border-t border-slate-100">
-                              <div>
-                                <div className="text-xs text-slate-400 font-bold uppercase tracking-wide">
-                                  TỦ RACK
-                                </div>
-                                <div className="text-base font-bold text-[#191c1e] font-mono">
-                                  {totalRacks}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-xs text-slate-400 font-bold uppercase tracking-wide">
-                                  SW24
-                                </div>
-                                <div className="text-base font-bold text-[#191c1e] font-mono">
-                                  {totalSw24}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-xs text-slate-400 font-bold uppercase tracking-wide">
-                                  SW16
-                                </div>
-                                <div className="text-base font-bold text-[#191c1e] font-mono">
-                                  {totalSw16}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-xs text-slate-400 font-bold uppercase tracking-wide">
-                                  UPS
-                                </div>
-                                <div className="text-base font-bold text-[#191c1e] font-mono">
-                                  {totalUPS1K + totalUPS2K}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-xs text-slate-400 font-bold uppercase tracking-wide">
-                                  PDU
-                                </div>
-                                <div className="text-base font-bold text-[#191c1e] font-mono">
-                                  {totalPDU}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-xs text-slate-400 font-bold uppercase tracking-wide">
-                                  CONV.
-                                </div>
-                                <div className="text-base font-bold text-[#191c1e] font-mono">
-                                  {totalConv}
-                                </div>
-                              </div>
-                            </div>
                           </div>
 
                         </div>
