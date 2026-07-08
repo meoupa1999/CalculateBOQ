@@ -20,6 +20,8 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
 
     @Override
     public CalculateBOMResponseDTO calculateBOM(CalculateBOMRequestDTO dto) {
+        System.out.println(dto);
+        // ------------------
         CalculateBOMResponseDTO response = new CalculateBOMResponseDTO();
         if (dto == null) {
             return response;
@@ -27,7 +29,7 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
 
         response.setCamDomeQuantity(calculateTotalCameraDome(dto));
         response.setCamBulletQuantity(calculateTotalCamerBullet(dto));
-        
+
         Map<String, Integer> recorderMap = calculateRecorder16And32(dto);
         response.setRecorder16Quantity(recorderMap.get("recorder16Quantity"));
         response.setRecorder32Quantity(recorderMap.get("recorder32Quantity"));
@@ -80,18 +82,23 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
     public Map<String, Integer> calculateRecorder16And32(CalculateBOMRequestDTO dto) {
         Map<String, Integer> map = new HashMap<>();
         int totalCamera = getSafeInt(dto.getTotalCamera());
-        map.put("recorder32Quantity", totalCamera / 32);
-        int digit = (int) (totalCamera * Math.pow(totalCamera, 1)) % 10;
+        if (totalCamera > 0) {
+            map.put("recorder32Quantity", totalCamera / 32);
+            map.put("recorder16Quantity", 0);
+        }
+        int digit = (int) (((double) totalCamera / 32) * 10) % 10;
+        System.out.println("digit ne: " + digit);
         if (digit > 5) {
             map.put("recorder32Quantity", map.get("recorder32Quantity") + 1);
-        } else {
-            map.put("recorder16Quantity", 1);
+        } else if (digit <= 5 && digit != 0) {
+            map.put("recorder16Quantity", map.get("recorder16Quantity") + 1);
         }
         return map;
     }
 
     public Integer calculateHardDisk(CalculateBOMRequestDTO dto, Map<String, Integer> map) {
-        if (map == null) return 0;
+        if (map == null)
+            return 0;
         int total = map.values()
                 .stream()
                 .filter(val -> val != null)
@@ -154,7 +161,8 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
     public Integer calculateCabinet(CalculateBOMRequestDTO dto) {
         int cabinetQuantity = 0;
         String cabinetType = dto.getCabinetType();
-        if ("2U".equals(cabinetType) || "6U".equals(cabinetType) || "10U".equals(cabinetType) || "20U".equals(cabinetType) || "32U".equals(cabinetType) || "42U".equals(cabinetType)) {
+        if ("2U".equals(cabinetType) || "6U".equals(cabinetType) || "10U".equals(cabinetType)
+                || "20U".equals(cabinetType) || "32U".equals(cabinetType) || "42U".equals(cabinetType)) {
             cabinetQuantity = getSafeInt(dto.getTotalCabinet());
         }
         return cabinetQuantity;

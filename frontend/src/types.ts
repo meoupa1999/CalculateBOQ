@@ -36,7 +36,7 @@ export interface HardwareLogic {
   backupHours: number; // e.g., 1 or 2 hours
   pduPerRack: number;
   converterPerUplink: number;
-  cabinetSizeDefault: "2U" | "6U" | "9U" | "12U";
+  cabinetSizeDefault: "2U" | "6U" | "10U" | "20U";
 }
 
 export interface InventoryItem {
@@ -69,7 +69,7 @@ export interface Tower {
   hasRoof?: boolean;
   horizontalDistance: number; // average run to IT room per floor (m)
   verticalDistance: number; // vertical cable run per floor (m)
-  rackType: "2U" | "6U" | "9U" | "12U";
+  rackType: "2U" | "6U" | "10U" | "20U";
   standardPresetId: string;
   floorsData: FloorData[];
   siteParams: SiteParameters;

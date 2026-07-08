@@ -355,7 +355,7 @@ export default function App() {
   const [tempHasRoof, setTempHasRoof] = useState(activeTower?.hasRoof || false);
   const [tempH, setTempH] = useState(activeTower?.horizontalDistance || 50);
   const [tempV, setTempV] = useState(activeTower?.verticalDistance || 4);
-  const [tempRack, setTempRack] = useState<"2U" | "6U" | "9U" | "12U">(activeTower?.rackType || "2U");
+  const [tempRack, setTempRack] = useState<"2U" | "6U" | "10U" | "20U">(activeTower?.rackType || "2U");
 
   // State to store cabinet placement floors (indices of upper floors that have cabinets)
   const [cabinetPlacements, setCabinetPlacements] = useState<number[]>([]);
@@ -1134,8 +1134,8 @@ const handleAddGlobalInventory = () => {
     let sw16Count = 0;
     let rack2u = 0;
     let rack6u = 0;
-    let rack9u = 0;
-    let rack12u = 0;
+    let rack10u = 0;
+    let rack20u = 0;
     let ups1k = 0;
     let ups2k = 0;
     let pduCount = 0;
@@ -1153,15 +1153,12 @@ const handleAddGlobalInventory = () => {
       sw16Count += f.sw16Count;
       
       // Rack counts based on active project's rack size configuration
-      const match = f.label.match(/Tầng\s+(\d+)/);
-      const isUpperFloor = match !== null && !f.label.includes("Mái");
-      const physicalFloorNum = isUpperFloor ? parseInt(match[1]) : null;
-      const needsCabinet = physicalFloorNum !== null && cabinetPlacements.includes(physicalFloorNum);
+      const needsCabinet = f.isCabinetPlaced || cabinetPlacements.includes(f.floorIndex);
       if (needsCabinet) {
         if (activeTower?.rackType === "2U") rack2u += 1;
         else if (activeTower?.rackType === "6U") rack6u += 1;
-        else if (activeTower?.rackType === "9U") rack9u += 1;
-        else if (activeTower?.rackType === "12U") rack12u += 1;
+        else if (activeTower?.rackType === "10U") rack10u += 1;
+        else if (activeTower?.rackType === "20U") rack20u += 1;
       }
 
       if (f.upsType === "1K") ups1k += 1;
@@ -1182,8 +1179,8 @@ const handleAddGlobalInventory = () => {
       "item-sw-16": sw16Count,
       "item-rack-2u": rack2u,
       "item-rack-6u": rack6u,
-      "item-rack-9u": rack9u,
-      "item-rack-12u": rack12u,
+      "item-rack-10u": rack10u,
+      "item-rack-20u": rack20u,
       "item-ups-1k": ups1k,
       "item-ups-2k": ups2k,
       "item-pdu": pduCount,
@@ -1604,13 +1601,13 @@ const handleAddGlobalInventory = () => {
                           </label>
                           <select
                             value={tempRack}
-                            onChange={(e) => setTempRack(e.target.value as "2U" | "6U" | "9U" | "12U")}
+                            onChange={(e) => setTempRack(e.target.value as "2U" | "6U" | "10U" | "20U")}
                             className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded px-3 py-2 text-base font-semibold text-center focus:border-[#1A237E] focus:outline-none transition"
                           >
                             <option value="2U">2U</option>
                             <option value="6U">6U</option>
-                            <option value="9U">9U</option>
-                            <option value="12U">12U</option>
+                            <option value="10U">10U</option>
+                            <option value="20U">20U</option>
                           </select>
                         </div>
                       </div>
@@ -1778,8 +1775,8 @@ const handleAddGlobalInventory = () => {
                             >
                               <option value="2U">2U</option>
                               <option value="6U">6U</option>
-                              <option value="9U">9U</option>
-                              <option value="12U">12U</option>
+                              <option value="10U">10U</option>
+                              <option value="20U">20U</option>
                             </select>
                           </div>
 
