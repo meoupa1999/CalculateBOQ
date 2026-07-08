@@ -41,7 +41,7 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
 
         response.setSwich16POEQuantity(calculateSwitch16POE(dto));
         response.setSwich24POEQuantity(calculateSwitch24POE(dto));
-        response.setObserScreenQuantity(calculateOberserScreen(dto));
+        response.setObserScreenQuantity(calculateOberserScreen(dto, recorderMap));
         response.setConverterQuantity(calculateConverter(dto));
 
         String cabinetType = dto.getCabinetType();
@@ -60,7 +60,7 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
         }
 
         response.setCvvCable(calculateCVVCable(dto));
-        response.setPduQuantity(calcuatePDUPower(dto));
+        response.setPduQuantity(calcuatePDUPower(dto, recorderMap));
         response.setUps1000Quantity(calculateUPSS1000(dto));
         response.setAmpCatQuantity(calculateAmpCat(dto));
         response.setFiberOpticalPatchQuantity(calcuateFiberOpticalPatch(dto));
@@ -110,14 +110,14 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
 
     public Map<String, Integer> calculateswich16CISCO(CalculateBOMRequestDTO dto, Map<String, Integer> map) {
         Map<String, Integer> resultMap = new HashMap<>();
+        int totalRecorder = 0;
         if (map != null) {
-            resultMap.putAll(map);
+            totalRecorder = map.values()
+                    .stream()
+                    .filter(val -> val != null)
+                    .mapToInt(Integer::intValue)
+                    .sum();
         }
-        int totalRecorder = resultMap.values()
-                .stream()
-                .filter(val -> val != null)
-                .mapToInt(Integer::intValue)
-                .sum();
         int totalConverter = getSafeInt(dto.getTotalConverter());
         int condition = totalConverter + totalRecorder;
         resultMap.put("sw24", 0);
@@ -142,16 +142,13 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
         return getSafeInt(dto.getTotalSw24());
     }
 
-    public Integer calculateSwitch16CISCO(CalculateBOMRequestDTO dto) {
-        return 0;
-    }
-
-    public Integer calculateSwitch24CISCO(CalculateBOMRequestDTO dto) {
-        return 0;
-    }
-
-    public Integer calculateOberserScreen(CalculateBOMRequestDTO dto) {
-        return 0;
+    public Integer calculateOberserScreen(CalculateBOMRequestDTO dto, Map<String, Integer> map) {
+        int totalRecorder = map.values()
+                .stream()
+                .filter(val -> val != null)
+                .mapToInt(Integer::intValue)
+                .sum();
+        return getSafeInt(totalRecorder);
     }
 
     public Integer calculateConverter(CalculateBOMRequestDTO dto) {
@@ -172,8 +169,25 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
         return getSafeInt(dto.getTotalCabinet()) * 20;
     }
 
-    public Integer calcuatePDUPower(CalculateBOMRequestDTO dto) {
-        return 0;
+    public Integer calcuatePDUPower(CalculateBOMRequestDTO dto, Map<String, Integer> map) {
+        int totalRecorder = map.values()
+                .stream()
+                .filter(val -> val != null)
+                .mapToInt(Integer::intValue)
+                .sum();
+        System.out.println("totalRecorder: " + totalRecorder);
+
+        for (String key : calculateswich16CISCO(dto, map).keySet()) {
+            System.out.println("key: " + key + " value: " + calculateswich16CISCO(dto, map).get(key));
+        }
+        int cisco = calculateswich16CISCO(dto, map).values()
+                .stream()
+                .filter(val -> val != null)
+                .mapToInt(Integer::intValue)
+                .sum();
+        System.out.println("cisco: " + cisco);
+        int fcc = dto.getTotalConverter() + calculateOberserScreen(dto, map) + totalRecorder + cisco;
+        return getSafeInt(dto.getTotalCabinet()) + fcc;
     }
 
     public Integer calculateUPSS1000(CalculateBOMRequestDTO dto) {
