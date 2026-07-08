@@ -51,8 +51,6 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
             response.setCabinet6UQuantity(calculateCabinet(dto));
         } else if ("10U".equals(cabinetType)) {
             response.setCabinet10UQuantity(calculateCabinet(dto));
-        } else if ("20U".equals(cabinetType)) {
-            response.setCabinet20UQuantity(calculateCabinet(dto));
         } else if ("32U".equals(cabinetType)) {
             response.setCabinet32UQuantity(calculateCabinet(dto));
         } else if ("42U".equals(cabinetType)) {
@@ -65,7 +63,7 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
         response.setAmpCatQuantity(calculateAmpCat(dto));
         response.setFiberOpticalPatchQuantity(calcuateFiberOpticalPatch(dto));
         response.setOdf4FOQuantity(calcuateODF4FO(dto));
-        response.setPatchCordQuantity(calcuatePatchCord(dto));
+        response.setPatchCordQuantity(calcuatePatchCord(dto, recorderMap));
         response.setCablemanageQuantity(calcuateCablemanage(dto));
         return response;
     }
@@ -159,7 +157,7 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
         int cabinetQuantity = 0;
         String cabinetType = dto.getCabinetType();
         if ("2U".equals(cabinetType) || "6U".equals(cabinetType) || "10U".equals(cabinetType)
-                || "20U".equals(cabinetType) || "32U".equals(cabinetType) || "42U".equals(cabinetType)) {
+                || "32U".equals(cabinetType) || "42U".equals(cabinetType)) {
             cabinetQuantity = getSafeInt(dto.getTotalCabinet());
         }
         return cabinetQuantity;
@@ -207,8 +205,18 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
         return getSafeInt(dto.getTotalCabinet());
     }
 
-    public Integer calcuatePatchCord(CalculateBOMRequestDTO dto) {
-        return getSafeInt(dto.getTotalCabinet()) * 2;
+    public Integer calcuatePatchCord(CalculateBOMRequestDTO dto, Map<String, Integer> map) {
+        int cisco = calculateswich16CISCO(dto, map).values()
+                .stream()
+                .filter(val -> val != null)
+                .mapToInt(Integer::intValue)
+                .sum();
+        int totalRecorder = map.values()
+                .stream()
+                .filter(val -> val != null)
+                .mapToInt(Integer::intValue)
+                .sum();
+        return getSafeInt(dto.getTotalCabinet()) * 2 + cisco + totalRecorder;
     }
 
     public Integer calcuateCablemanage(CalculateBOMRequestDTO dto) {
