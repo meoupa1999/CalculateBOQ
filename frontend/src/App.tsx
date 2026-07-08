@@ -62,6 +62,10 @@ export default function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string>("");
   const [activeTowerId, setActiveTowerId] = useState<string>("");
+  const [isSummaryTabActive, setIsSummaryTabActive] = useState<boolean>(false);
+  const [selectedTowersSummary, setSelectedTowersSummary] = useState<Record<string, boolean>>({});
+  const [summaryBomData, setSummaryBomData] = useState<any>(null);
+  const [isCalculatingSummary, setIsCalculatingSummary] = useState<boolean>(false);
 
   const fetchProjects = async (selectNewestId?: string) => {
     try {
@@ -347,7 +351,7 @@ export default function App() {
   const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0];
 
   // Find active tower
-  const activeTower = activeProject?.towers?.find((t) => t.id === activeTowerId) || activeProject?.towers?.[0];
+  const activeTower = isSummaryTabActive ? null : (activeProject?.towers?.find((t) => t.id === activeTowerId) || activeProject?.towers?.[0]);
 
   // Temporary edit states for current tower top inputs (to be committed on "Tính toán BOQ" click)
   const [tempFloors, setTempFloors] = useState(activeTower?.floorsCount || 5);
@@ -558,6 +562,105 @@ export default function App() {
       fetchBOM(activeTower);
     }
   }, [activeTower?.id, activeTower?.floorsData, activeTower?.rackType]);
+
+  useEffect(() => {
+    if (isSummaryTabActive && activeProject?.towers) {
+      const initial: Record<string, boolean> = {};
+      activeProject.towers.forEach(t => {
+        initial[t.id] = true;
+      });
+      setSelectedTowersSummary(initial);
+    }
+  }, [isSummaryTabActive, activeProject?.towers]);
+
+  const handleCalculateSummary = async () => {
+    if (!activeProject?.towers) return;
+    
+    const selectedTowers = activeProject.towers.filter(t => selectedTowersSummary[t.id]);
+    if (selectedTowers.length === 0) {
+      addToast("Vui lòng chọn ít nhất một tháp để tính tổng BOM!", "error");
+      return;
+    }
+
+    setIsCalculatingSummary(true);
+    try {
+      const promises = selectedTowers.map(async (t) => {
+        const floorsData = t.floorsData;
+        if (!floorsData || floorsData.length === 0) return null;
+        const totalCamera = floorsData.reduce((acc: number, curr: any) => acc + (curr.camerasCount || 0), 0);
+        const totalCamDome = floorsData.reduce((acc: number, curr: any) => acc + (curr.domeCount || 0), 0);
+        const totalCamBullet = floorsData.reduce((acc: number, curr: any) => acc + (curr.bulletCount || 0), 0);
+        const totalSw16 = floorsData.reduce((acc: number, curr: any) => acc + (curr.sw16Count || 0), 0);
+        const totalSw24 = floorsData.reduce((acc: number, curr: any) => acc + (curr.sw24Count || 0), 0);
+        const totalSwichPOE = totalSw16 + totalSw24;
+        const totalCabinet = floorsData.filter((f: any) => f.isCabinetPlaced).length;
+        const totalUPS = floorsData.filter((f: any) => f.isCabinetPlaced && f.upsType !== "None").length;
+        const totalPDU = floorsData.reduce((acc: number, curr: any) => acc + (curr.pduCount || 0), 0);
+        const totalConverter = floorsData.reduce((acc: number, curr: any) => acc + (curr.convCount || 0), 0);
+
+        const floors = floorsData.map((f: any) => ({
+          floorIndex: f.floorIndex,
+          isCabinetPlaced: f.isCabinetPlaced || false,
+          label: f.label,
+          camerasCount: f.camerasCount || 0,
+          domeCount: f.domeCount || 0,
+          bulletCount: f.bulletCount || 0,
+          cameraQuantityInCabinet: f.cameraQuantityInCabinet || 0,
+          sw24Count: f.sw24Count || 0,
+          sw16Count: f.sw16Count || 0,
+          upsCount: f.upsType !== "None" ? 1 : 0,
+          pduCount: f.pduCount || 0,
+          convCount: f.convCount || 0
+        }));
+
+        const res = await fetch(`${API_BASE}/calculate/bom`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            totalCamera,
+            totalCamDome,
+            totalCamBullet,
+            totalSwichPOE,
+            totalSw16,
+            totalSw24,
+            cabinetType: t.rackType || "2U",
+            totalCabinet,
+            totalUPS,
+            totalPDU,
+            totalConverter,
+            floors
+          })
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+        return null;
+      });
+
+      const results = await Promise.all(promises);
+      const validResults = results.filter(r => r !== null);
+
+      if (validResults.length === 0) {
+        addToast("Không lấy được dữ liệu BOM cho tháp nào!", "error");
+        return;
+      }
+
+      // Sum all numeric fields
+      const sum: any = {};
+      const keys = Object.keys(validResults[0]);
+      keys.forEach((key) => {
+        sum[key] = validResults.reduce((acc, curr) => acc + (curr[key] || 0), 0);
+      });
+
+      setSummaryBomData(sum);
+      addToast("Tính tổng BOM cho các tháp thành công!", "success");
+    } catch (err) {
+      console.error(err);
+      addToast("Lỗi khi tính tổng BOM!", "error");
+    } finally {
+      setIsCalculatingSummary(false);
+    }
+  };
 
   // Sync temp values when active tower changes
   useEffect(() => {
@@ -1453,9 +1556,10 @@ const handleAddGlobalInventory = () => {
                         <button
                           onClick={() => {
                             setActiveTowerId(t.id);
+                            setIsSummaryTabActive(false);
                           }}
                           className={`px-4 py-2.5 text-sm font-semibold border-t-2 border-x rounded-t-lg transition-all duration-150 flex items-center gap-2 ${
-                            activeTowerId === t.id
+                            !isSummaryTabActive && activeTowerId === t.id
                               ? "bg-white border-t-[#1A237E] border-x-[#ECEFF1] text-[#1A237E] -mb-px shadow-xs"
                               : "bg-[#F5F7F9] border-t-transparent border-x-transparent text-[#455A64] hover:text-[#191c1e] hover:bg-slate-200"
                           }`}
@@ -1479,11 +1583,29 @@ const handleAddGlobalInventory = () => {
                       </div>
                     ))}
                     
+                    {activeProject?.towers && activeProject.towers.length > 0 && (
+                      <button
+                        onClick={() => {
+                          setIsSummaryTabActive(true);
+                          setActiveTowerId("");
+                        }}
+                        className={`px-4 py-2.5 text-sm font-semibold border-t-2 border-x rounded-t-lg transition-all duration-150 flex items-center gap-2 ${
+                          isSummaryTabActive
+                            ? "bg-white border-t-[#E65100] border-x-[#ECEFF1] text-[#E65100] -mb-px shadow-xs"
+                            : "bg-[#F5F7F9] border-t-transparent border-x-transparent text-[#455A64] hover:text-[#191c1e] hover:bg-slate-200"
+                        }`}
+                      >
+                        <Activity className="w-4 h-4 text-[#E65100]" />
+                        <span>Tổng Hợp BOM</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={() => {
                         const name = prompt("Nhập tên Tháp (Tower) mới:", `Tháp ${String.fromCharCode(65 + (activeProject?.towers?.length || 0))}`);
                         if (name) {
                           handleCreateTower(name);
+                          setIsSummaryTabActive(false);
                         }
                       }}
                       className="px-3 py-1.5 text-xs font-bold text-[#1A237E] hover:bg-[#E8EAF6] rounded transition flex items-center gap-1 ml-2 border border-[#1A237E]/20"
@@ -1493,7 +1615,709 @@ const handleAddGlobalInventory = () => {
                     </button>
                   </div>
 
-                  {!activeTower ? (
+                  {isSummaryTabActive ? (
+                    /* Summary BOM Tab Content */
+                    <div className="space-y-6 mt-6">
+                      <div className="bg-white border border-[#ECEFF1] rounded-lg p-6 shadow-xs">
+                        <h3 className="font-sans font-bold text-lg text-[#191c1e] flex items-center gap-2">
+                          <Activity className="w-5 h-5 text-[#E65100]" />
+                          <span>Tổng Hợp Vật Tư BOM Các Tháp</span>
+                        </h3>
+                        <p className="text-xs text-[#455A64] mt-1">
+                          Chọn các tháp dưới đây để cộng gộp bảng thống kê vật tư BOM của dự án <strong>{activeProject.name}</strong>.
+                        </p>
+                        
+                        <div className="mt-4 border-t border-[#ECEFF1] pt-4">
+                          <div className="flex flex-wrap gap-4 items-center">
+                            <span className="text-xs font-bold text-[#455A64] uppercase tracking-wide">
+                              Danh sách tháp:
+                            </span>
+                            <div className="flex flex-wrap gap-4">
+                              {activeProject?.towers?.map((t) => (
+                                <label key={t.id} className="flex items-center gap-2 cursor-pointer bg-slate-50 hover:bg-slate-100 border border-[#ECEFF1] rounded px-3 py-1.5 transition text-sm font-semibold select-none">
+                                  <input
+                                    type="checkbox"
+                                    checked={!!selectedTowersSummary[t.id]}
+                                    onChange={(e) => {
+                                      setSelectedTowersSummary(prev => ({
+                                        ...prev,
+                                        [t.id]: e.target.checked
+                                      }));
+                                    }}
+                                    className="accent-[#E65100]"
+                                  />
+                                  <span>{t.name}</span>
+                                  <span className="text-xs text-slate-400 font-mono">({t.floorsCount} tầng)</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div className="mt-6 flex flex-wrap gap-3">
+                            <button
+                              onClick={() => {
+                                const next: Record<string, boolean> = {};
+                                activeProject.towers?.forEach(t => {
+                                  next[t.id] = true;
+                                });
+                                setSelectedTowersSummary(next);
+                              }}
+                              className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded text-xs transition"
+                            >
+                              Chọn tất cả
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedTowersSummary({});
+                              }}
+                              className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded text-xs transition"
+                            >
+                              Bỏ chọn tất cả
+                            </button>
+                            <button
+                              onClick={handleCalculateSummary}
+                              disabled={isCalculatingSummary}
+                              className="bg-[#E65100] hover:bg-[#E65100]/95 disabled:bg-slate-300 text-white font-bold px-5 py-1.5 rounded text-xs transition flex items-center gap-1.5 ml-auto shadow-sm"
+                            >
+                              {isCalculatingSummary ? (
+                                <>
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Đang tính toán...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                                  <span>Tính tổng BOM</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {summaryBomData ? (
+                        <div className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs overflow-hidden w-full">
+                          <div className="px-6 py-4 border-b border-[#ECEFF1] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
+                            <div>
+                              <h3 className="font-sans font-bold text-base text-[#191c1e]">
+                                Khung BOM Tổng Hợp Thiết Bị &amp; Vật Tư
+                              </h3>
+                              <p className="text-xs text-[#455A64]">
+                                Khung sườn danh mục vật tư chính, phụ kiện tổng cộng từ các tháp đã chọn
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="overflow-x-auto p-4 bg-slate-50/30">
+                            <div className="border border-slate-200 rounded overflow-hidden shadow-xs bg-white min-w-[850px]">
+                              
+                              <div className="border-b border-slate-200 bg-[#F8F9FA] px-4 py-3 text-center">
+                                <div className="text-sm font-sans font-bold text-[#E65100] uppercase tracking-wide">
+                                  BẢNG TỔNG HỢP VẬT TƯ BOM - DỰ ÁN {activeProject?.name?.toUpperCase()}
+                                </div>
+                              </div>
+
+                              <table className="w-full text-xs text-left border-collapse font-sans">
+                                <thead>
+                                  <tr className="bg-[#E8EAED] text-[#3c4043] font-bold text-center border-b border-slate-300 divide-x divide-slate-200 select-none">
+                                    <th className="py-2 px-1 text-center w-12">STT</th>
+                                    <th className="py-2 px-2 text-left w-52">VẬT TƯ</th>
+                                    <th className="py-2 px-2 text-left w-72">MÔ TẢ</th>
+                                    <th className="py-2 px-1 w-16">Đ.VỊ</th>
+                                    <th className="py-2 px-1 w-16">SLG</th>
+                                    <th className="py-2 px-1 w-20">Nhân công</th>
+                                    <th className="py-2 px-1 w-20">Tổng công</th>
+                                    <th className="py-2 px-2 text-left w-44">GHI CHÚ</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200 font-sans">
+                                  {/* Category I Header Row */}
+                                  <tr className="bg-[#FFE0B2]/60 text-[#E65100] font-bold text-[11px] divide-x divide-slate-200">
+                                    <td colSpan={8} className="py-2.5 px-4 uppercase tracking-wide">
+                                      I. HẠNG MỤC VẬT TƯ CHÍNH VÀ GIÁM SÁT VÀ ĐỊNH TUYẾN
+                                    </td>
+                                  </tr>
+
+                                  {/* Section I Items */}
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Camera IP Dome 2MP HIKVISION DS-2CD1121G0-I
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.camDomeQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat1_1")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">2</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Camera IP thân 2MP HIKVISION DS-2CD1021G0-I
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.camBulletQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat1_2")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">3</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Đầu ghi hình camera IP 32 kênh HIKVISION DS-7732NXI-K4
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.recorder32Quantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat1_3")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">4</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Đầu ghi hình camera IP 16 kênh
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.recorder16Quantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat1_4")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">5</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Ổ Cứng 10T WESTERN
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.hardDiskQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat1_5")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">6</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Switch Hikvision POE 24 cổng DS-3E1326P-EI
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.swich24POEQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat1_6")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">7</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Switch Hikvision POE 16 cổng DS-3E1318P-EI
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.swich16POEQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat1_7")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">8</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Switch 16 port CISCO CBS110-16T-EU
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.swich16CISCOQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat1_8")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">9</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Switch 24 port CISCO
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.swich24CISCOQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat1_9")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">10</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Màn hình quan sát 43 inch SamSung(khung kê + HDMI (15m))
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.obserScreenQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat1_10")}
+                                  </tr>
+
+                                  {/* Category II Header Row */}
+                                  <tr className="bg-[#FFE0B2]/60 text-[#E65100] font-bold text-[11px] divide-x divide-slate-200">
+                                    <td colSpan={8} className="py-2.5 px-4 uppercase tracking-wide">
+                                      II. HẠNG MỤC TRUYỀN DẪN
+                                    </td>
+                                  </tr>
+
+                                  {/* Section II Items */}
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Cáp quang 4FO
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.fiberCableQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat2_1")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">2</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Cáp mạng Cat5E
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.cableQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat2_2")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">3</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Bộ chuyển đổi quang điện Gigabit GNETCOM 10/100/1000M GNC-2111S-20A/B
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.converterQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat2_3")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">4</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Tủ mạng rack 2U
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.cabinet2UQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat2_4")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">5</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Tủ mạng rack 6U
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.cabinet6UQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat2_5")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">6</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Tủ mạng rack 10U (Có bánh xe)
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.cabinet10UQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat2_6")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">7</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Tủ mạng rack 20U (Có bánh xe)
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.cabinet20UQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat2_7")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">8</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Tủ mạng rack 32U
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.cabinet32UQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat2_8")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">9</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Tủ mạng rack 42U
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.cabinet42UQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat2_9")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">10</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      ODF 12FO SC/UPC (Full Phụ kiện)
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.odf12FOQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat2_10")}
+                                  </tr>
+
+                                  {/* Category III Header Row */}
+                                  <tr className="bg-[#FFE0B2]/60 text-[#E65100] font-bold text-[11px] divide-x divide-slate-200">
+                                    <td colSpan={8} className="py-2.5 px-4 uppercase tracking-wide">
+                                      III. HẠNG MỤC ĐIỆN
+                                    </td>
+                                  </tr>
+
+                                  {/* Section III Items */}
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Dây điện CVV 2x2.5
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.cvvCable ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat3_1")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">2</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Thanh nguồn PDU đa năng 6 ổ cắm 3 chấu chuẩn 19"
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.pduQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat3_2")}
+                                  </tr>
+
+                                  {/* Category IV Header Row */}
+                                  <tr className="bg-[#FFE0B2]/60 text-[#E65100] font-bold text-[11px] divide-x divide-slate-200">
+                                    <td colSpan={8} className="py-2.5 px-4 uppercase tracking-wide">
+                                      IV. HẠNG MỤC NGUỒN DỰ PHÒNG
+                                    </td>
+                                  </tr>
+
+                                  {/* Section IV Items */}
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Nguồn lưu điện UPS ARES Model AR610 1000VA/800W
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.ups1000Quantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat4_1")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">3</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Nguồn lưu điện UPS ARES Model AR630 3000VA-2400W
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.ups3000Quantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat4_3")}
+                                  </tr>
+
+                                  {/* Category V Header Row */}
+                                  <tr className="bg-[#FFE0B2]/60 text-[#E65100] font-bold text-[11px] divide-x divide-slate-200">
+                                    <td colSpan={8} className="py-2.5 px-4 uppercase tracking-wide">
+                                      V. VẬT TƯ PHỤ
+                                    </td>
+                                  </tr>
+
+                                  {/* Section V Items */}
+                                  <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Vật tư phụ
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-700 text-xs">
+                                      Bao gồm ống điện, ruột gà, vít, tacke...
+                                    </td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Gói</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat5_1")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1.1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Vật tư phụ kết nối
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-700"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Gói</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat5_1_1")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Đầu mạng AMP Cat 5
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.ampCatQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat5_1_1_sub1")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Dây nhảy quang SC/UPC SC/UPC 3M
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Sợi</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.fiberOpticalPatchQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat5_1_1_sub2")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      ODF 4FO SC/UPC - SC/UPC (Full phụ kiện)
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Bộ</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.odf4FOQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat5_1_1_sub3")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Dây nhảy mạng Cat5
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Sợi</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.patchCordQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat5_1_1_sub4")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Thanh quản lý cáp mạng 19inch
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Cái</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.cablemanageQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat5_1_1_sub5")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1.2</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Vật tư phụ thi công
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-700"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Gói</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat5_1_2")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1.2.1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Ruột gà phi 20
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.chickenTubeQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat5_1_2_1")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1.2.2</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Ống điện D20
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Mét</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">{summaryBomData?.electricTubeQuantity ?? 0}</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat5_1_2_2")}
+                                  </tr>
+
+                                  {/* Category VI Header Row */}
+                                  <tr className="bg-[#FFE0B2]/60 text-[#E65100] font-bold text-[11px] divide-x divide-slate-200">
+                                    <td colSpan={8} className="py-2.5 px-4 uppercase tracking-wide">
+                                      VI. CHI PHÍ LẮP ĐẶT
+                                    </td>
+                                  </tr>
+
+                                  {/* Section VI Items */}
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-600">1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Chi phí lắp đặt
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600 text-xs">
+                                      Thi công trọn gói và hướng dẫn vận hành
+                                    </td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Gói</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat6_1")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1.1</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Nhân công Cấu hình thiết lập
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-700"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat6_1_1")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Thiết lập cấu hình
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat6_1_1_sub1")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Hồ sơ hướng dẫn
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat6_1_1_sub2")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Kiểm thử T&C
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat6_1_1_sub3")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Dự trù Thay đổi cấu hình phát sinh
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat6_1_1_sub4")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Nghiệm thu
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat6_1_1_sub5")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 hover:bg-slate-50/50 transition">
+                                    <td className="py-2.5 px-1 text-center text-slate-400">-</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight pl-6">
+                                      Bảo hành thiết lập
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-600"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat6_1_1_sub6")}
+                                  </tr>
+                                  <tr className="divide-x divide-slate-200 bg-yellow-100/70 hover:bg-yellow-100 transition">
+                                    <td className="py-2.5 px-1 text-center font-semibold text-slate-700">1.2</td>
+                                    <td className="py-2.5 px-2 font-semibold text-slate-800 leading-tight">
+                                      Triển khai
+                                    </td>
+                                    <td className="py-2.5 px-2 text-slate-700"></td>
+                                    <td className="py-2.5 px-1 text-center text-slate-700 font-semibold">Công</td>
+                                    <td className="py-2.5 px-1 text-center font-mono">0</td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    <td className="py-2.5 px-1 text-center font-mono"></td>
+                                    {renderNoteCell("summary_cat6_1_2")}
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-white border border-[#ECEFF1] rounded-lg p-12 text-center text-slate-400">
+                          <Activity className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                          <p className="text-sm font-semibold">Chưa có dữ liệu tổng hợp BOM</p>
+                          <p className="text-xs text-slate-400 mt-1">Vui lòng chọn các tháp và nhấn nút "Tính tổng BOM" ở trên.</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : !activeTower ? (
                     /* No towers: show empty state */
                     <div className="bg-white border border-[#ECEFF1] rounded-lg p-12 shadow-xs flex flex-col items-center justify-center max-w-md mx-auto text-center gap-6 my-12 animate-in fade-in zoom-in-95 duration-200">
                       <div className="w-14 h-14 rounded-full bg-[#1A237E]/10 flex items-center justify-center text-[#1A237E]">
