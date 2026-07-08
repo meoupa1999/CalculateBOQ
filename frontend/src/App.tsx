@@ -557,7 +557,7 @@ export default function App() {
     if (activeTower) {
       fetchBOM(activeTower);
     }
-  }, [activeTower?.id]);
+  }, [activeTower?.id, activeTower?.floorsData, activeTower?.rackType]);
 
   // Sync temp values when active tower changes
   useEffect(() => {
@@ -1894,30 +1894,13 @@ const handleAddGlobalInventory = () => {
                           </div>
 
                           {/* Compute Trigger Button */}
-                          <div>
+                          <div className="lg:col-span-2">
                             <button
                               onClick={handleRecalculate}
                               className="w-full bg-[#1A237E] hover:bg-[#1A237E]/95 text-white py-2 px-4 rounded text-sm font-semibold shadow-xs transition flex items-center justify-center gap-2 h-[38px]"
                             >
                               <RefreshCw className="w-4 h-4" />
-                              <span>Tính toán BOQ</span>
-                            </button>
-                          </div>
-
-                          {/* Calculate BOM Button */}
-                          <div>
-                            <button
-                              onClick={() => {
-                                if (activeTower) {
-                                  fetchBOM(activeTower);
-                                } else {
-                                  addToast("Không tìm thấy tháp để tính BOM!", "error");
-                                }
-                              }}
-                              className="w-full bg-[#E65100] hover:bg-[#E65100]/95 text-white py-2 px-4 rounded text-sm font-semibold shadow-xs transition flex items-center justify-center gap-2 h-[38px]"
-                            >
-                              <Activity className="w-4 h-4" />
-                              <span>Tính BOM</span>
+                              <span>Tính BOQ &amp; BOM</span>
                             </button>
                           </div>
 
