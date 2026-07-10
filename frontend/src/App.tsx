@@ -407,6 +407,16 @@ export default function App() {
       })
     );
 
+    fetchCabinetPlacement(
+      activeTower.floorsCount,
+      activeTower.basementsCount || 0,
+      activeTower.hasRoof || false,
+      activeTower.horizontalDistance,
+      activeTower.verticalDistance,
+      activeTower.rackType,
+      recalculatedFloors
+    );
+
     addToast(`Đồng bộ ${camsCount} camera cho ${selectedFloorIndexes.length} tầng thành công!`, "success");
     setSelectedFloorIndexes([]); // Clear selection after apply
   };
@@ -438,6 +448,102 @@ export default function App() {
   const [bomData, setBomData] = useState<any>(null);
   const [customBOMOverrides, setCustomBOMOverrides] = useState<Record<string, Record<string, number>>>({});
 
+  // Dual-mode calculation state
+  const [calculationMode, setCalculationMode] = useState<"auto" | "manual">("auto");
+  const [manualGroups, setManualGroups] = useState<{ cabinetIndex: number; totalCamera: number; floorRange: Record<number, number>; associatedFloors: number[]; rackType?: string }[]>([]);
+  const [activeCabinetIndex, setActiveCabinetIndex] = useState<number | null>(null);
+
+  const handleToggleCabinet = (floorIndex: number) => {
+    if (!activeTower) return;
+    const exists = manualGroups.some((g) => g.cabinetIndex === floorIndex);
+    let nextGroups = [];
+    if (exists) {
+      if (activeCabinetIndex === floorIndex) {
+        setActiveCabinetIndex(null);
+      }
+      nextGroups = manualGroups.filter((g) => g.cabinetIndex !== floorIndex);
+    } else {
+      const newGroup = {
+        cabinetIndex: floorIndex,
+        totalCamera: 0,
+        floorRange: {},
+        associatedFloors: [floorIndex],
+        rackType: "",
+      };
+      setActiveCabinetIndex(floorIndex);
+      nextGroups = [...manualGroups, newGroup];
+    }
+    setManualGroups(nextGroups);
+    fetchCabinetPlacement(
+      tempFloors,
+      tempBasements,
+      tempHasRoof,
+      tempH,
+      tempV,
+      tempRack,
+      activeTower.floorsData,
+      calculationMode,
+      nextGroups
+    );
+  };
+
+  const handleCabinetRackTypeChange = (cabinetIndex: number, newRackType: string) => {
+    if (!activeTower) return;
+    const nextGroups = manualGroups.map((g) => {
+      if (g.cabinetIndex === cabinetIndex) {
+        return { ...g, rackType: newRackType };
+      }
+      return g;
+    });
+    setManualGroups(nextGroups);
+    fetchCabinetPlacement(
+      tempFloors,
+      tempBasements,
+      tempHasRoof,
+      tempH,
+      tempV,
+      tempRack,
+      activeTower.floorsData,
+      calculationMode,
+      nextGroups
+    );
+  };
+
+  const handleCtrlClickFloor = (floorIndex: number) => {
+    if (activeCabinetIndex === null || !activeTower) return;
+    const nextGroups = manualGroups.map((g) => {
+      if (g.cabinetIndex === activeCabinetIndex) {
+        const isAssociated = g.associatedFloors.includes(floorIndex);
+        let newAssoc = [...g.associatedFloors];
+        if (isAssociated) {
+          if (floorIndex !== g.cabinetIndex) {
+            newAssoc = newAssoc.filter((idx) => idx !== floorIndex);
+          }
+        } else {
+          newAssoc.push(floorIndex);
+        }
+        return { ...g, associatedFloors: newAssoc };
+      } else {
+        return {
+          ...g,
+          associatedFloors: g.associatedFloors.filter((idx) => idx !== floorIndex),
+        };
+      }
+    });
+    setManualGroups(nextGroups);
+    fetchCabinetPlacement(
+      tempFloors,
+      tempBasements,
+      tempHasRoof,
+      tempH,
+      tempV,
+      tempRack,
+      activeTower.floorsData,
+      calculationMode,
+      nextGroups
+    );
+  };
+
   // Fetch cabinet placement from API
   const fetchCabinetPlacement = async (
     floorsCount: number,
@@ -446,7 +552,9 @@ export default function App() {
     horizontalDistance: number,
     verticalDistance: number,
     rackType: string,
-    floorsData: FloorData[]
+    floorsData: FloorData[],
+    mode: "auto" | "manual" = calculationMode,
+    groups = manualGroups
   ) => {
     if (floorsCount <= 0) {
       setCabinetPlacements([]);
@@ -458,24 +566,62 @@ export default function App() {
         .map(f => ({
           floorIndex: f.floorIndex,
           label: f.label,
-          camerasCount: f.camerasCount
+          camerasCount: f.camerasCount,
+          domeCount: f.domeCount,
+          bulletCount: f.bulletCount,
         }));
 
-      const res = await fetch(`${API_BASE}/calculate/cabinet-placement`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          floorsCount,
-          basementsCount,
-          hasRoof,
-          horizontalDistance,
-          verticalDistance,
-          rackType,
-          floors: sortedFloors
-        })
-      });
+      let res;
+      if (mode === "manual") {
+        const manualGroupsPayload = groups.map((g) => {
+          const minF = Math.min(...g.associatedFloors);
+          const maxF = Math.max(...g.associatedFloors);
+          const totalCam = g.associatedFloors.reduce((sum: number, fIdx: number) => {
+            const floor = floorsData.find((fd) => fd.floorIndex === fIdx);
+            return sum + (floor?.camerasCount || 0);
+          }, 0);
+          return {
+            cabinetIndex: g.cabinetIndex,
+            totalCamera: totalCam,
+            floorRange: { [minF]: maxF },
+            rackType: g.rackType || "",
+          };
+        });
+
+        res = await fetch(`${API_BASE}/calculate/cabinet-placement-manual`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            floorsCount,
+            basementsCount,
+            hasRoof,
+            horizontalDistance,
+            verticalDistance,
+            rackType,
+            floors: sortedFloors,
+            manualGroups: manualGroupsPayload,
+          })
+        });
+      } else {
+        res = await fetch(`${API_BASE}/calculate/cabinet-placement`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            floorsCount,
+            basementsCount,
+            hasRoof,
+            horizontalDistance,
+            verticalDistance,
+            rackType,
+            floors: sortedFloors
+          })
+        });
+      }
+
       if (res.ok) {
         const data = await res.json();
         
@@ -521,6 +667,7 @@ export default function App() {
                           convCount: backendInfo.convCount ?? 0,
                           cameraQuantityInCabinet: backendInfo.cameraQuantityInCabinet ?? 0,
                           isCabinetPlaced: true,
+                          cabinetType: backendInfo.cabinetType,
                           fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
                           toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
                         };
@@ -536,6 +683,7 @@ export default function App() {
                       convCount: 0,
                       cameraQuantityInCabinet: 0,
                       isCabinetPlaced: false,
+                      cabinetType: undefined,
                       fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
                       toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
                     };
@@ -593,7 +741,8 @@ export default function App() {
         sw16Count: f.sw16Count || 0,
         upsCount: f.upsType !== "None" ? 1 : 0,
         pduCount: f.pduCount || 0,
-        convCount: f.convCount || 0
+        convCount: f.convCount || 0,
+        cabinetType: f.cabinetType
       }));
 
       const res = await fetch(`${API_BASE}/calculate/bom`, {
@@ -925,6 +1074,15 @@ export default function App() {
       })
     );
 
+    fetchCabinetPlacement(
+      activeTower.floorsCount,
+      activeTower.basementsCount || 0,
+      activeTower.hasRoof || false,
+      activeTower.horizontalDistance,
+      activeTower.verticalDistance,
+      activeTower.rackType,
+      recalculatedFloors
+    );
   };
 
   // Helper to render editable note input cell in the Excel-like BOQ Template Table (Left)
@@ -1473,11 +1631,11 @@ const handleAddGlobalInventory = () => {
       const match = f.label.match(/Tầng\s+(\d+)/);
       const isUpperFloor = match !== null && !f.label.includes("Mái");
       const physicalFloorNum = isUpperFloor ? parseInt(match[1]) : null;
-      const isCabinetPlaced = physicalFloorNum !== null && cabinetPlacements.includes(physicalFloorNum);
+      const isCabinetPlaced = f.isCabinetPlaced || (physicalFloorNum !== null && cabinetPlacements.includes(physicalFloorNum));
       const cabinetCol = isCabinetPlaced 
         ? (f.cableLength > 0 
-          ? `Tủ (${f.cameraQuantityInCabinet ?? 0} Cam) - ${f.cableLength}m` 
-          : `Tủ (${f.cameraQuantityInCabinet ?? 0} Cam)`)
+          ? `Tủ ${f.cabinetType || ""} (${f.cameraQuantityInCabinet ?? 0} Cam) - ${f.cableLength}m` 
+          : `Tủ ${f.cabinetType || ""} (${f.cameraQuantityInCabinet ?? 0} Cam)`)
         : "-";
       csvContent += `"${f.label}",${f.camerasCount},${f.domeCount},${f.bulletCount},"${cabinetCol}",${f.sw24Count},${f.sw16Count},"${f.upsType}",${f.pduCount},${f.convCount}\r\n`;
     });
@@ -2596,61 +2754,110 @@ const handleAddGlobalInventory = () => {
                             </p>
                           </div>
 
-                          {/* Bulk editing banner */}
-                          {selectedFloorIndexes.length > 0 ? (
-                            <div className="flex items-center gap-3 bg-[#E8EAF6] px-3 py-1.5 rounded-lg border border-[#1A237E]/20 self-start sm:self-auto">
-                              <span className="text-xs font-semibold text-[#1A237E]">
-                                Đã chọn {selectedFloorIndexes.length} tầng
-                              </span>
-                              <div className="flex items-center gap-1.5">
-                                <input
-                                  id="bulk-camera-input"
-                                  type="number"
-                                  min="0"
-                                  placeholder="Số cam"
-                                  className="w-16 bg-white border border-[#ECEFF1] rounded px-2 py-1 text-xs font-semibold text-center focus:border-[#1A237E] focus:outline-none"
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                      const val = parseInt((e.target as HTMLInputElement).value);
-                                      if (!isNaN(val) && val >= 0) {
-                                        handleBulkUpdateCamera(val);
-                                      }
-                                    }
-                                  }}
-                                />
-                                <button
-                                  onClick={() => {
-                                    const el = document.getElementById("bulk-camera-input") as HTMLInputElement;
-                                    if (el) {
-                                      const val = parseInt(el.value);
-                                      if (!isNaN(val) && val >= 0) {
-                                        handleBulkUpdateCamera(val);
-                                      } else {
-                                        alert("Vui lòng nhập số camera hợp lệ!");
-                                      }
-                                    }
-                                  }}
-                                  className="bg-[#1A237E] hover:bg-[#1A237E]/90 text-white text-xs font-bold px-2.5 py-1.5 rounded transition shadow-sm"
-                                >
-                                  Đồng bộ
-                                </button>
-                              </div>
+                          {/* Calculation Mode Switcher & Actions */}
+                          <div className="flex items-center gap-4 self-end sm:self-auto">
+                            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/60 shadow-xs">
                               <button
-                                onClick={() => setSelectedFloorIndexes([])}
-                                className="text-xs text-slate-500 hover:text-red-600 font-medium ml-1 transition"
+                                onClick={() => {
+                                  setCalculationMode("auto");
+                                  fetchCabinetPlacement(
+                                    tempFloors,
+                                    tempBasements,
+                                    tempHasRoof,
+                                    tempH,
+                                    tempV,
+                                    tempRack,
+                                    activeTower?.floorsData || [],
+                                    "auto"
+                                  );
+                                }}
+                                className={`px-3 py-1 text-xs font-semibold font-sans transition-all duration-200 rounded-md ${
+                                  calculationMode === "auto"
+                                    ? "bg-white text-[#1A237E] shadow-sm font-bold"
+                                    : "text-slate-500 hover:text-slate-800"
+                                }`}
                               >
-                                Hủy
+                                Tự động tối ưu
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setCalculationMode("manual");
+                                  fetchCabinetPlacement(
+                                    tempFloors,
+                                    tempBasements,
+                                    tempHasRoof,
+                                    tempH,
+                                    tempV,
+                                    tempRack,
+                                    activeTower?.floorsData || [],
+                                    "manual"
+                                  );
+                                }}
+                                className={`px-3 py-1 text-xs font-semibold font-sans transition-all duration-200 rounded-md ${
+                                  calculationMode === "manual"
+                                    ? "bg-emerald-600 text-white shadow-sm font-bold"
+                                    : "text-slate-500 hover:text-slate-800"
+                                }`}
+                              >
+                                Phân nhóm thủ công
                               </button>
                             </div>
-                          ) : (
-                            <button
-                              onClick={handleExportCSV}
-                              title="Tải về file excel CSV"
-                              className="p-1.5 text-[#455A64] hover:text-[#1A237E] hover:bg-slate-100 rounded transition self-end sm:sm:self-auto"
-                            >
-                              <Download className="w-5 h-5" />
-                            </button>
-                          )}
+
+                            {selectedFloorIndexes.length > 0 ? (
+                              <div className="flex items-center gap-3 bg-[#E8EAF6] px-3 py-1.5 rounded-lg border border-[#1A237E]/20">
+                                <span className="text-xs font-semibold text-[#1A237E]">
+                                  Đã chọn {selectedFloorIndexes.length} tầng
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    id="bulk-camera-input"
+                                    type="number"
+                                    min="0"
+                                    placeholder="Số cam"
+                                    className="w-16 bg-white border border-[#ECEFF1] rounded px-2 py-1 text-xs font-semibold text-center focus:border-[#1A237E] focus:outline-none"
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        const val = parseInt((e.target as HTMLInputElement).value);
+                                        if (!isNaN(val) && val >= 0) {
+                                          handleBulkUpdateCamera(val);
+                                        }
+                                      }
+                                    }}
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const el = document.getElementById("bulk-camera-input") as HTMLInputElement;
+                                      if (el) {
+                                        const val = parseInt(el.value);
+                                        if (!isNaN(val) && val >= 0) {
+                                          handleBulkUpdateCamera(val);
+                                        } else {
+                                          alert("Vui lòng nhập số camera hợp lệ!");
+                                        }
+                                      }
+                                    }}
+                                    className="bg-[#1A237E] hover:bg-[#1A237E]/90 text-white text-xs font-bold px-2.5 py-1.5 rounded transition shadow-sm"
+                                  >
+                                    Đồng bộ
+                                  </button>
+                                </div>
+                                <button
+                                  onClick={() => setSelectedFloorIndexes([])}
+                                  className="text-xs text-slate-500 hover:text-red-600 font-medium ml-1 transition"
+                                >
+                                  Hủy
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={handleExportCSV}
+                                title="Tải về file excel CSV"
+                                className="p-1.5 text-[#455A64] hover:text-[#1A237E] hover:bg-slate-100 rounded transition"
+                              >
+                                <Download className="w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         <div className="overflow-x-auto">
@@ -2665,6 +2872,9 @@ const handleAddGlobalInventory = () => {
                                     className="rounded text-[#1A237E] focus:ring-[#1A237E] w-4 h-4 cursor-pointer"
                                   />
                                 </th>
+                                {calculationMode === "manual" && (
+                                  <th className="py-3 px-3 w-24 text-center">ĐẶT TỦ (MC)</th>
+                                )}
                                 <th className="py-3 px-4 w-28">TẦNG</th>
                                 <th className="py-3 px-3 w-32">SỐ CAMERA</th>
                                 <th className="py-3 px-3 w-28">CAM DOME</th>
@@ -2707,13 +2917,13 @@ const handleAddGlobalInventory = () => {
                                   .sort((a, b) => a.fromIndex - b.fromIndex);
 
                                 const rangeColors = [
-                                  { bg: 'bg-indigo-50 hover:bg-indigo-100/70', border: 'border-l-4 border-indigo-500/80', labelBg: 'bg-indigo-100 text-indigo-700 border border-indigo-200' },
-                                  { bg: 'bg-teal-50 hover:bg-teal-100/70', border: 'border-l-4 border-teal-500/80', labelBg: 'bg-teal-100 text-teal-700 border border-teal-200' },
-                                  { bg: 'bg-amber-50 hover:bg-amber-100/70', border: 'border-l-4 border-amber-500/80', labelBg: 'bg-amber-100 text-amber-700 border border-amber-200' },
-                                  { bg: 'bg-rose-50 hover:bg-rose-100/70', border: 'border-l-4 border-rose-500/80', labelBg: 'bg-rose-100 text-rose-700 border border-rose-200' },
-                                  { bg: 'bg-sky-50 hover:bg-sky-100/70', border: 'border-l-4 border-sky-500/80', labelBg: 'bg-sky-100 text-sky-700 border border-sky-200' },
-                                  { bg: 'bg-violet-50 hover:bg-violet-100/70', border: 'border-l-4 border-violet-500/80', labelBg: 'bg-violet-100 text-violet-700 border border-violet-200' },
-                                  { bg: 'bg-emerald-50 hover:bg-emerald-100/70', border: 'border-l-4 border-emerald-500/80', labelBg: 'bg-emerald-100 text-emerald-700 border border-emerald-200' }
+                                  { bg: 'bg-indigo-50/50 hover:bg-indigo-100/40', border: 'border-l-4 border-indigo-500/80', labelBg: 'bg-indigo-100 text-indigo-700 border border-indigo-200' },
+                                  { bg: 'bg-teal-50/50 hover:bg-teal-100/40', border: 'border-l-4 border-teal-500/80', labelBg: 'bg-teal-100 text-teal-700 border border-teal-200' },
+                                  { bg: 'bg-amber-50/50 hover:bg-amber-100/40', border: 'border-l-4 border-amber-500/80', labelBg: 'bg-amber-100 text-amber-700 border border-amber-200' },
+                                  { bg: 'bg-rose-50/50 hover:bg-rose-100/40', border: 'border-l-4 border-rose-500/80', labelBg: 'bg-rose-100 text-rose-700 border border-rose-200' },
+                                  { bg: 'bg-sky-50/50 hover:bg-sky-100/40', border: 'border-l-4 border-sky-500/80', labelBg: 'bg-sky-100 text-sky-700 border border-sky-200' },
+                                  { bg: 'bg-violet-50/50 hover:bg-violet-100/40', border: 'border-l-4 border-violet-500/80', labelBg: 'bg-violet-100 text-violet-700 border border-violet-200' },
+                                  { bg: 'bg-emerald-50/50 hover:bg-emerald-100/40', border: 'border-l-4 border-emerald-500/80', labelBg: 'bg-emerald-100 text-emerald-700 border border-emerald-200' }
                                 ];
 
                                 const getRangeStyle = (f: FloorData) => {
@@ -2729,18 +2939,102 @@ const handleAddGlobalInventory = () => {
                                   return rangeColors[idx % rangeColors.length];
                                 };
 
+                                const getManualRangeStyle = (f: FloorData) => {
+                                  const groupIdx = manualGroups.findIndex(g => {
+                                    if (g.associatedFloors.length === 0) return false;
+                                    const min = Math.min(...g.associatedFloors);
+                                    const max = Math.max(...g.associatedFloors);
+                                    return f.floorIndex >= min && f.floorIndex <= max;
+                                  });
+                                  if (groupIdx === -1) {
+                                    const autoStyle = getRangeStyle(f);
+                                    if (autoStyle.border !== '') {
+                                      const autoIdx = cabinetRanges.findIndex(
+                                        r => r.fromIndex === f.fromIndex && r.toIndex === f.toIndex
+                                      );
+                                      if (autoIdx !== -1) {
+                                        return rangeColors[(manualGroups.length + autoIdx) % rangeColors.length];
+                                      }
+                                      return autoStyle;
+                                    }
+                                    return { bg: 'hover:bg-slate-50/80', border: '', labelBg: 'bg-slate-100 text-slate-400 border border-slate-200' };
+                                  }
+                                  return rangeColors[groupIdx % rangeColors.length];
+                                };
+
+                                const getFloorWarning = (f: FloorData) => {
+                                  if (!activeTower || calculationMode !== "manual") return null;
+
+                                  const group = manualGroups.find((g) => {
+                                    if (g.associatedFloors.length === 0) return false;
+                                    const min = Math.min(...g.associatedFloors);
+                                    const max = Math.max(...g.associatedFloors);
+                                    return f.floorIndex >= min && f.floorIndex <= max;
+                                  });
+                                  if (!group) return null;
+
+                                  const cabinetIndex = group.cabinetIndex;
+                                  const hDist = activeTower.horizontalDistance || 0;
+                                  const vDist = activeTower.verticalDistance || 0;
+                                  const rackType = group.rackType || activeTower.rackType;
+
+                                  const singleRunDistance = hDist + Math.abs(f.floorIndex - cabinetIndex) * vDist;
+                                  const maxCableLength = 70;
+
+                                  let distanceExceeded = false;
+                                  if (f.camerasCount > 0 && singleRunDistance > maxCableLength) {
+                                    distanceExceeded = true;
+                                  }
+
+                                  let cameraExceeded = false;
+                                  let totalCamsInCabinet = 0;
+                                  if (rackType === "2U") {
+                                    const groupFloorIndices = Array.from(new Set([group.cabinetIndex, ...group.associatedFloors]));
+                                    totalCamsInCabinet = activeTower.floorsData
+                                      .filter((fd) => groupFloorIndices.includes(fd.floorIndex))
+                                      .reduce((sum, fd) => sum + (fd.camerasCount || 0), 0);
+
+                                    if (totalCamsInCabinet > 20) {
+                                      cameraExceeded = true;
+                                    }
+                                  }
+
+                                  return {
+                                    distanceExceeded,
+                                    singleRunDistance,
+                                    maxCableLength,
+                                    cameraExceeded,
+                                    totalCamsInCabinet,
+                                    isCabinetPlaced: cabinetIndex === f.floorIndex,
+                                  };
+                                };
+
                                 const renderRow = (f: FloorData) => {
                                   const isCabinetPlaced = cabinetPlacements.includes(f.floorIndex);
-                                  const styleGroup = getRangeStyle(f);
+                                  const styleGroup = calculationMode === "manual" ? getManualRangeStyle(f) : getRangeStyle(f);
+                                  const isActiveCabinet = calculationMode === "manual" && activeCabinetIndex === f.floorIndex;
 
                                   return (
                                     <tr 
                                       key={f.floorIndex} 
-                                      className={`transition ${
+                                      className={`transition select-none cursor-pointer ${
                                         selectedFloorIndexes.includes(f.floorIndex) 
                                           ? 'bg-[#E8EAF6]/30' 
                                           : styleGroup.bg
-                                      } ${styleGroup.border}`}
+                                      } ${styleGroup.border} ${isActiveCabinet ? 'ring-2 ring-emerald-500 ring-inset' : ''}`}
+                                      onClick={(e) => {
+                                        if (calculationMode === "manual") {
+                                          if (e.ctrlKey || e.metaKey) {
+                                            e.preventDefault();
+                                            handleCtrlClickFloor(f.floorIndex);
+                                          } else {
+                                            const isCab = manualGroups.some(g => g.cabinetIndex === f.floorIndex);
+                                            if (isCab) {
+                                              setActiveCabinetIndex(f.floorIndex);
+                                            }
+                                          }
+                                        }
+                                      }}
                                     >
                                     <td className="py-2 px-4 text-center">
                                       <input
@@ -2751,17 +3045,122 @@ const handleAddGlobalInventory = () => {
                                         className="rounded text-[#1A237E] focus:ring-[#1A237E] w-4 h-4 cursor-pointer"
                                       />
                                     </td>
-                                    <td className="py-2 px-4 font-semibold text-[#191c1e]">
-                                      <div className="flex items-center gap-2">
-                                        <span>{f.label}</span>
-                                        {isCabinetPlaced && (
-                                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-[#1A237E]/10 text-[#1A237E] border border-[#1A237E]/20" title="Tầng đặt tủ rack">
-                                            <svg className="w-3.5 h-3.5 text-[#1A237E]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                                    {calculationMode === "manual" && (
+                                      <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center justify-center gap-1.5">
+                                          <button
+                                            onClick={() => handleToggleCabinet(f.floorIndex)}
+                                            title={manualGroups.some(g => g.cabinetIndex === f.floorIndex) ? "Hủy đặt tủ tại tầng này" : "Đặt tủ MC tại tầng này"}
+                                            className={`p-1.5 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-emerald-500 border ${
+                                              manualGroups.some(g => g.cabinetIndex === f.floorIndex)
+                                                ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-sm scale-105"
+                                                : "bg-slate-50 hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 border-slate-200/60"
+                                            }`}
+                                          >
+                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                              <line x1="7" y1="8" x2="17" y2="8"></line>
+                                              <line x1="7" y1="12" x2="17" y2="12"></line>
+                                              <line x1="7" y1="16" x2="17" y2="16"></line>
                                             </svg>
-                                            RACK
-                                          </span>
-                                        )}
+                                          </button>
+                                          {manualGroups.some(g => g.cabinetIndex === f.floorIndex) && (
+                                            <select
+                                              value={manualGroups.find(g => g.cabinetIndex === f.floorIndex)?.rackType || ""}
+                                              onChange={(e) => handleCabinetRackTypeChange(f.floorIndex, e.target.value)}
+                                              className="text-[11px] bg-white border border-slate-300 rounded px-1 py-0.5 text-slate-700 focus:ring-emerald-500 focus:border-emerald-500 cursor-pointer shadow-sm focus:outline-none"
+                                              title="Chọn loại tủ riêng cho nhóm này"
+                                            >
+                                              <option value="">Chung</option>
+                                              <option value="2U">2U</option>
+                                              <option value="6U">6U</option>
+                                              <option value="10U">10U</option>
+                                              <option value="20U">20U</option>
+                                            </select>
+                                          )}
+                                        </div>
+                                      </td>
+                                    )}
+                                    <td className="py-2 px-4 font-semibold text-[#191c1e]">
+                                      <div className="flex flex-col gap-1.5">
+                                        <div className="flex items-center gap-2">
+                                          <span>{f.label}</span>
+                                          {calculationMode === "manual" ? (
+                                            manualGroups.some(g => g.cabinetIndex === f.floorIndex) ? (
+                                              (() => {
+                                                const group = manualGroups.find(g => g.cabinetIndex === f.floorIndex);
+                                                const customRack = group?.rackType ? `${group.rackType}` : "Chung";
+                                                return (
+                                                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold rounded border transition-all ${
+                                                    isActiveCabinet
+                                                      ? "bg-emerald-600 text-white border-emerald-700 shadow-sm font-extrabold animate-pulse"
+                                                      : "bg-emerald-100 text-emerald-800 border-emerald-200"
+                                                  }`} title={isActiveCabinet ? "Tủ đang chọn để phân nhóm" : "Tủ đặt thủ công"}>
+                                                    <svg className="w-3 h-3 font-bold" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                    </svg>
+                                                    {isActiveCabinet ? `MC RACK (${customRack}) (ĐANG CHỌN)` : `MC RACK (${customRack})`}
+                                                  </span>
+                                                );
+                                              })()
+                                            ) : (
+                                              (() => {
+                                                const associatedGroup = manualGroups.find(g => {
+                                                  if (g.associatedFloors.length === 0) return false;
+                                                  const min = Math.min(...g.associatedFloors);
+                                                  const max = Math.max(...g.associatedFloors);
+                                                  return f.floorIndex >= min && f.floorIndex <= max;
+                                                });
+                                                if (associatedGroup) {
+                                                  return (
+                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold rounded bg-blue-100 text-blue-800 border border-blue-200">
+                                                      Liên kết Tủ T.{associatedGroup.cabinetIndex + 1}
+                                                    </span>
+                                                  );
+                                                }
+                                                return (
+                                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-slate-100 text-slate-400 border border-slate-200 italic">
+                                                    Tự động tối ưu
+                                                  </span>
+                                                );
+                                              })()
+                                            )
+                                          ) : (
+                                            isCabinetPlaced && (
+                                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-[#1A237E]/10 text-[#1A237E] border border-[#1A237E]/20" title="Tầng đặt tủ rack">
+                                                <svg className="w-3.5 h-3.5 text-[#1A237E]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                                                </svg>
+                                                RACK
+                                              </span>
+                                            )
+                                          )}
+                                        </div>
+                                        {/* Warnings in Manual Mode */}
+                                        {(() => {
+                                          const warn = getFloorWarning(f);
+                                          if (!warn) return null;
+                                          return (
+                                            <div className="flex flex-col gap-1 mt-0.5">
+                                              {warn.distanceExceeded && (
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded px-2 py-0.5 w-max shadow-sm animate-pulse">
+                                                  <svg className="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                  </svg>
+                                                  LỖI CÁP: {warn.singleRunDistance}m &gt; {warn.maxCableLength}m
+                                                </span>
+                                              )}
+                                              {warn.cameraExceeded && warn.isCabinetPlaced && (
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 rounded px-2 py-0.5 w-max shadow-sm">
+                                                  <svg className="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                  </svg>
+                                                  QUÁ TẢI TỦ 2U: {warn.totalCamsInCabinet} cam &gt; 20 cam
+                                                </span>
+                                              )}
+                                            </div>
+                                          );
+                                        })()}
                                       </div>
                                     </td>
                                     
@@ -2809,8 +3208,8 @@ const handleAddGlobalInventory = () => {
                                       {isCabinetPlaced ? (
                                         <div className="px-2 py-1 font-mono text-xs font-semibold text-center border rounded inline-block min-w-[130px] text-[#1A237E] bg-[#E8EAF6] border-[#1A237E]/20">
                                           {f.cableLength > 0
-                                            ? `Tủ (${f.cameraQuantityInCabinet ?? 0} Cam) - ${f.cableLength}m` 
-                                            : `Tủ (${f.cameraQuantityInCabinet ?? 0} Cam)`}
+                                            ? `Tủ ${f.cabinetType || ""} (${f.cameraQuantityInCabinet ?? 0} Cam) - ${f.cableLength}m` 
+                                            : `Tủ ${f.cabinetType || ""} (${f.cameraQuantityInCabinet ?? 0} Cam)`}
                                         </div>
                                       ) : (
                                         <span className="text-slate-300">-</span>
@@ -2859,7 +3258,7 @@ const handleAddGlobalInventory = () => {
                                     {roofFloors.length > 0 && (
                                       <>
                                         <tr className="bg-slate-100/90 border-y border-[#ECEFF1] text-[11px] font-bold text-[#1A237E] select-none">
-                                          <td colSpan={11} className="py-2.5 px-4">
+                                          <td colSpan={calculationMode === "manual" ? 12 : 11} className="py-2.5 px-4">
                                             <div className="flex items-center gap-2">
                                               <span className="w-2.5 h-2.5 rounded-full bg-[#1A237E]"></span>
                                               <span>NHÓM 3: TẦNG MÁI ({roofFloors.length} tầng)</span>
@@ -2874,7 +3273,7 @@ const handleAddGlobalInventory = () => {
                                     {sortedUpperFloors.length > 0 && (
                                       <>
                                         <tr className="bg-slate-100/90 border-y border-[#ECEFF1] text-[11px] font-bold text-[#2E7D32] select-none">
-                                          <td colSpan={11} className="py-2.5 px-4">
+                                          <td colSpan={calculationMode === "manual" ? 12 : 11} className="py-2.5 px-4">
                                             <div className="flex items-center gap-2">
                                               <span className="w-2.5 h-2.5 rounded-full bg-[#2E7D32]"></span>
                                               <span>NHÓM 2: TẦNG NỔI ({sortedUpperFloors.length} tầng)</span>
@@ -2889,7 +3288,7 @@ const handleAddGlobalInventory = () => {
                                     {sortedBasementFloors.length > 0 && (
                                       <>
                                         <tr className="bg-slate-100/90 border-y border-[#ECEFF1] text-[11px] font-bold text-[#C62828] select-none">
-                                          <td colSpan={11} className="py-2.5 px-4">
+                                          <td colSpan={calculationMode === "manual" ? 12 : 11} className="py-2.5 px-4">
                                             <div className="flex items-center gap-2">
                                               <span className="w-2.5 h-2.5 rounded-full bg-[#C62828]"></span>
                                               <span>NHÓM 1: TẦNG HẦM ({sortedBasementFloors.length} tầng)</span>

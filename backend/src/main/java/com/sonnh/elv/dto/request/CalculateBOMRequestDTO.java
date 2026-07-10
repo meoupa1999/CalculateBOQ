@@ -42,5 +42,6 @@ public class CalculateBOMRequestDTO {
         private Integer upsCount;
         private Integer pduCount;
         private Integer convCount;
+        private String cabinetType;
     }
 }

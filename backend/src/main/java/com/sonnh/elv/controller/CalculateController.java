@@ -1,6 +1,7 @@
 package com.sonnh.elv.controller;
 
 import com.sonnh.elv.dto.request.CalculateBOQRequestDTO;
+import com.sonnh.elv.dto.request.CalculateBOQManualRequestDTO;
 import com.sonnh.elv.dto.request.CalculateBOMRequestDTO;
 import com.sonnh.elv.dto.response.CalculateBOQResponseDTO;
 import com.sonnh.elv.dto.response.CalculateBOMResponseDTO;
@@ -27,6 +28,14 @@ public class CalculateController {
             @RequestBody CalculateBOQRequestDTO dto
     ) {
         List<CalculateBOQResponseDTO> placement = calculateService.calculateBOQ(dto);
+        return ResponseEntity.ok(placement);
+    }
+
+    @PostMapping("/cabinet-placement-manual")
+    public ResponseEntity<List<CalculateBOQResponseDTO>> getCabinetPlacementManual(
+            @RequestBody CalculateBOQManualRequestDTO dto
+    ) {
+        List<CalculateBOQResponseDTO> placement = calculateService.calculateBOQManual(dto);
         return ResponseEntity.ok(placement);
     }
 

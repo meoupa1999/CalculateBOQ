@@ -6,10 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import com.sonnh.elv.data.repository.ConfigRepository;
 import com.sonnh.elv.dto.request.CalculateBOQRequestDTO;
 import com.sonnh.elv.dto.request.CalculateBOQRequestDTO.FloorRequest;
+import com.sonnh.elv.dto.request.CalculateBOQManualRequestDTO;
 import com.sonnh.elv.dto.response.CabinetEquipmentDTO;
 import com.sonnh.elv.dto.response.CalculateBOQResponseDTO;
 import com.sonnh.elv.service.CalculateService;
@@ -25,7 +28,7 @@ public class CalcualateServiceImpl implements CalculateService {
         Config config = configRepository
                 .findById(UUID.fromString("a2b0a797-8ff2-4a79-ac5d-78525bd25e90")).get();
         Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
-        calculateCabinetPlacementUitls(dto, mapResult, config);
+        calculateCabinetPlacementUitls(dto, mapResult, config, 0, dto.getFloors().size() - 1);
         calculateCameraQuantityInCabinet(mapResult, dto);
         calculateSwichPOE(mapResult, config);
         calculateUPS(mapResult, config);
@@ -66,14 +69,16 @@ public class CalcualateServiceImpl implements CalculateService {
                         .sw16Count(cabinet.getSw16Quantity())
                         .upsCount(cabinet.getUps())
                         .pduCount(cabinet.getPdu())
-                        .convCount(cabinet.getConverter());
+                        .convCount(cabinet.getConverter())
+                        .cabinetType(dto.getRackType());
             } else {
                 builder.cameraQuantityInCabinet(0)
                         .sw24Count(0)
                         .sw16Count(0)
                         .upsCount(0)
                         .pduCount(0)
-                        .convCount(0);
+                        .convCount(0)
+                        .cabinetType(null);
             }
             result.add(builder.build());
         }
@@ -81,23 +86,21 @@ public class CalcualateServiceImpl implements CalculateService {
         return result;
     }
 
-
-
     public Map<Integer, CabinetEquipmentDTO> calculateCabinetPlacementUitls(CalculateBOQRequestDTO dto,
-            Map<Integer, CabinetEquipmentDTO> mapResult, Config config) {
+            Map<Integer, CabinetEquipmentDTO> mapResult, Config config, int min, int max) {
         // tính pivot
         int pivot = 0;
         int maxFloorInRange = 0;
         int cabinetIndex = 0;
-        int from = 0;
+        int from = min;
         int to = 0;
         // int flag = 0;
         Integer horizontalDistance = dto.getHorizontalDistance().intValue();
         Integer verticalDistance = dto.getVerticalDistance().intValue();
         int pivotResult = config.getConditionLength() - horizontalDistance;
 
-        int maxSize = dto.getFloors().size();
-        for (int i = dto.getFloors().size() - 1; i >= 0; i--) {
+        int maxSize = min;
+        for (int i = max; i >= min; i--) {
             if (dto.getFloors().get(i).getCamerasCount() != 0) {
                 maxSize = dto.getFloors().get(i).getFloorIndex() + 1;
                 break;
@@ -105,8 +108,9 @@ public class CalcualateServiceImpl implements CalculateService {
         }
 
         // tính from
-
-        for (FloorRequest floor : dto.getFloors()) {
+        from = min;
+        for (int i = min; i <= max; i++) {
+            FloorRequest floor = dto.getFloors().get(i);
             if (floor.getCamerasCount() != 0) {
                 from = floor.getFloorIndex();
                 break;
@@ -139,7 +143,8 @@ public class CalcualateServiceImpl implements CalculateService {
                 to = maxFloorInRange;
                 cabinetIndex = from + (maxFloorInRange - from) / 2;
             }
-            for (FloorRequest floor : dto.getFloors()) {
+            for (int i = min; i <= max; i++) {
+                FloorRequest floor = dto.getFloors().get(i);
                 if (floor.getFloorIndex() < from) {
                     continue;
                 }
@@ -171,10 +176,11 @@ public class CalcualateServiceImpl implements CalculateService {
             // init
             maxFloorInRange = 0;
             cabinetIndex = 0;
-            from = 0;
+            from = min;
             to = 0;
             // tính from
-            for (FloorRequest floor : dto.getFloors()) {
+            for (int i = min; i <= max; i++) {
+                FloorRequest floor = dto.getFloors().get(i);
                 if (floor.getCamerasCount() != 0) {
                     from = floor.getFloorIndex();
                     break;
@@ -197,7 +203,8 @@ public class CalcualateServiceImpl implements CalculateService {
                 cabinetIndex = from + (maxFloorInRange - from) / 2;
             }
             int totalCamera2U = 0;
-            for (FloorRequest floor : dto.getFloors()) {
+            for (int i = min; i <= max; i++) {
+                FloorRequest floor = dto.getFloors().get(i);
                 if (floor.getFloorIndex() < from) {
                     continue;
                 }
@@ -330,12 +337,282 @@ public class CalcualateServiceImpl implements CalculateService {
 
     public void calculatePDU(Map<Integer, CabinetEquipmentDTO> mapResult, Config config) {
         for (Integer key : mapResult.keySet()) {
-            int total = (mapResult.get(key).getSw24Quantity() != null
-                    ? mapResult.get(key).getSw24Quantity()
-                    : 0) + (mapResult.get(key).getSw16Quantity() != null ? mapResult.get(key).getSw16Quantity() : 0) +
-                    config.getConverter();
-            mapResult.get(key).setPdu(total);
-
+            CabinetEquipmentDTO cab = mapResult.get(key);
+            int converterVal = cab.getConverter() != null ? cab.getConverter() : 0;
+            int sw16Val = cab.getSw16Quantity() != null ? cab.getSw16Quantity() : 0;
+            int sw24Val = cab.getSw24Quantity() != null ? cab.getSw24Quantity() : 0;
+            
+            int total = converterVal + sw16Val + sw24Val;
+            int pdu = total / 6;
+            if (total % 6 != 0) {
+                pdu += 1;
+            }
+            cab.setPdu(pdu);
         }
+    }
+
+    // @Override
+    // public List<CalculateBOQResponseDTO>
+    // calculateBOQManual(CalculateBOQManualRequestDTO dto) {
+    /*
+     * Config config = configRepository
+     * .findById(UUID.fromString("a2b0a797-8ff2-4a79-ac5d-78525bd25e90")).get();
+     * 
+     * // 1. Build rqMap from manualGroups
+     * Map<Integer, Integer> rqMap = new TreeMap<>();
+     * if (dto.getManualGroups() != null) {
+     * for (CalculateBOQManualRequestDTO.ManualCabinetGroup group :
+     * dto.getManualGroups()) {
+     * if (group.getFloorRange() != null) {
+     * for (Map.Entry<Integer, Integer> rangeEntry :
+     * group.getFloorRange().entrySet()) {
+     * rqMap.put(rangeEntry.getKey(), rangeEntry.getValue());
+     * }
+     * }
+     * }
+     * }
+     * 
+     * // 2. Identify remaining auto segments using our optimized sub-array division
+     * algorithm
+     * int totalFloors = dto.getFloors().size();
+     * Map<Integer, Integer> autoSegments = new TreeMap<>();
+     * int currentStart = 0;
+     * for (Map.Entry<Integer, Integer> entry : rqMap.entrySet()) {
+     * int manualStart = entry.getKey();
+     * int manualEnd = entry.getValue();
+     * if (currentStart < manualStart) {
+     * autoSegments.put(currentStart, manualStart - 1);
+     * }
+     * currentStart = manualEnd + 1;
+     * }
+     * if (currentStart < totalFloors) {
+     * autoSegments.put(currentStart, totalFloors - 1);
+     * }
+     * 
+     * Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
+     * 
+     * // 3. Populate manual groups into mapResult
+     * if (dto.getManualGroups() != null) {
+     * for (CalculateBOQManualRequestDTO.ManualCabinetGroup group :
+     * dto.getManualGroups()) {
+     * if (group.getFloorRange() != null && !group.getFloorRange().isEmpty()) {
+     * Map.Entry<Integer, Integer> rangeEntry =
+     * group.getFloorRange().entrySet().iterator().next();
+     * CabinetEquipmentDTO cab = new CabinetEquipmentDTO();
+     * cab.setFrom(rangeEntry.getKey());
+     * cab.setTo(rangeEntry.getValue());
+     * mapResult.put(group.getCabinetIndex(), cab);
+     * }
+     * }
+     * }
+     * 
+     * // 4. Run the auto-placement algorithm on each remaining segment
+     * CalculateBOQRequestDTO tempDto = CalculateBOQRequestDTO.builder()
+     * .floorsCount(dto.getFloorsCount())
+     * .basementsCount(dto.getBasementsCount())
+     * .hasRoof(dto.getHasRoof())
+     * .horizontalDistance(dto.getHorizontalDistance())
+     * .verticalDistance(dto.getVerticalDistance())
+     * .rackType(dto.getRackType())
+     * .floors(dto.getFloors())
+     * .build();
+     * 
+     * for (Map.Entry<Integer, Integer> segment : autoSegments.entrySet()) {
+     * int start = segment.getKey();
+     * int end = segment.getValue();
+     * if (start > end) {
+     * continue;
+     * }
+     * calculateCabinetPlacementUitls(tempDto, mapResult, config, start, end);
+     * }
+     * 
+     * // 5. Run standard equipment sizing calculators on the unified mapResult
+     * calculateCameraQuantityInCabinet(mapResult, tempDto);
+     * calculateSwichPOE(mapResult, config);
+     * calculateUPS(mapResult, config);
+     * calculateConverter(mapResult, config);
+     * calculatePDU(mapResult, config);
+     * 
+     * // 6. Build the response list mapped by floor
+     * List<CalculateBOQResponseDTO> result = new ArrayList<>();
+     * for (CalculateBOQRequestDTO.FloorRequest floor : dto.getFloors()) {
+     * boolean isPlaced = mapResult.containsKey(floor.getFloorIndex());
+     * CalculateBOQResponseDTO.CalculateBOQResponseDTOBuilder builder =
+     * CalculateBOQResponseDTO.builder()
+     * .floorIndex(floor.getFloorIndex())
+     * .label(floor.getLabel())
+     * .camerasCount(floor.getCamerasCount())
+     * .isCabinetPlaced(isPlaced);
+     * 
+     * // Find covering cabinet range
+     * CabinetEquipmentDTO coveringCabinet = null;
+     * for (Map.Entry<Integer, CabinetEquipmentDTO> entry : mapResult.entrySet()) {
+     * CabinetEquipmentDTO cab = entry.getValue();
+     * if (floor.getFloorIndex() >= cab.getFrom() && floor.getFloorIndex() <=
+     * cab.getTo()) {
+     * coveringCabinet = cab;
+     * break;
+     * }
+     * }
+     * 
+     * if (coveringCabinet != null) {
+     * builder.fromIndex(coveringCabinet.getFrom())
+     * .toIndex(coveringCabinet.getTo());
+     * }
+     * 
+     * if (isPlaced) {
+     * CabinetEquipmentDTO cabinet = mapResult.get(floor.getFloorIndex());
+     * builder.cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
+     * .sw24Count(cabinet.getSw24Quantity())
+     * .sw16Count(cabinet.getSw16Quantity())
+     * .upsCount(cabinet.getUps())
+     * .pduCount(cabinet.getPdu())
+     * .convCount(cabinet.getConverter());
+     * } else {
+     * builder.cameraQuantityInCabinet(0)
+     * .sw24Count(0)
+     * .sw16Count(0)
+     * .upsCount(0)
+     * .pduCount(0)
+     * .convCount(0);
+     * }
+     * result.add(builder.build());
+     * }
+     * 
+     * return result;
+     */
+    // return new ArrayList<>();
+    // }
+
+    @Override
+    public List<CalculateBOQResponseDTO> calculateBOQManual(CalculateBOQManualRequestDTO dto) {
+        Config config = configRepository
+                .findById(UUID.fromString("a2b0a797-8ff2-4a79-ac5d-78525bd25e90")).get();
+        // lấy map các nhóm tầng manual từ frontend
+        Map<Integer, Integer> rqMap = new TreeMap<>();
+        if (dto.getManualGroups() != null) {
+            rqMap = dto.getManualGroups().stream()
+                    .filter(group -> group.getFloorRange() != null)
+                    .flatMap(group -> group.getFloorRange().entrySet().stream())
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            (v1, v2) -> v1,
+                            TreeMap::new));
+        }
+        // lấy ra mảng con
+        int totalFloors = dto.getFloors().size();
+        Map<Integer, Integer> autoSegments = new TreeMap<>();
+        int currentStart = 0;
+
+        for (Map.Entry<Integer, Integer> entry : rqMap.entrySet()) {
+            int manualStart = entry.getKey();
+            int manualEnd = entry.getValue();
+
+            if (currentStart < manualStart) {
+                autoSegments.put(currentStart, manualStart - 1);
+            }
+
+            currentStart = manualEnd + 1;
+        }
+
+        if (currentStart < totalFloors) {
+            autoSegments.put(currentStart, totalFloors - 1);
+        }
+
+        Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
+        if (dto.getManualGroups() != null) {
+            for (CalculateBOQManualRequestDTO.ManualCabinetGroup group : dto.getManualGroups()) {
+                if (group.getFloorRange() != null && !group.getFloorRange().isEmpty()) {
+                    Map.Entry<Integer, Integer> rangeEntry = group.getFloorRange().entrySet().iterator().next();
+                    CabinetEquipmentDTO cab = new CabinetEquipmentDTO();
+                    cab.setFrom(rangeEntry.getKey());
+                    cab.setTo(rangeEntry.getValue());
+                    mapResult.put(group.getCabinetIndex(), cab);
+                }
+            }
+        }
+
+        CalculateBOQRequestDTO tempDto = CalculateBOQRequestDTO.builder()
+                .floorsCount(dto.getFloorsCount())
+                .basementsCount(dto.getBasementsCount())
+                .hasRoof(dto.getHasRoof())
+                .horizontalDistance(dto.getHorizontalDistance())
+                .verticalDistance(dto.getVerticalDistance())
+                .rackType(dto.getRackType())
+                .floors(dto.getFloors())
+                .build();
+
+        for (Map.Entry<Integer, Integer> segment : autoSegments.entrySet()) {
+            int start = segment.getKey();
+            int end = segment.getValue();
+            if (start > end) {
+                continue;
+            }
+            calculateCabinetPlacementUitls(tempDto, mapResult, config, start, end);
+        }
+
+        calculateCameraQuantityInCabinet(mapResult, tempDto);
+        calculateSwichPOE(mapResult, config);
+        calculateUPS(mapResult, config);
+        calculateConverter(mapResult, config);
+        calculatePDU(mapResult, config);
+
+        List<CalculateBOQResponseDTO> result = new ArrayList<>();
+        for (CalculateBOQRequestDTO.FloorRequest floor : dto.getFloors()) {
+            boolean isPlaced = mapResult.containsKey(floor.getFloorIndex());
+            CalculateBOQResponseDTO.CalculateBOQResponseDTOBuilder builder = CalculateBOQResponseDTO.builder()
+                    .floorIndex(floor.getFloorIndex())
+                    .label(floor.getLabel())
+                    .camerasCount(floor.getCamerasCount())
+                    .isCabinetPlaced(isPlaced);
+
+            CabinetEquipmentDTO coveringCabinet = null;
+            for (Map.Entry<Integer, CabinetEquipmentDTO> entry : mapResult.entrySet()) {
+                CabinetEquipmentDTO cab = entry.getValue();
+                if (floor.getFloorIndex() >= cab.getFrom() && floor.getFloorIndex() <= cab.getTo()) {
+                    coveringCabinet = cab;
+                    break;
+                }
+            }
+
+            if (coveringCabinet != null) {
+                builder.fromIndex(coveringCabinet.getFrom())
+                        .toIndex(coveringCabinet.getTo());
+            }
+
+            if (isPlaced) {
+                CabinetEquipmentDTO cabinet = mapResult.get(floor.getFloorIndex());
+                String cabType = dto.getRackType();
+                if (dto.getManualGroups() != null) {
+                    for (CalculateBOQManualRequestDTO.ManualCabinetGroup group : dto.getManualGroups()) {
+                        if (group.getCabinetIndex().equals(floor.getFloorIndex())) {
+                            if (group.getRackType() != null && !group.getRackType().isEmpty()) {
+                                cabType = group.getRackType();
+                            }
+                            break;
+                        }
+                    }
+                }
+                builder.cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
+                        .sw24Count(cabinet.getSw24Quantity())
+                        .sw16Count(cabinet.getSw16Quantity())
+                        .upsCount(cabinet.getUps())
+                        .pduCount(cabinet.getPdu())
+                        .convCount(cabinet.getConverter())
+                        .cabinetType(cabType);
+            } else {
+                builder.cameraQuantityInCabinet(0)
+                        .sw24Count(0)
+                        .sw16Count(0)
+                        .upsCount(0)
+                        .pduCount(0)
+                        .convCount(0)
+                        .cabinetType(null);
+            }
+            result.add(builder.build());
+        }
+
+        return result;
     }
 }

@@ -44,18 +44,59 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
         response.setObserScreenQuantity(calculateOberserScreen(dto, recorderMap));
         response.setConverterQuantity(calculateConverter(dto));
 
-        String cabinetType = dto.getCabinetType();
-        if ("2U".equals(cabinetType)) {
-            response.setCabinet2UQuantity(calculateCabinet(dto));
-        } else if ("6U".equals(cabinetType)) {
-            response.setCabinet6UQuantity(calculateCabinet(dto));
-        } else if ("10U".equals(cabinetType)) {
-            response.setCabinet10UQuantity(calculateCabinet(dto));
-        } else if ("32U".equals(cabinetType)) {
-            response.setCabinet32UQuantity(calculateCabinet(dto));
-        } else if ("42U".equals(cabinetType)) {
-            response.setCabinet42UQuantity(calculateCabinet(dto));
+        int cab2U = 0;
+        int cab6U = 0;
+        int cab10U = 0;
+        int cab20U = 0;
+        int cab32U = 0;
+        int cab42U = 0;
+
+        if (dto.getFloors() != null) {
+            for (CalculateBOMRequestDTO.FloorBOMInfo f : dto.getFloors()) {
+                if (f.getIsCabinetPlaced() != null && f.getIsCabinetPlaced()) {
+                    String type = f.getCabinetType();
+                    if (type == null || type.trim().isEmpty() || "Same as general".equalsIgnoreCase(type) || "Default".equalsIgnoreCase(type)) {
+                        type = dto.getCabinetType();
+                    }
+                    if ("2U".equalsIgnoreCase(type)) {
+                        cab2U++;
+                    } else if ("6U".equalsIgnoreCase(type)) {
+                        cab6U++;
+                    } else if ("10U".equalsIgnoreCase(type)) {
+                        cab10U++;
+                    } else if ("20U".equalsIgnoreCase(type)) {
+                        cab20U++;
+                    } else if ("32U".equalsIgnoreCase(type)) {
+                        cab32U++;
+                    } else if ("42U".equalsIgnoreCase(type)) {
+                        cab42U++;
+                    }
+                }
+            }
+        } else {
+            String cabinetType = dto.getCabinetType();
+            int totalCabinet = getSafeInt(dto.getTotalCabinet());
+            if ("2U".equalsIgnoreCase(cabinetType)) {
+                cab2U = totalCabinet;
+            } else if ("6U".equalsIgnoreCase(cabinetType)) {
+                cab6U = totalCabinet;
+            } else if ("10U".equalsIgnoreCase(cabinetType)) {
+                cab10U = totalCabinet;
+            } else if ("20U".equalsIgnoreCase(cabinetType)) {
+                cab20U = totalCabinet;
+            } else if ("32U".equalsIgnoreCase(cabinetType)) {
+                cab32U = totalCabinet;
+            } else if ("42U".equalsIgnoreCase(cabinetType)) {
+                cab42U = totalCabinet;
+            }
         }
+
+        response.setCabinet2UQuantity(cab2U);
+        response.setCabinet6UQuantity(cab6U);
+        response.setCabinet10UQuantity(cab10U);
+        response.setCabinet20UQuantity(cab20U);
+        response.setCabinet32UQuantity(cab32U);
+        response.setCabinet42UQuantity(cab42U);
 
         response.setCvvCable(calculateCVVCable(dto));
         response.setPduQuantity(calcuatePDUPower(dto, recorderMap));

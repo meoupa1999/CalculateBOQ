@@ -19,6 +19,7 @@ export interface FloorData {
   fromIndex?: number;
   toIndex?: number;
   isCabinetPlaced?: boolean;
+  cabinetType?: string;
 }
 
 export interface SiteParameters {
@@ -83,4 +84,28 @@ export interface Project {
   description: string;
   createdAt: string;
   towers: Tower[];
+}
+
+export interface ManualCabinetGroup {
+  cabinetIndex: number; // tầng user đặt tủ
+  totalCamera: number; // tổng cam tính tổng trong nhóm các tầng user chọn luôn
+  floorRange: Record<number, number>; // khoảng index user nhóm tầng ví dụ {4: 9}
+  rackType?: string; // loại tủ của riêng nhóm này
+}
+
+export interface CalculateBOQManualRequest {
+  floorsCount: number;
+  basementsCount: number;
+  hasRoof: boolean;
+  horizontalDistance: number;
+  verticalDistance: number;
+  rackType: string;
+  floors: {
+    floorIndex: number;
+    label: string;
+    camerasCount: number;
+    domeCount?: number;
+    bulletCount?: number;
+  }[];
+  manualGroups: ManualCabinetGroup[];
 }
