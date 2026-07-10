@@ -1219,6 +1219,124 @@ export default function App() {
     );
   };
 
+  const handleDeleteFloor = (deletedFloorIndex: number) => {
+    if (!activeTower) return;
+
+    const basementsCount = activeTower.basementsCount || 0;
+    const floorsCount = activeTower.floorsCount || 0;
+    const hasRoof = activeTower.hasRoof || false;
+
+    let newBasementsCount = basementsCount;
+    let newFloorsCount = floorsCount;
+    let newHasRoof = hasRoof;
+
+    if (deletedFloorIndex < basementsCount) {
+      newBasementsCount = Math.max(0, basementsCount - 1);
+    } else if (deletedFloorIndex >= basementsCount && deletedFloorIndex < basementsCount + floorsCount) {
+      newFloorsCount = Math.max(0, floorsCount - 1);
+    } else if (hasRoof && deletedFloorIndex === basementsCount + floorsCount) {
+      newHasRoof = false;
+    }
+
+    setTempBasements(newBasementsCount);
+    setTempFloors(newFloorsCount);
+    setTempHasRoof(newHasRoof);
+
+    const remainingFloors = activeTower.floorsData
+      .filter((f) => f.floorIndex !== deletedFloorIndex)
+      .map((f, idx) => ({
+        ...f,
+        floorIndex: idx,
+      }));
+
+    const newCabinetPlacements = cabinetPlacements
+      .filter((idx) => idx !== deletedFloorIndex)
+      .map((idx) => (idx > deletedFloorIndex ? idx - 1 : idx));
+    setCabinetPlacements(newCabinetPlacements);
+
+    const newManualGroups = manualGroups
+      .filter((g) => g.cabinetIndex !== deletedFloorIndex)
+      .map((g) => {
+        const updatedCabinetIndex = g.cabinetIndex > deletedFloorIndex ? g.cabinetIndex - 1 : g.cabinetIndex;
+        const updatedAssociatedFloors = g.associatedFloors
+          .filter((fIdx) => fIdx !== deletedFloorIndex)
+          .map((fIdx) => (fIdx > deletedFloorIndex ? fIdx - 1 : fIdx));
+        return {
+          ...g,
+          cabinetIndex: updatedCabinetIndex,
+          associatedFloors: updatedAssociatedFloors,
+        };
+      });
+    setManualGroups(newManualGroups);
+
+    const recalculatedFloors = calculateProjectBOQ(
+      newFloorsCount,
+      activeTower.horizontalDistance,
+      activeTower.verticalDistance,
+      activeTower.rackType,
+      activeTower.siteParams,
+      activeTower.hardwareLogic,
+      remainingFloors,
+      newBasementsCount,
+      newHasRoof,
+      newCabinetPlacements
+    );
+
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id === activeProject.id) {
+          const updatedTowers = p.towers.map((t) => {
+            if (t.id === activeTower?.id) {
+              return {
+                ...t,
+                floorsCount: newFloorsCount,
+                basementsCount: newBasementsCount,
+                hasRoof: newHasRoof,
+                floorsData: recalculatedFloors,
+              };
+            }
+            return t;
+          });
+          return {
+            ...p,
+            towers: updatedTowers,
+          };
+        }
+        return p;
+      })
+    );
+
+    fetch(`${API_BASE}/towers/${activeTower.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        configId: "a2b0a797-8ff2-4a79-ac5d-78525bd25e90",
+        name: activeTower.name,
+        floorCount: newFloorsCount,
+        basementCount: newBasementsCount,
+        hasRoof: newHasRoof,
+        widthLength: activeTower.horizontalDistance,
+        heightLength: activeTower.verticalDistance
+      })
+    })
+    .then((res) => {
+      if (res.ok) {
+        fetchCabinetPlacement(
+          newFloorsCount,
+          newBasementsCount,
+          newHasRoof,
+          activeTower.horizontalDistance,
+          activeTower.verticalDistance,
+          activeTower.rackType,
+          recalculatedFloors
+        );
+      }
+    })
+    .catch((err) => console.error("Error updating tower on floor deletion", err));
+
+    addToast("Đã xóa tầng thành công và tính toán lại BOQ!", "success");
+  };
+
   // Helper to render editable note input cell in the Excel-like BOQ Template Table (Left)
   const renderNoteCell = (key: string) => {
     return (
@@ -3030,6 +3148,7 @@ const handleAddGlobalInventory = () => {
                                 <th className="py-3 px-3 w-24">UPS 1K/2K</th>
                                 <th className="py-3 px-3 w-20">PDU</th>
                                 <th className="py-3 px-3 w-28">CONVERTER</th>
+                                 <th className="py-3 px-3 w-16 text-center text-rose-600 font-bold">XÓA</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-[#ECEFF1] text-sm">
@@ -3394,6 +3513,20 @@ const handleAddGlobalInventory = () => {
                                     <td className={`py-2 px-3 font-mono text-center ${isCabinetPlaced ? "text-[#191c1e]" : "text-slate-300"}`}>
                                       {f.convCount || "-"}
                                     </td>
+                                    {/* Delete button */}
+                                    <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                      <button
+                                        onClick={() => {
+                                          if (window.confirm(`Bạn có chắc chắn muốn xóa tầng "${f.label}" không?`)) {
+                                            handleDeleteFloor(f.floorIndex);
+                                          }
+                                        }}
+                                        className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors duration-200"
+                                        title="Xóa tầng"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </td>
                                   </tr>
                                 );
                               };
@@ -3404,7 +3537,7 @@ const handleAddGlobalInventory = () => {
                                     {roofFloors.length > 0 && (
                                       <>
                                         <tr className="bg-slate-100/90 border-y border-[#ECEFF1] text-[11px] font-bold text-[#1A237E] select-none">
-                                          <td colSpan={calculationMode === "manual" ? 12 : 11} className="py-2.5 px-4">
+                                          <td colSpan={calculationMode === "manual" ? 13 : 12} className="py-2.5 px-4">
                                             <div className="flex items-center gap-2">
                                               <span className="w-2.5 h-2.5 rounded-full bg-[#1A237E]"></span>
                                               <span>NHÓM 3: TẦNG MÁI ({roofFloors.length} tầng)</span>
@@ -3419,7 +3552,7 @@ const handleAddGlobalInventory = () => {
                                     {sortedUpperFloors.length > 0 && (
                                       <>
                                         <tr className="bg-slate-100/90 border-y border-[#ECEFF1] text-[11px] font-bold text-[#2E7D32] select-none">
-                                          <td colSpan={calculationMode === "manual" ? 12 : 11} className="py-2.5 px-4">
+                                          <td colSpan={calculationMode === "manual" ? 13 : 12} className="py-2.5 px-4">
                                             <div className="flex items-center gap-2">
                                               <span className="w-2.5 h-2.5 rounded-full bg-[#2E7D32]"></span>
                                               <span>NHÓM 2: TẦNG NỔI ({sortedUpperFloors.length} tầng)</span>
@@ -3434,7 +3567,7 @@ const handleAddGlobalInventory = () => {
                                     {sortedBasementFloors.length > 0 && (
                                       <>
                                         <tr className="bg-slate-100/90 border-y border-[#ECEFF1] text-[11px] font-bold text-[#C62828] select-none">
-                                          <td colSpan={calculationMode === "manual" ? 12 : 11} className="py-2.5 px-4">
+                                          <td colSpan={calculationMode === "manual" ? 13 : 12} className="py-2.5 px-4">
                                             <div className="flex items-center gap-2">
                                               <span className="w-2.5 h-2.5 rounded-full bg-[#C62828]"></span>
                                               <span>NHÓM 1: TẦNG HẦM ({sortedBasementFloors.length} tầng)</span>
