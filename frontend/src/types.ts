@@ -109,3 +109,13 @@ export interface CalculateBOQManualRequest {
   }[];
   manualGroups: ManualCabinetGroup[];
 }
+
+export interface SystemConfig {
+  id: string;
+  conditionLength: number;
+  sw24ConditionQuanity: number;
+  sw16ConditionQuanity: number;
+  ups: number;
+  pdu: number;
+  converter: number;
+}

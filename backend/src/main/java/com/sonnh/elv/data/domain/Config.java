@@ -29,10 +29,6 @@ public class Config {
 
     private Integer sw16ConditionQuanity;
 
-    private Integer sw16MaxPortUse;
-
-    private Integer sw24MaxPortUse;
-
     private Integer ups; // default 1 cái 1K
 
     private Integer pdu; // default 6 lỗ

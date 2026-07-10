@@ -37,7 +37,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 
 import { BASE_PRESETS, BASE_INVENTORY, DEFAULT_SITE_PARAMS, DEFAULT_HARDWARE_LOGIC, calculateProjectBOQ, INITIAL_PROJECTS, localCalculateCabinetPlacement } from "./data";
-import { Project, Tower, FloorData, SiteParameters, HardwareLogic, InventoryItem, StandardPreset } from "./types";
+import { Project, Tower, FloorData, SiteParameters, HardwareLogic, InventoryItem, StandardPreset, SystemConfig } from "./types";
 
 interface BOMItem {
   stt: string;
@@ -117,8 +117,8 @@ export default function App() {
   const [activeNav, setActiveNav] = useState<"dashboard" | "parameters" | "logic" | "cost" | "reports">("dashboard");
 
   // Top header tabs state
-  // "app" | "projects" | "inventory" | "standards"
-  const [activeTab, setActiveTab] = useState<"app" | "projects" | "inventory" | "standards">("app");
+  // "app" | "projects" | "inventory" | "standards" | "settings"
+  const [activeTab, setActiveTab] = useState<"app" | "projects" | "inventory" | "standards" | "settings">("app");
 
   // Inventory form states
   const [newItemCode, setNewItemCode] = useState("");
@@ -129,6 +129,61 @@ export default function App() {
   const [newItemPrice, setNewItemPrice] = useState(100000);
 
   const API_BASE = "http://localhost:8080/api";
+
+  // Configuration settings state
+  const CONFIG_ID = "a2b0a797-8ff2-4a79-ac5d-78525bd25e90";
+  const [systemConfig, setSystemConfig] = useState<SystemConfig | null>(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(false);
+
+  const fetchSystemConfig = async () => {
+    setIsLoadingConfig(true);
+    try {
+      const res = await fetch(`${API_BASE}/configs/${CONFIG_ID}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSystemConfig(data);
+      } else {
+        console.error("Failed to fetch system config");
+      }
+    } catch (err) {
+      console.error("Error fetching system config", err);
+    } finally {
+      setIsLoadingConfig(false);
+    }
+  };
+
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+
+  const handleSaveConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!systemConfig) return;
+    setIsSavingConfig(true);
+    try {
+      const res = await fetch(`${API_BASE}/configs/${CONFIG_ID}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conditionLength: systemConfig.conditionLength,
+          sw24ConditionQuanity: systemConfig.sw24ConditionQuanity,
+          sw16ConditionQuanity: systemConfig.sw16ConditionQuanity,
+          ups: systemConfig.ups,
+          pdu: systemConfig.pdu,
+          converter: systemConfig.converter
+        })
+      });
+      if (res.ok) {
+        addToast("Cập nhật cấu hình hệ thống thành công!", "success");
+        fetchSystemConfig();
+      } else {
+        addToast("Lỗi khi cập nhật cấu hình!", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("Lỗi kết nối khi cập nhật cấu hình!", "error");
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
 
   // Load projects from backend
   const [projects, setProjects] = useState<Project[]>([]);
@@ -265,6 +320,7 @@ export default function App() {
 
   useEffect(() => {
     fetchProjects();
+    fetchSystemConfig();
   }, []);
 
   // Global base inventory (can be edited globally under Inventory tab)
@@ -768,7 +824,6 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setBomData(data);
-        addToast("Tính toán BOM thành công!", "success");
       } else {
         console.error("Failed to fetch BOM", res.statusText);
         addToast("Lỗi khi tính toán BOM!", "error");
@@ -1004,6 +1059,85 @@ export default function App() {
     }
 
     addToast("Tính toán lại BOQ thành công!", "success");
+  };
+
+  const handleResetBOQ = () => {
+    if (!activeTower) return;
+
+    // Reset all floors data in the current active tower to 0 cameras and 0 equipment
+    const resetFloors = activeTower.floorsData.map((f) => ({
+      ...f,
+      camerasCount: 0,
+      domeCount: 0,
+      bulletCount: 0,
+      sw24Count: 0,
+      sw16Count: 0,
+      upsType: "None" as const,
+      pduCount: 0,
+      convCount: 0,
+      cameraQuantityInCabinet: 0,
+      isCabinetPlaced: false,
+      cabinetType: undefined,
+      fromIndex: undefined,
+      toIndex: undefined,
+    }));
+
+    setManualGroups([]);
+    setCabinetPlacements([]);
+
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id === activeProject.id) {
+          const updatedTowers = p.towers.map((t) => {
+            if (t.id === activeTower?.id) {
+              return {
+                ...t,
+                floorsData: resetFloors,
+              };
+            }
+            return t;
+          });
+          return {
+            ...p,
+            towers: updatedTowers,
+          };
+        }
+        return p;
+      })
+    );
+
+    // Call PUT /api/towers/{id} to save empty config to backend
+    fetch(`${API_BASE}/towers/${activeTower.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        configId: "a2b0a797-8ff2-4a79-ac5d-78525bd25e90",
+        name: activeTower.name,
+        floorCount: activeTower.floorsCount,
+        basementCount: activeTower.basementsCount,
+        hasRoof: activeTower.hasRoof,
+        widthLength: activeTower.horizontalDistance,
+        heightLength: activeTower.verticalDistance
+      })
+    })
+    .then((res) => {
+      if (res.ok) {
+        fetchCabinetPlacement(
+          activeTower.floorsCount,
+          activeTower.basementsCount || 0,
+          activeTower.hasRoof || false,
+          activeTower.horizontalDistance,
+          activeTower.verticalDistance,
+          activeTower.rackType,
+          resetFloors,
+          "auto",
+          []
+        );
+      }
+    })
+    .catch(err => console.error("Error resetting tower in backend", err));
+
+    addToast("Đã reset cấu hình camera và thiết bị về 0!", "info");
   };
 
   // Directly update specific cell value in the detailed floor sheet
@@ -1761,6 +1895,14 @@ const handleAddGlobalInventory = () => {
                 }`}
               >
                 Quản lý Dự án ({projects.length})
+              </button>
+              <button
+                onClick={() => { setActiveTab("settings"); }}
+                className={`px-4 py-2 text-sm font-medium rounded transition ${
+                  activeTab === "settings" ? "text-[#1A237E] bg-[#E8EAF6]" : "text-[#455A64] hover:text-[#191c1e] hover:bg-slate-100"
+                }`}
+              >
+                Cấu hình hệ thống
               </button>
               <button
                 disabled
@@ -2600,13 +2742,24 @@ const handleAddGlobalInventory = () => {
                           </div>
 
                           {/* Compute Trigger Button */}
-                          <div className="lg:col-span-2">
+                          <div className="lg:col-span-1">
                             <button
                               onClick={handleRecalculate}
-                              className="w-full bg-[#1A237E] hover:bg-[#1A237E]/95 text-white py-2 px-4 rounded text-sm font-semibold shadow-xs transition flex items-center justify-center gap-2 h-[38px]"
+                              className="w-full bg-[#1A237E] hover:bg-[#1A237E]/95 text-white py-2 px-4 rounded text-sm font-semibold shadow-xs transition flex items-center justify-center gap-1.5 h-[38px] whitespace-nowrap"
                             >
                               <RefreshCw className="w-4 h-4" />
-                              <span>Tính BOQ &amp; BOM</span>
+                              <span>Tính toán</span>
+                            </button>
+                          </div>
+
+                          {/* Reset Button */}
+                          <div className="lg:col-span-1">
+                            <button
+                              onClick={handleResetBOQ}
+                              className="w-full bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 py-2 px-4 rounded text-sm font-semibold shadow-xs transition flex items-center justify-center gap-1.5 h-[38px] whitespace-nowrap"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              <span>Reset</span>
                             </button>
                           </div>
 
@@ -2917,13 +3070,13 @@ const handleAddGlobalInventory = () => {
                                   .sort((a, b) => a.fromIndex - b.fromIndex);
 
                                 const rangeColors = [
-                                  { bg: 'bg-indigo-50/50 hover:bg-indigo-100/40', border: 'border-l-4 border-indigo-500/80', labelBg: 'bg-indigo-100 text-indigo-700 border border-indigo-200' },
-                                  { bg: 'bg-teal-50/50 hover:bg-teal-100/40', border: 'border-l-4 border-teal-500/80', labelBg: 'bg-teal-100 text-teal-700 border border-teal-200' },
-                                  { bg: 'bg-amber-50/50 hover:bg-amber-100/40', border: 'border-l-4 border-amber-500/80', labelBg: 'bg-amber-100 text-amber-700 border border-amber-200' },
-                                  { bg: 'bg-rose-50/50 hover:bg-rose-100/40', border: 'border-l-4 border-rose-500/80', labelBg: 'bg-rose-100 text-rose-700 border border-rose-200' },
-                                  { bg: 'bg-sky-50/50 hover:bg-sky-100/40', border: 'border-l-4 border-sky-500/80', labelBg: 'bg-sky-100 text-sky-700 border border-sky-200' },
-                                  { bg: 'bg-violet-50/50 hover:bg-violet-100/40', border: 'border-l-4 border-violet-500/80', labelBg: 'bg-violet-100 text-violet-700 border border-violet-200' },
-                                  { bg: 'bg-emerald-50/50 hover:bg-emerald-100/40', border: 'border-l-4 border-emerald-500/80', labelBg: 'bg-emerald-100 text-emerald-700 border border-emerald-200' }
+                                  { bg: 'bg-indigo-100 hover:bg-indigo-200/80', border: 'border-l-4 border-indigo-600', labelBg: 'bg-indigo-200 text-indigo-900 border border-indigo-300 font-bold' },
+                                  { bg: 'bg-amber-100 hover:bg-amber-200/80', border: 'border-l-4 border-amber-600', labelBg: 'bg-amber-200 text-amber-900 border border-amber-300 font-bold' },
+                                  { bg: 'bg-teal-100 hover:bg-teal-200/80', border: 'border-l-4 border-teal-600', labelBg: 'bg-teal-200 text-teal-900 border border-teal-300 font-bold' },
+                                  { bg: 'bg-rose-100 hover:bg-rose-200/80', border: 'border-l-4 border-rose-600', labelBg: 'bg-rose-200 text-rose-900 border border-rose-300 font-bold' },
+                                  { bg: 'bg-emerald-100 hover:bg-emerald-200/80', border: 'border-l-4 border-emerald-600', labelBg: 'bg-emerald-200 text-emerald-900 border border-emerald-300 font-bold' },
+                                  { bg: 'bg-sky-100 hover:bg-sky-200/80', border: 'border-l-4 border-sky-600', labelBg: 'bg-sky-200 text-sky-900 border border-sky-300 font-bold' },
+                                  { bg: 'bg-purple-100 hover:bg-purple-200/80', border: 'border-l-4 border-purple-600', labelBg: 'bg-purple-200 text-purple-900 border border-purple-300 font-bold' }
                                 ];
 
                                 const getRangeStyle = (f: FloorData) => {
@@ -3019,7 +3172,7 @@ const handleAddGlobalInventory = () => {
                                       key={f.floorIndex} 
                                       className={`transition select-none cursor-pointer ${
                                         selectedFloorIndexes.includes(f.floorIndex) 
-                                          ? 'bg-[#E8EAF6]/30' 
+                                          ? 'bg-slate-300 font-semibold text-slate-900' 
                                           : styleGroup.bg
                                       } ${styleGroup.border} ${isActiveCabinet ? 'ring-2 ring-emerald-500 ring-inset' : ''}`}
                                       onClick={(e) => {
@@ -4307,6 +4460,191 @@ const handleAddGlobalInventory = () => {
                 })}
               </div>
 
+            </div>
+          )}
+
+          {/* TAB 5: SYSTEM CONFIGURATION SETTINGS */}
+          {activeTab === "settings" && (
+            <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto">
+              <div>
+                <h1 className="font-sans font-bold text-2xl text-[#191c1e] tracking-tight">
+                  Cấu hình tham số hệ thống
+                </h1>
+                <p className="text-sm text-[#455A64]">
+                  Thay đổi các tham số kỹ thuật mặc định và ngưỡng tối ưu hóa phân phối thiết bị (Switch, UPS, PDU)
+                </p>
+              </div>
+
+              {isLoadingConfig || !systemConfig ? (
+                <div className="bg-white border border-[#ECEFF1] rounded-xl p-12 text-center shadow-xs flex flex-col items-center justify-center gap-4">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1A237E]"></div>
+                  <span className="text-sm font-medium text-slate-500">Đang tải cấu hình hệ thống...</span>
+                </div>
+              ) : (
+                <form onSubmit={handleSaveConfig} className="bg-white border border-[#ECEFF1] rounded-xl shadow-sm overflow-hidden">
+                  <div className="p-6 border-b border-[#ECEFF1] bg-slate-50/50">
+                    <h3 className="font-sans font-bold text-base text-[#191c1e]">
+                      Tham số tính toán BOQ &amp; BOM mặc định
+                    </h3>
+                    <p className="text-xs text-[#455A64] mt-0.5">
+                      Các giá trị này sẽ được áp dụng trực tiếp khi tính toán thiết bị cho dự án
+                    </p>
+                  </div>
+
+                  <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Column 1: Switch & Physical Thresholds */}
+                    <div className="flex flex-col gap-4">
+                      <h4 className="text-sm font-bold text-[#1A237E] uppercase tracking-wider border-b border-indigo-50 pb-1.5 flex items-center gap-2">
+                        <SlidersHorizontal className="w-4 h-4" />
+                        <span>Ngưỡng phân phối Switch &amp; Trục đứng</span>
+                      </h4>
+
+                      <div>
+                        <label className="block text-xs font-bold text-[#455A64] uppercase tracking-wide mb-1.5">
+                          Ngưỡng tối đa camera cho Switch 24 (cổng)
+                        </label>
+                        <input
+                          type="number"
+                          value={systemConfig.sw24ConditionQuanity}
+                          onChange={(e) => setSystemConfig({
+                            ...systemConfig,
+                            sw24ConditionQuanity: Math.max(0, parseInt(e.target.value) || 0)
+                          })}
+                          className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded-lg px-3.5 py-2 text-sm font-medium focus:border-[#1A237E] focus:outline-none transition font-mono"
+                        />
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Số lượng camera tối đa trước khi thuật toán tự động tách tủ hoặc đặt thêm Switch 24.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-[#455A64] uppercase tracking-wide mb-1.5">
+                          Ngưỡng tối đa camera cho Switch 16 (cổng)
+                        </label>
+                        <input
+                          type="number"
+                          value={systemConfig.sw16ConditionQuanity}
+                          onChange={(e) => setSystemConfig({
+                            ...systemConfig,
+                            sw16ConditionQuanity: Math.max(0, parseInt(e.target.value) || 0)
+                          })}
+                          className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded-lg px-3.5 py-2 text-sm font-medium focus:border-[#1A237E] focus:outline-none transition font-mono"
+                        />
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Ngưỡng camera ưu tiên chọn Switch 16 để tránh lãng phí dung lượng cổng trống.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-[#455A64] uppercase tracking-wide mb-1.5">
+                          Giới hạn chiều dài cáp trục đứng (mét)
+                        </label>
+                        <input
+                          type="number"
+                          value={systemConfig.conditionLength}
+                          onChange={(e) => setSystemConfig({
+                            ...systemConfig,
+                            conditionLength: Math.max(0, parseInt(e.target.value) || 0)
+                          })}
+                          className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded-lg px-3.5 py-2 text-sm font-medium focus:border-[#1A237E] focus:outline-none transition font-mono"
+                        />
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Chiều dài tối đa của cáp mạng đồng trước khi bắt buộc phân phối thêm tủ trung gian.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Column 2: Equipment and physical properties */}
+                    <div className="flex flex-col gap-4">
+                      <h4 className="text-sm font-bold text-[#1A237E] uppercase tracking-wider border-b border-indigo-50 pb-1.5 flex items-center gap-2">
+                        <Building className="w-4 h-4" />
+                        <span>Quy chuẩn thiết bị tủ mặc định</span>
+                      </h4>
+
+                      <div>
+                        <label className="block text-xs font-bold text-[#455A64] uppercase tracking-wide mb-1.5">
+                          Số lượng bộ lưu điện UPS (mặc định)
+                        </label>
+                        <input
+                          type="number"
+                          value={systemConfig.ups}
+                          onChange={(e) => setSystemConfig({
+                            ...systemConfig,
+                            ups: Math.max(0, parseInt(e.target.value) || 0)
+                          })}
+                          className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded-lg px-3.5 py-2 text-sm font-medium focus:border-[#1A237E] focus:outline-none transition font-mono"
+                        />
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Số lượng UPS 1000VA Online tiêu chuẩn lắp đặt cho mỗi tủ cabinet.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-[#455A64] uppercase tracking-wide mb-1.5">
+                          Số lượng thanh nguồn PDU (mặc định)
+                        </label>
+                        <input
+                          type="number"
+                          value={systemConfig.pdu}
+                          onChange={(e) => setSystemConfig({
+                            ...systemConfig,
+                            pdu: Math.max(0, parseInt(e.target.value) || 0)
+                          })}
+                          className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded-lg px-3.5 py-2 text-sm font-medium focus:border-[#1A237E] focus:outline-none transition font-mono"
+                        />
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Số lượng thanh nguồn 6 lỗ tiêu chuẩn lắp đặt cho mỗi tủ cabinet.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-[#455A64] uppercase tracking-wide mb-1.5">
+                          Số lượng Converter quang (mặc định)
+                        </label>
+                        <input
+                          type="number"
+                          value={systemConfig.converter}
+                          onChange={(e) => setSystemConfig({
+                            ...systemConfig,
+                            converter: Math.max(0, parseInt(e.target.value) || 0)
+                          })}
+                          className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded-lg px-3.5 py-2 text-sm font-medium focus:border-[#1A237E] focus:outline-none transition font-mono"
+                        />
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Số lượng bộ chuyển đổi quang điện mặc định khi kéo kết nối Uplink về phòng trung tâm.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="px-6 py-4 bg-slate-50 border-t border-[#ECEFF1] flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => fetchSystemConfig()}
+                      className="px-4 py-2 border border-slate-200 text-sm font-semibold rounded-lg hover:bg-slate-100 transition text-[#455A64]"
+                    >
+                      Hủy &amp; Tải lại
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSavingConfig}
+                      className="px-5 py-2 bg-[#1A237E] hover:bg-[#1A237E]/95 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg shadow-sm transition flex items-center gap-2"
+                    >
+                      {isSavingConfig ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>Đang lưu...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          <span>Lưu cấu hình</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           )}
 

@@ -304,6 +304,7 @@ public class CalcualateServiceImpl implements CalculateService {
         return mapResult;
     }
 
+    /*
     public Map<Integer, CabinetEquipmentDTO> calculateSwichPOE(Map<Integer, CabinetEquipmentDTO> mapResult,
             Config config) {
         for (Integer key : mapResult.keySet()) {
@@ -319,6 +320,51 @@ public class CalcualateServiceImpl implements CalculateService {
                     cameraQuantityInCabinet -= config.getSw16ConditionQuanity();
                 }
             }
+        }
+        return mapResult;
+    }
+    */
+
+    public Map<Integer, CabinetEquipmentDTO> calculateSwichPOE(Map<Integer, CabinetEquipmentDTO> mapResult,
+            Config config) {
+        int limit24 = config.getSw24ConditionQuanity();
+        int limit16 = config.getSw16ConditionQuanity();
+
+        for (Integer key : mapResult.keySet()) {
+            CabinetEquipmentDTO cabinet = mapResult.get(key);
+            int cameraCount = cabinet.getCameraQuantityInCabinet();
+
+            if (cameraCount <= 0) {
+                cabinet.setSw24Quantity(0);
+                cabinet.setSw16Quantity(0);
+                continue;
+            }
+
+            // Tìm số lượng switch tối thiểu lý thuyết
+            int minSwitches = (int) Math.ceil((double) cameraCount / limit24);
+            int bestX = -1;
+            int bestY = -1;
+            int minCapacity = Integer.MAX_VALUE;
+
+            // Duyệt từ số lượng switch tối thiểu tăng dần lên
+            for (int S = minSwitches; ; S++) {
+                for (int x = 0; x <= S; x++) {
+                    int y = S - x;
+                    int capacity = x * limit24 + y * limit16;
+
+                    if (capacity >= cameraCount && capacity < minCapacity) {
+                        minCapacity = capacity;
+                        bestX = x;
+                        bestY = y;
+                    }
+                }
+                if (bestX != -1) {
+                    break;
+                }
+            }
+
+            cabinet.setSw24Quantity(bestX);
+            cabinet.setSw16Quantity(bestY);
         }
         return mapResult;
     }
