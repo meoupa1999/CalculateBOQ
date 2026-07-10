@@ -1762,10 +1762,7 @@ const handleAddGlobalInventory = () => {
     csvContent += "Tang,So Camera,Cam Dome,Cam Than,Tu & So Cam,SW24,SW16,UPS,PDU,Converter\r\n";
     
     activeTower?.floorsData.forEach((f) => {
-      const match = f.label.match(/Tầng\s+(\d+)/);
-      const isUpperFloor = match !== null && !f.label.includes("Mái");
-      const physicalFloorNum = isUpperFloor ? parseInt(match[1]) : null;
-      const isCabinetPlaced = f.isCabinetPlaced || (physicalFloorNum !== null && cabinetPlacements.includes(physicalFloorNum));
+      const isCabinetPlaced = f.isCabinetPlaced;
       const cabinetCol = isCabinetPlaced 
         ? (f.cableLength > 0 
           ? `Tủ ${f.cabinetType || ""} (${f.cameraQuantityInCabinet ?? 0} Cam) - ${f.cableLength}m` 
@@ -1815,12 +1812,7 @@ const handleAddGlobalInventory = () => {
   const totalUPS2K = activeTower?.floorsData?.filter((f) => f.upsType === "2K").length || 0;
   const totalPDU = activeTower?.floorsData?.reduce((acc, curr) => acc + curr.pduCount, 0) || 0;
   const totalConv = activeTower?.floorsData?.reduce((acc, curr) => acc + curr.convCount, 0) || 0;
-  const totalRacks = activeTower?.floorsData?.filter((f) => {
-    const match = f.label.match(/Tầng\s+(\d+)/);
-    const isUpperFloor = match !== null && !f.label.includes("Mái");
-    const physicalFloorNum = isUpperFloor ? parseInt(match[1]) : null;
-    return physicalFloorNum !== null && cabinetPlacements.includes(physicalFloorNum);
-  }).length || 0;
+  const totalRacks = activeTower?.floorsData?.filter((f) => f.isCabinetPlaced).length || 0;
 
   // Helper values for Summary BOM dashboard
   const selectedTowersForSummary = activeProject?.towers?.filter(t => selectedTowersSummary[t.id]) || [];
@@ -3043,21 +3035,16 @@ const handleAddGlobalInventory = () => {
                             <tbody className="divide-y divide-[#ECEFF1] text-sm">
                               {(() => {
                                 const floors = activeTower?.floorsData || [];
-                                const roofFloors = floors.filter(f => f.label.includes("Mái"));
-                                const upperFloors = floors.filter(f => f.label.startsWith("Tầng") && !f.label.includes("Mái"));
-                                const basementFloors = floors.filter(f => f.label.startsWith("B"));
+                                const basementsCount = activeTower?.basementsCount || 0;
+                                const floorsCount = activeTower?.floorsCount || 0;
+                                const hasRoof = activeTower?.hasRoof || false;
 
-                                const sortedUpperFloors = [...upperFloors].sort((a, b) => {
-                                  const numA = parseInt(a.label.replace("Tầng", "").trim()) || 0;
-                                  const numB = parseInt(b.label.replace("Tầng", "").trim()) || 0;
-                                  return numB - numA;
-                                });
+                                const roofFloors = floors.filter(f => hasRoof && f.floorIndex === basementsCount + floorsCount);
+                                const upperFloors = floors.filter(f => f.floorIndex >= basementsCount && f.floorIndex < basementsCount + floorsCount);
+                                const basementFloors = floors.filter(f => f.floorIndex < basementsCount);
 
-                                const sortedBasementFloors = [...basementFloors].sort((a, b) => {
-                                  const numA = parseInt(a.label.replace("B", "").trim()) || 0;
-                                  const numB = parseInt(b.label.replace("B", "").trim()) || 0;
-                                  return numA - numB;
-                                });
+                                const sortedUpperFloors = [...upperFloors].sort((a, b) => b.floorIndex - a.floorIndex);
+                                const sortedBasementFloors = [...basementFloors].sort((a, b) => b.floorIndex - a.floorIndex);
 
                                 const cabinetRangesMap = new Map<string, {fromIndex: number, toIndex: number}>();
                                 floors.forEach(f => {
@@ -3237,7 +3224,13 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2 px-4 font-semibold text-[#191c1e]">
                                       <div className="flex flex-col gap-1.5">
                                         <div className="flex items-center gap-2">
-                                          <span>{f.label}</span>
+                                          <input
+                                            type="text"
+                                            value={f.label}
+                                            onChange={(e) => handleUpdateFloorCell(f.floorIndex, "label", e.target.value)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="bg-transparent border-0 hover:bg-slate-200/80 focus:bg-white focus:ring-1 focus:ring-[#1A237E]/30 focus:border-[#1A237E] rounded px-1.5 py-0.5 font-semibold text-[#191c1e] text-sm focus:outline-none transition w-36 text-left"
+                                          />
                                           {calculationMode === "manual" ? (
                                             manualGroups.some(g => g.cabinetIndex === f.floorIndex) ? (
                                               (() => {

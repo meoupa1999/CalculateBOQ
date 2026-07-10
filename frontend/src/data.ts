@@ -279,7 +279,7 @@ export function calculateProjectBOQ(
 
     return {
       floorIndex,
-      label,
+      label: existing ? existing.label : label,
       camerasCount,
       domeCount,
       bulletCount,
