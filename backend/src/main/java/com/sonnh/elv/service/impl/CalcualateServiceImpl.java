@@ -96,7 +96,7 @@ public class CalcualateServiceImpl implements CalculateService {
         if (cabinetIndex == null) {
             return 0;
         }
-        int floorDiff = Math.abs(floor.getFloorIndex() - cabinetIndex);
+        int floorDiff = Math.abs(floor.getFloorIndex() - cabinetIndex) + 1;
         int baseCable = floor.getCableLength() != null ? floor.getCableLength() : 0;
         double vDist = verticalDistance != null ? verticalDistance : 0.0;
         return (int) Math.round((vDist * floorDiff) + baseCable);
