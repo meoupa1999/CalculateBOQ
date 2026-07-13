@@ -305,32 +305,7 @@ export function calculateProjectBOQ(
     tempFloorsList = labels.map((label, idx) => {
       const floorIndex = idx; // 0-based ordering
 
-      // Find matching floor in existingFloorsData to preserve user input
-      // First try to match by label
-      let existingIndex = existingFloorsData?.findIndex(
-        (ef) => ef.label === label && !usedExistingIndices.has(ef.floorIndex)
-      );
-
-      // If not found, try to match by index
-      if ((existingIndex === undefined || existingIndex === -1) && existingFloorsData) {
-        existingIndex = existingFloorsData.findIndex(
-          (ef) => ef.floorIndex === floorIndex && !usedExistingIndices.has(ef.floorIndex)
-        );
-      }
-
-      const existing = (existingIndex !== undefined && existingIndex !== -1)
-        ? existingFloorsData?.[existingIndex]
-        : undefined;
-
-      if (existing) {
-        usedExistingIndices.add(existing.floorIndex);
-      }
-
-      const camerasCount = existing ? existing.camerasCount : 0;
-      const domeCount = existing ? existing.domeCount : 0;
-      const bulletCount = existing ? existing.bulletCount : 0;
-
-      // Determine level
+      // Determine level of the new floor
       let level = 1;
       if (label.includes("Mái")) {
         level = floorsCount + 1;
@@ -345,6 +320,47 @@ export function calculateProjectBOQ(
           }
         }
       }
+
+      // Find matching floor in existingFloorsData to preserve user input
+      // First try to match by label
+      let existingIndex = existingFloorsData?.findIndex(
+        (ef) => ef.label === label && !usedExistingIndices.has(ef.floorIndex)
+      );
+
+      // Helper to calculate level of an existing floor
+      const getExistingFloorLevel = (efLabel: string): number => {
+        if (efLabel.includes("Mái")) {
+          return floorsCount + 1; 
+        }
+        const matchT = efLabel.match(/Tầng\s+(\d+)/);
+        if (matchT) {
+          return parseInt(matchT[1]);
+        }
+        const matchB = efLabel.match(/B(\d+)/);
+        if (matchB) {
+          return 1 - parseInt(matchB[1]);
+        }
+        return 1;
+      };
+
+      // If not found, try to match by level (absolute vertical position)
+      if ((existingIndex === undefined || existingIndex === -1) && existingFloorsData) {
+        existingIndex = existingFloorsData.findIndex(
+          (ef) => getExistingFloorLevel(ef.label) === level && !usedExistingIndices.has(ef.floorIndex)
+        );
+      }
+
+      const existing = (existingIndex !== undefined && existingIndex !== -1)
+        ? existingFloorsData?.[existingIndex]
+        : undefined;
+
+      if (existing) {
+        usedExistingIndices.add(existing.floorIndex);
+      }
+
+      const camerasCount = existing ? existing.camerasCount : 0;
+      const domeCount = existing ? existing.domeCount : 0;
+      const bulletCount = existing ? existing.bulletCount : 0;
 
       return {
         floorIndex,

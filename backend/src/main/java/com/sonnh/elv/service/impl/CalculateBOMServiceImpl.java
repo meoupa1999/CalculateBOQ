@@ -308,12 +308,10 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
     }
 
     public Integer calcuateCableQuantity(List<CalculateBOMRequestDTO> dtos) {
-        if (dtos == null) {
-            return 0;
-        }
-        return dtos.stream()
-                .filter(val -> val != null && val.getTotalCableLength() != null)
-                .mapToInt(CalculateBOMRequestDTO::getTotalCableLength)
-                .sum();
+        return getSafeInt(dtos.stream()
+                .filter(val -> val != null)
+                .map(CalculateBOMRequestDTO::getTotalCableLength)
+                .mapToInt(Integer::intValue)
+                .sum());
     }
 }
