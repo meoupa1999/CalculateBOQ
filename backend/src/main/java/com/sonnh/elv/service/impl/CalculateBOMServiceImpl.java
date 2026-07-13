@@ -27,7 +27,6 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
         if (dtos == null || dtos.isEmpty()) {
             return response;
         }
-        CalculateBOMRequestDTO dto = dtos.get(0);
 
         response.setCamDomeQuantity(calculateTotalCameraDome(dtos));
         response.setCamBulletQuantity(calculateTotalCamerBullet(dtos));
@@ -309,10 +308,12 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
     }
 
     public Integer calcuateCableQuantity(List<CalculateBOMRequestDTO> dtos) {
-        return getSafeInt(dtos.stream()
-                .filter(val -> val != null)
-                .map(CalculateBOMRequestDTO::getTotalCableLength)
-                .mapToInt(Integer::intValue)
-                .sum());
+        if (dtos == null) {
+            return 0;
+        }
+        return dtos.stream()
+                .filter(val -> val != null && val.getTotalCableLength() != null)
+                .mapToInt(CalculateBOMRequestDTO::getTotalCableLength)
+                .sum();
     }
 }
