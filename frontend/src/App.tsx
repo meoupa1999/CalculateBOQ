@@ -1965,9 +1965,7 @@ const handleAddGlobalInventory = () => {
     activeTower?.floorsData.forEach((f) => {
       const isCabinetPlaced = f.isCabinetPlaced;
       const cabinetCol = isCabinetPlaced 
-        ? (f.cableLength > 0 
-          ? `Tủ ${f.cabinetType || ""} (${f.cameraQuantityInCabinet ?? 0} Cam) - ${f.cableLength}m` 
-          : `Tủ ${f.cabinetType || ""} (${f.cameraQuantityInCabinet ?? 0} Cam)`)
+        ? `Tủ ${f.cabinetType || ""} (${f.cameraQuantityInCabinet ?? 0} Cam)`
         : "-";
       csvContent += `"${f.label}",${f.camerasCount},${f.domeCount},${f.bulletCount},"${cabinetCol}",${f.sw24Count},${f.sw16Count},"${f.upsType}",${f.pduCount},${f.convCount}\r\n`;
     });
@@ -3586,10 +3584,9 @@ const handleAddGlobalInventory = () => {
                                     <td className="py-2 px-3 text-center">
                                       {isCabinetPlaced ? (
                                         <div className="px-2 py-1 font-mono text-xs font-semibold text-center border rounded inline-block min-w-[130px] text-[#1A237E] bg-[#E8EAF6] border-[#1A237E]/20">
-                                          {f.cableLength > 0
-                                            ? `Tủ ${f.cabinetType || ""} (${f.cameraQuantityInCabinet ?? 0} Cam) - ${f.cableLength}m` 
-                                            : `Tủ ${f.cabinetType || ""} (${f.cameraQuantityInCabinet ?? 0} Cam)`}
+                                          {`Tủ ${f.cabinetType || ""} (${f.cameraQuantityInCabinet ?? 0} Cam)`}
                                         </div>
+
                                       ) : (
                                         <span className="text-slate-300">-</span>
                                       )}
