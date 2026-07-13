@@ -250,7 +250,7 @@ export function calculateProjectBOQ(
   }
 
   // First pass: build floors with basic camera counts and level mapping
-  let tempFloorsList: { floorIndex: number; label: string; camerasCount: number; domeCount: number; bulletCount: number; level: number; }[] = [];
+  let tempFloorsList: { floorIndex: number; label: string; camerasCount: number; domeCount: number; bulletCount: number; level: number; cableLengthInput?: number; }[] = [];
   const totalTargetCount = basementsCount + floorsCount + (hasRoof ? 1 : 0);
 
   if (existingFloorsData && existingFloorsData.length === totalTargetCount) {
@@ -278,6 +278,7 @@ export function calculateProjectBOQ(
         domeCount: f.domeCount,
         bulletCount: f.bulletCount,
         level,
+        cableLengthInput: f.cableLengthInput,
       };
     });
   } else {
@@ -352,6 +353,7 @@ export function calculateProjectBOQ(
         domeCount,
         bulletCount,
         level,
+        cableLengthInput: existing ? existing.cableLengthInput : undefined,
       };
     });
   }
@@ -411,6 +413,7 @@ export function calculateProjectBOQ(
         pduCount: 0,
         convCount: 0,
         cameraQuantityInCabinet: 0,
+        cableLengthInput: f.cableLengthInput,
       });
     } else {
       // Cabinet floor: calculate for this cabinet
@@ -479,6 +482,7 @@ export function calculateProjectBOQ(
         pduCount,
         convCount,
         cameraQuantityInCabinet: totalCams,
+        cableLengthInput: f.cableLengthInput,
       });
     }
   });
