@@ -3452,6 +3452,14 @@ const handleAddGlobalInventory = () => {
                                             onClick={(e) => e.stopPropagation()}
                                             className="bg-transparent border-0 hover:bg-slate-200/80 focus:bg-white focus:ring-1 focus:ring-[#1A237E]/30 focus:border-[#1A237E] rounded px-1.5 py-0.5 font-semibold text-[#191c1e] text-sm focus:outline-none transition w-36 text-left"
                                           />
+                                          {f.cableLength !== undefined && (
+                                            <span 
+                                              className="inline-flex items-center px-1.5 py-0.5 text-[11px] font-semibold rounded bg-[#E8EAF6] text-[#283593] border border-[#C5CAE9] shadow-xs whitespace-nowrap"
+                                              title="Tổng chiều dài cáp tính toán cho tầng này"
+                                            >
+                                              {f.cableLength}m
+                                            </span>
+                                          )}
                                           {calculationMode === "manual" ? (
                                             manualGroups.some(g => g.cabinetIndex === f.floorIndex) ? (
                                               (() => {
