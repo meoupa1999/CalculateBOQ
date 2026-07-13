@@ -25,6 +25,7 @@ public class CalculateBOMRequestDTO {
     private Integer totalUPS;
     private Integer totalPDU;
     private Integer totalConverter;
+    private Integer totalCableLength;
     private List<FloorBOMInfo> floors;
 
     @Data
