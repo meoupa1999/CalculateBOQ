@@ -65,6 +65,15 @@ public class CalcualateServiceImpl implements CalculateService {
                         .cabinetIndex(cabinetIndex);
             }
 
+            int calculatedCable = 0;
+            if (cabinetIndex != null) {
+                int floorDiff = Math.abs(floor.getFloorIndex() - cabinetIndex);
+                int baseCable = floor.getCableLength() != null ? floor.getCableLength() : 0;
+                double hDist = dto.getHorizontalDistance() != null ? dto.getHorizontalDistance() : 0.0;
+                calculatedCable = (int) Math.round((hDist * floorDiff) + baseCable);
+            }
+            builder.cableLength(calculatedCable);
+
             if (isPlaced) {
                 CabinetEquipmentDTO cabinet = mapResult.get(floor.getFloorIndex());
                 builder.cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
@@ -632,6 +641,15 @@ public class CalcualateServiceImpl implements CalculateService {
                         .toIndex(coveringCabinet.getTo())
                         .cabinetIndex(cabinetIndex);
             }
+
+            int calculatedCable = 0;
+            if (cabinetIndex != null) {
+                int floorDiff = Math.abs(floor.getFloorIndex() - cabinetIndex);
+                int baseCable = floor.getCableLength() != null ? floor.getCableLength() : 0;
+                double hDist = dto.getHorizontalDistance() != null ? dto.getHorizontalDistance() : 0.0;
+                calculatedCable = (int) Math.round((hDist * floorDiff) + baseCable);
+            }
+            builder.cableLength(calculatedCable);
 
             if (isPlaced) {
                 CabinetEquipmentDTO cabinet = mapResult.get(floor.getFloorIndex());
