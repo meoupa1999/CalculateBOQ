@@ -41,9 +41,9 @@ public class CalculateController {
 
     @PostMapping("/bom")
     public ResponseEntity<CalculateBOMResponseDTO> getBOM(
-            @RequestBody CalculateBOMRequestDTO dto
+            @RequestBody List<CalculateBOMRequestDTO> dtos
     ) {
-        CalculateBOMResponseDTO bom = calculateBOMService.calculateBOM(dto);
+        CalculateBOMResponseDTO bom = calculateBOMService.calculateBOM(dtos);
         return ResponseEntity.ok(bom);
     }
 }

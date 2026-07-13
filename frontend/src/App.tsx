@@ -74,6 +74,7 @@ const BOM_ITEMS: BOMItem[] = [
   { stt: "7", name: "Tủ mạng rack 32U", unit: "Bộ", field: "cabinet32UQuantity", noteKey: "cat2_8" },
   { stt: "8", name: "Tủ mạng rack 42U", unit: "Bộ", field: "cabinet42UQuantity", noteKey: "cat2_9" },
   { stt: "9", name: "ODF 12FO SC/UPC (Full Phụ kiện)", unit: "Cái", field: "odf12FOQuantity", noteKey: "cat2_10" },
+  { stt: "10", name: "ODF 24FO SC/UPC (Full Phụ kiện)", unit: "Cái", field: "odf24FOQuantity", noteKey: "cat2_11" },
 
   // III. HẠNG MỤC ĐIỆN
   { stt: "", name: "III. HẠNG MỤC ĐIỆN", unit: "", noteKey: "" },
@@ -781,6 +782,17 @@ export default function App() {
       const totalSw24 = floorsData.reduce((acc: number, curr: any) => acc + (curr.sw24Count || 0), 0);
       const totalSwichPOE = totalSw16 + totalSw24;
       const totalCabinet = floorsData.filter((f: any) => f.isCabinetPlaced).length;
+      const cabinets: Record<string, number> = {};
+      floorsData.forEach((f: any) => {
+        if (f.isCabinetPlaced) {
+          const type = f.cabinetType || tower.rackType || "2U";
+          cabinets[type] = (cabinets[type] || 0) + 1;
+        }
+      });
+      if (Object.keys(cabinets).length === 0) {
+        const type = tower.rackType || "2U";
+        cabinets[type] = totalCabinet || 0;
+      }
       const totalUPS = floorsData.filter((f: any) => f.isCabinetPlaced && f.upsType !== "None").length;
       const totalPDU = floorsData.reduce((acc: number, curr: any) => acc + (curr.pduCount || 0), 0);
       const totalConverter = floorsData.reduce((acc: number, curr: any) => acc + (curr.convCount || 0), 0);
@@ -806,20 +818,20 @@ export default function App() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          totalCamera,
+        body: JSON.stringify([{
+          towerId: tower.id, totalCamera,
           totalCamDome,
           totalCamBullet,
           totalSwichPOE,
           totalSw16,
           totalSw24,
-          cabinetType: tower.rackType || "2U",
-          totalCabinet,
+          cabinets,
+
           totalUPS,
           totalPDU,
           totalConverter,
           floors
-        })
+        }])
       });
       if (res.ok) {
         const data = await res.json();
@@ -861,7 +873,7 @@ export default function App() {
 
     setIsCalculatingSummary(true);
     try {
-      const promises = selectedTowers.map(async (t) => {
+      const payload = selectedTowers.map((t) => {
         const floorsData = t.floorsData;
         if (!floorsData || floorsData.length === 0) return null;
         const totalCamera = floorsData.reduce((acc: number, curr: any) => acc + (curr.camerasCount || 0), 0);
@@ -871,6 +883,17 @@ export default function App() {
         const totalSw24 = floorsData.reduce((acc: number, curr: any) => acc + (curr.sw24Count || 0), 0);
         const totalSwichPOE = totalSw16 + totalSw24;
         const totalCabinet = floorsData.filter((f: any) => f.isCabinetPlaced).length;
+        const cabinets: Record<string, number> = {};
+        floorsData.forEach((f: any) => {
+          if (f.isCabinetPlaced) {
+            const type = f.cabinetType || t.rackType || "2U";
+            cabinets[type] = (cabinets[type] || 0) + 1;
+          }
+        });
+        if (Object.keys(cabinets).length === 0) {
+          const type = t.rackType || "2U";
+          cabinets[type] = totalCabinet || 0;
+        }
         const totalUPS = floorsData.filter((f: any) => f.isCabinetPlaced && f.upsType !== "None").length;
         const totalPDU = floorsData.reduce((acc: number, curr: any) => acc + (curr.pduCount || 0), 0);
         const totalConverter = floorsData.reduce((acc: number, curr: any) => acc + (curr.convCount || 0), 0);
@@ -890,50 +913,31 @@ export default function App() {
           convCount: f.convCount || 0
         }));
 
-        const res = await fetch(`${API_BASE}/calculate/bom`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            totalCamera,
-            totalCamDome,
-            totalCamBullet,
-            totalSwichPOE,
-            totalSw16,
-            totalSw24,
-            cabinetType: t.rackType || "2U",
-            totalCabinet,
-            totalUPS,
-            totalPDU,
-            totalConverter,
-            floors
-          })
-        });
-        if (res.ok) {
-          return await res.json();
-        }
-        return null;
-      });
+        return {
+          towerId: t.id,
+          totalCamera,
+          totalCamDome,
+          totalCamBullet,
+          totalSwichPOE,
+          totalSw16,
+          totalSw24,
+          cabinets,
 
-      const results = await Promise.all(promises);
-      const validResults = results.filter(r => r !== null);
+          totalUPS,
+          totalPDU,
+          totalConverter,
+          floors
+        };
+      }).filter(p => p !== null);
 
-      if (validResults.length === 0) {
+      if (payload.length === 0) {
         addToast("Không lấy được dữ liệu BOM cho tháp nào!", "error");
         return;
       }
 
-      // Sum all numeric fields
-      const sum: any = {};
-      const keys = Object.keys(validResults[0]);
-      keys.forEach((key) => {
-        sum[key] = validResults.reduce((acc, curr, idx) => {
-          const t = selectedTowers[idx];
-          const val = customBOMOverrides[t.id]?.[key] ?? curr[key] ?? 0;
-          return acc + val;
-        }, 0);
-      });
+      const res = await fetch(API_BASE + "/calculate/bom", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
 
-      setSummaryBomData(sum);
+      if (res.ok) { setSummaryBomData(await res.json()); } else { addToast("Lỗi khi tính tổng BOM!", "error"); return; }
       addToast("Tính tổng BOM cho các tháp thành công!", "success");
     } catch (err) {
       console.error(err);
@@ -1372,7 +1376,7 @@ export default function App() {
     if (normalized.includes("tủ mạng rack 10u (có bánh xe)")) return 0.765;
     if (normalized.includes("tủ mạng rack 32u")) return 2;
     if (normalized.includes("tủ mạng rack 42u")) return 2;
-    if (normalized.includes("odf 12fo sc/upc (full phụ kiện)") || normalized.includes("odf 12fo sc/upc")) return 1;
+    if (normalized.includes("odf 12fo sc/upc") || normalized.includes("odf 24fo sc/upc")) return 1;
     if (normalized.includes("dây điện cvv 2x2.5")) return 0.01;
     if (normalized.includes("thanh nguồn pdu đa năng")) return 0.04;
     if (normalized.includes("nguồn lưu điện ups ares model ar610")) return 0.245;
@@ -2944,7 +2948,8 @@ const handleAddGlobalInventory = () => {
                                       "cabinet42UQuantity",
                                       "ups3000Quantity",
                                       "chickenTubeQuantity",
-                                      "electricTubeQuantity"
+                                      "electricTubeQuantity",
+                                       "cvvCable"
                                     ].includes(item.field || "");
                                     
                                     const isYellow = item.stt === "1.1" || item.stt === "1.2" || item.name === "Vật tư phụ";
@@ -3334,7 +3339,7 @@ const handleAddGlobalInventory = () => {
                                               <option value="2U">2U</option>
                                               <option value="6U">6U</option>
                                               <option value="10U">10U</option>
-                                              <option value="20U">20U</option>
+
                                             </select>
                                           )}
                                         </div>

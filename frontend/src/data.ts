@@ -250,42 +250,111 @@ export function calculateProjectBOQ(
   }
 
   // First pass: build floors with basic camera counts and level mapping
-  const tempFloorsList = labels.map((label, idx) => {
-    const floorIndex = idx; // 0-based ordering
-    
-    // Find matching floor in existingFloorsData to preserve user input
-    const existing = existingFloorsData?.find(
-      (ef) => ef.label === label || ef.floorIndex === floorIndex
-    );
-    const camerasCount = existing ? existing.camerasCount : 0;
-    const domeCount = existing ? existing.domeCount : 0;
-    const bulletCount = existing ? existing.bulletCount : 0;
-    
-    // Determine level
-    let level = 1;
-    if (label.includes("Mái")) {
-      level = floorsCount + 1;
-    } else {
-      const matchT = label.match(/Tầng\s+(\d+)/);
-      if (matchT) {
-        level = parseInt(matchT[1]);
+  let tempFloorsList: { floorIndex: number; label: string; camerasCount: number; domeCount: number; bulletCount: number; level: number; }[] = [];
+  const totalTargetCount = basementsCount + floorsCount + (hasRoof ? 1 : 0);
+
+  if (existingFloorsData && existingFloorsData.length === totalTargetCount) {
+    // If the length matches exactly, use existingFloorsData directly to preserve customized labels and order
+    tempFloorsList = existingFloorsData.map((f, idx) => {
+      const label = f.label;
+      let level = 1;
+      if (label.includes("Mái")) {
+        level = floorsCount + 1;
       } else {
-        const matchB = label.match(/B(\d+)/);
-        if (matchB) {
-          level = 1 - parseInt(matchB[1]);
+        const matchT = label.match(/Tầng\s+(\d+)/);
+        if (matchT) {
+          level = parseInt(matchT[1]);
+        } else {
+          const matchB = label.match(/B(\d+)/);
+          if (matchB) {
+            level = 1 - parseInt(matchB[1]);
+          }
         }
       }
+      return {
+        floorIndex: idx, // Ensure index is 0-based and consecutive
+        label: f.label,
+        camerasCount: f.camerasCount,
+        domeCount: f.domeCount,
+        bulletCount: f.bulletCount,
+        level,
+      };
+    });
+  } else {
+    // Otherwise, generate labels from scratch and match them robustly
+    const labels: string[] = [];
+
+    // 1. Basements (e.g. B3, B2, B1)
+    for (let b = basementsCount; b >= 1; b--) {
+      labels.push(`B${b}`);
     }
 
-    return {
-      floorIndex,
-      label: existing ? existing.label : label,
-      camerasCount,
-      domeCount,
-      bulletCount,
-      level,
-    };
-  });
+    // 2. Regular floors (Tầng 1, Tầng 2, ...)
+    for (let f = 1; f <= floorsCount; f++) {
+      labels.push(`Tầng ${f}`);
+    }
+
+    // 3. Roof (Tầng Mái)
+    if (hasRoof) {
+      labels.push("Tầng Mái");
+    }
+
+    const usedExistingIndices = new Set<number>();
+
+    tempFloorsList = labels.map((label, idx) => {
+      const floorIndex = idx; // 0-based ordering
+
+      // Find matching floor in existingFloorsData to preserve user input
+      // First try to match by label
+      let existingIndex = existingFloorsData?.findIndex(
+        (ef) => ef.label === label && !usedExistingIndices.has(ef.floorIndex)
+      );
+
+      // If not found, try to match by index
+      if ((existingIndex === undefined || existingIndex === -1) && existingFloorsData) {
+        existingIndex = existingFloorsData.findIndex(
+          (ef) => ef.floorIndex === floorIndex && !usedExistingIndices.has(ef.floorIndex)
+        );
+      }
+
+      const existing = (existingIndex !== undefined && existingIndex !== -1)
+        ? existingFloorsData?.[existingIndex]
+        : undefined;
+
+      if (existing) {
+        usedExistingIndices.add(existing.floorIndex);
+      }
+
+      const camerasCount = existing ? existing.camerasCount : 0;
+      const domeCount = existing ? existing.domeCount : 0;
+      const bulletCount = existing ? existing.bulletCount : 0;
+
+      // Determine level
+      let level = 1;
+      if (label.includes("Mái")) {
+        level = floorsCount + 1;
+      } else {
+        const matchT = label.match(/Tầng\s+(\d+)/);
+        if (matchT) {
+          level = parseInt(matchT[1]);
+        } else {
+          const matchB = label.match(/B(\d+)/);
+          if (matchB) {
+            level = 1 - parseInt(matchB[1]);
+          }
+        }
+      }
+
+      return {
+        floorIndex,
+        label: existing ? existing.label : label,
+        camerasCount,
+        domeCount,
+        bulletCount,
+        level,
+      };
+    });
+  }
 
   // Determine cabinet levels using passed array or local calculation fallback
   const useCabinetPlacements = true; // Always calculate based on placement logic if available

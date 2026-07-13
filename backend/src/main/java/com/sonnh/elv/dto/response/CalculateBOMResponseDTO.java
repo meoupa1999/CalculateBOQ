@@ -29,7 +29,8 @@ public class CalculateBOMResponseDTO {
     private Integer cabinet20UQuantity; // Tủ rack 20U
     private Integer cabinet32UQuantity; // Tủ rack 32U
     private Integer cabinet42UQuantity; // Tủ rack 42U
-    private Integer odf12FOQuantity;// ODF 12FO SC/UPC (Full Phụ kiện) (tự nhập)
+    private Integer odf12FOQuantity;// ODF 12FO SC/UPC (Full Phụ kiện)
+    private Integer odf24FOQuantity;// ODF 24FO SC/UPC (Full Phụ kiện)
     private Integer cvvCable; // Dây điện CVV 2x2.5
     private Integer pduQuantity; // Thanh nguồn PDU đa năng 6 ổ cắm 3 chấu chuẩn 19"
     private Integer ups1000Quantity; // Nguồn lưu điện UPS ARES Model AR610 1000VA/800W

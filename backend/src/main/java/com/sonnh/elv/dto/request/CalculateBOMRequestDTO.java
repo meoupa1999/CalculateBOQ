@@ -6,20 +6,22 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CalculateBOMRequestDTO {
+    private UUID towerId;
     private Integer totalCamera;
     private Integer totalCamDome;
     private Integer totalCamBullet;
     private Integer totalSwichPOE;
     private Integer totalSw16;
     private Integer totalSw24;
-    private String cabinetType;
-    private Integer totalCabinet;
+    private Map<String, Integer> cabinets;
     private Integer totalUPS;
     private Integer totalPDU;
     private Integer totalConverter;
