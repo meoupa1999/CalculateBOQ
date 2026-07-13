@@ -977,6 +977,7 @@ export default function App() {
         const totalUPS = floorsData.filter((f: any) => f.isCabinetPlaced && f.upsType !== "None").length;
         const totalPDU = floorsData.reduce((acc: number, curr: any) => acc + (curr.pduCount || 0), 0);
         const totalConverter = floorsData.reduce((acc: number, curr: any) => acc + (curr.convCount || 0), 0);
+        const totalCableLength = floorsData.reduce((acc: number, curr: any) => acc + (curr.cableLength || 0), 0);
 
         const floors = floorsData.map((f: any) => ({
           floorIndex: f.floorIndex,
@@ -1006,6 +1007,7 @@ export default function App() {
           totalUPS,
           totalPDU,
           totalConverter,
+          totalCableLength,
           floors
         };
       }).filter(p => p !== null);
