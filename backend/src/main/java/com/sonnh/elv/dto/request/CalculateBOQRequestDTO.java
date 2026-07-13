@@ -30,5 +30,6 @@ public class CalculateBOQRequestDTO {
         private Integer camerasCount;
         private Integer domeCount;
         private Integer bulletCount;
+        private Integer cableLength;
     }
 }

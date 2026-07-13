@@ -106,6 +106,7 @@ export interface CalculateBOQManualRequest {
     camerasCount: number;
     domeCount?: number;
     bulletCount?: number;
+    cableLength?: number;
   }[];
   manualGroups: ManualCabinetGroup[];
 }

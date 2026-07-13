@@ -685,6 +685,7 @@ export default function App() {
           camerasCount: f.camerasCount,
           domeCount: f.domeCount,
           bulletCount: f.bulletCount,
+          cableLength: f.cableLength || 0,
         }));
 
       let res;
