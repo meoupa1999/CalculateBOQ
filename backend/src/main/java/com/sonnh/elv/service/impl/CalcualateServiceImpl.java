@@ -65,7 +65,7 @@ public class CalcualateServiceImpl implements CalculateService {
                         .cabinetIndex(cabinetIndex);
             }
 
-            int calculatedCable = calculateCableLength(cabinetIndex, floor, dto.getHorizontalDistance());
+            int calculatedCable = calculateCableLength(cabinetIndex, floor, dto.getVerticalDistance());
             builder.cableLength(calculatedCable);
 
             if (isPlaced) {
@@ -92,14 +92,14 @@ public class CalcualateServiceImpl implements CalculateService {
         return result;
     }
 
-    private int calculateCableLength(Integer cabinetIndex, FloorRequest floor, Double horizontalDistance) {
+    private int calculateCableLength(Integer cabinetIndex, FloorRequest floor, Double verticalDistance) {
         if (cabinetIndex == null) {
             return 0;
         }
         int floorDiff = Math.abs(floor.getFloorIndex() - cabinetIndex);
         int baseCable = floor.getCableLength() != null ? floor.getCableLength() : 0;
-        double hDist = horizontalDistance != null ? horizontalDistance : 0.0;
-        return (int) Math.round((hDist * floorDiff) + baseCable);
+        double vDist = verticalDistance != null ? verticalDistance : 0.0;
+        return (int) Math.round((vDist * floorDiff) + baseCable);
     }
 
     public Map<Integer, CabinetEquipmentDTO> calculateCabinetPlacementUitls(CalculateBOQRequestDTO dto,
@@ -646,7 +646,7 @@ public class CalcualateServiceImpl implements CalculateService {
                         .cabinetIndex(cabinetIndex);
             }
 
-            int calculatedCable = calculateCableLength(cabinetIndex, floor, dto.getHorizontalDistance());
+            int calculatedCable = calculateCableLength(cabinetIndex, floor, dto.getVerticalDistance());
             builder.cableLength(calculatedCable);
 
             if (isPlaced) {
