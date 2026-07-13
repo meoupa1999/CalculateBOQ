@@ -21,6 +21,7 @@ export interface FloorData {
   isCabinetPlaced?: boolean;
   cabinetType?: string;
   cabinetIndex?: number;
+  cableLengthInput?: number;
 }
 
 export interface SiteParameters {

@@ -685,7 +685,7 @@ export default function App() {
           camerasCount: f.camerasCount,
           domeCount: f.domeCount,
           bulletCount: f.bulletCount,
-          cableLength: f.cableLength || 0,
+          cableLength: f.cableLengthInput !== undefined ? f.cableLengthInput : (f.cableLength || 0),
         }));
 
       let res;
@@ -786,6 +786,7 @@ export default function App() {
                           isCabinetPlaced: true,
                           cabinetType: backendInfo.cabinetType,
                           cabinetIndex: backendInfo.cabinetIndex ?? undefined,
+                          cableLength: backendInfo.cableLength ?? 0,
                           fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
                           toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
                         };
@@ -801,6 +802,7 @@ export default function App() {
                         isCabinetPlaced: false,
                         cabinetType: undefined,
                         cabinetIndex: backendInfo.cabinetIndex ?? undefined,
+                        cableLength: backendInfo.cableLength ?? 0,
                         fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
                         toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
                       };
@@ -1160,6 +1162,7 @@ export default function App() {
       cabinetType: undefined,
       fromIndex: undefined,
       toIndex: undefined,
+      cableLengthInput: undefined,
     }));
 
     setManualGroups([]);
@@ -3241,7 +3244,7 @@ const handleAddGlobalInventory = () => {
                                   <th className="py-3 px-3 w-24 text-center">ĐẶT TỦ (MC)</th>
                                 )}
                                 <th className="py-3 px-4 w-28">TẦNG</th>
-                                <th className="py-3 px-3 w-32">SỐ CAMERA</th>
+                                <th className="py-3 px-3 w-32">KHOẢNG CÁCH DÂY (M)</th>
                                 <th className="py-3 px-3 w-28">CAM DOME</th>
                                 <th className="py-3 px-3 w-28">CAM THÂN</th>
                                 <th className="py-3 px-3 w-32">TỦ & SỐ CAM</th>
@@ -3539,18 +3542,19 @@ const handleAddGlobalInventory = () => {
                                       </div>
                                     </td>
                                     
-                                    {/* Editable Camera Count */}
-                                    <td className="py-2 px-3">
-                                      <input
-                                        type="number"
-                                        min="0"
-                                        placeholder="0"
-                                        value={f.camerasCount === 0 ? "" : f.camerasCount}
-                                        onFocus={(e) => e.target.select()}
-                                        onChange={(e) => handleUpdateFloorCell(f.floorIndex, "camerasCount", Math.max(0, parseInt(e.target.value) || 0))}
-                                        className="w-20 bg-[#f8f9fb] border border-[#ECEFF1] hover:border-slate-300 focus:border-[#1A237E] rounded px-2 py-1 text-center font-mono font-semibold focus:outline-none transition"
-                                      />
-                                    </td>
+                                    {/* Editable Cable Length Input */}
+                                     <td className="py-2 px-3">
+                                       <input
+                                         type="number"
+                                         min="0"
+                                         placeholder="0"
+                                         value={f.cableLengthInput !== undefined ? f.cableLengthInput : (f.cableLength || 0)}
+                                         onFocus={(e) => e.target.select()}
+                                         onChange={(e) => handleUpdateFloorCell(f.floorIndex, "cableLengthInput", Math.max(0, parseInt(e.target.value) || 0))}
+                                         className="w-20 bg-[#f8f9fb] border border-[#ECEFF1] hover:border-slate-300 focus:border-[#1A237E] rounded px-2 py-1 text-center font-mono font-semibold focus:outline-none transition"
+                                       />
+                                     </td>
+
 
                                     {/* Editable Dome Count */}
                                     <td className="py-2 px-3">
