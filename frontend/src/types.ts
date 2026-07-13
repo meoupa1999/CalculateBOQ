@@ -20,6 +20,7 @@ export interface FloorData {
   toIndex?: number;
   isCabinetPlaced?: boolean;
   cabinetType?: string;
+  cabinetIndex?: number;
 }
 
 export interface SiteParameters {

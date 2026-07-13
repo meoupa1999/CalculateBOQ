@@ -785,12 +785,27 @@ export default function App() {
                           cameraQuantityInCabinet: backendInfo.cameraQuantityInCabinet ?? 0,
                           isCabinetPlaced: true,
                           cabinetType: backendInfo.cabinetType,
+                          cabinetIndex: backendInfo.cabinetIndex ?? undefined,
                           fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
                           toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
                         };
                       }
+                      return {
+                        ...f,
+                        sw24Count: 0,
+                        sw16Count: 0,
+                        upsType: "None",
+                        pduCount: 0,
+                        convCount: 0,
+                        cameraQuantityInCabinet: 0,
+                        isCabinetPlaced: false,
+                        cabinetType: undefined,
+                        cabinetIndex: backendInfo.cabinetIndex ?? undefined,
+                        fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
+                        toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
+                      };
                     }
-                    // Non-cabinet floor: clear cabinet equipment quantities
+                    // Non-cabinet floor fallback
                     return {
                       ...f,
                       sw24Count: 0,
@@ -801,6 +816,7 @@ export default function App() {
                       cameraQuantityInCabinet: 0,
                       isCabinetPlaced: false,
                       cabinetType: undefined,
+                      cabinetIndex: undefined,
                       fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
                       toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
                     };

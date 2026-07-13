@@ -49,17 +49,20 @@ public class CalcualateServiceImpl implements CalculateService {
 
             // Find covering cabinet range
             CabinetEquipmentDTO coveringCabinet = null;
+            Integer cabinetIndex = null;
             for (Map.Entry<Integer, CabinetEquipmentDTO> entry : mapResult.entrySet()) {
                 CabinetEquipmentDTO cab = entry.getValue();
                 if (floor.getFloorIndex() >= cab.getFrom() && floor.getFloorIndex() <= cab.getTo()) {
                     coveringCabinet = cab;
+                    cabinetIndex = entry.getKey();
                     break;
                 }
             }
 
             if (coveringCabinet != null) {
                 builder.fromIndex(coveringCabinet.getFrom())
-                        .toIndex(coveringCabinet.getTo());
+                        .toIndex(coveringCabinet.getTo())
+                        .cabinetIndex(cabinetIndex);
             }
 
             if (isPlaced) {
@@ -614,17 +617,20 @@ public class CalcualateServiceImpl implements CalculateService {
                     .isCabinetPlaced(isPlaced);
 
             CabinetEquipmentDTO coveringCabinet = null;
+            Integer cabinetIndex = null;
             for (Map.Entry<Integer, CabinetEquipmentDTO> entry : mapResult.entrySet()) {
                 CabinetEquipmentDTO cab = entry.getValue();
                 if (floor.getFloorIndex() >= cab.getFrom() && floor.getFloorIndex() <= cab.getTo()) {
                     coveringCabinet = cab;
+                    cabinetIndex = entry.getKey();
                     break;
                 }
             }
 
             if (coveringCabinet != null) {
                 builder.fromIndex(coveringCabinet.getFrom())
-                        .toIndex(coveringCabinet.getTo());
+                        .toIndex(coveringCabinet.getTo())
+                        .cabinetIndex(cabinetIndex);
             }
 
             if (isPlaced) {

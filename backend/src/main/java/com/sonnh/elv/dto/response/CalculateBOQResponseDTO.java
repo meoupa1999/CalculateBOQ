@@ -13,6 +13,7 @@ public class CalculateBOQResponseDTO {
     private Integer floorIndex;
     private Integer fromIndex;
     private Integer toIndex;
+    private Integer cabinetIndex;
     private Boolean isCabinetPlaced;
     private String label;
     private Integer camerasCount;
