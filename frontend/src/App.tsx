@@ -195,6 +195,65 @@ export default function App() {
   const [summaryBomData, setSummaryBomData] = useState<any>(null);
   const [isCalculatingSummary, setIsCalculatingSummary] = useState<boolean>(false);
 
+  const [leftWidth, setLeftWidth] = useState<number>(50);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isXl, setIsXl] = useState<boolean>(window.innerWidth >= 1280);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1280px)");
+    const listener = () => setIsXl(media.matches);
+    media.addEventListener("change", listener);
+    return () => media.removeEventListener("change", listener);
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMove = (clientX: number) => {
+      const container = document.getElementById("bom-split-container");
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const newWidth = ((clientX - rect.left) / rect.width) * 100;
+      setLeftWidth(Math.min(Math.max(newWidth, 20), 80));
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      handleMove(e.clientX);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        handleMove(e.touches[0].clientX);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("touchmove", handleTouchMove);
+    document.addEventListener("touchend", handleMouseUp);
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isDragging]);
+
+  const startDrag = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
   const fetchProjects = async (selectNewestId?: string) => {
     try {
       const response = await fetch(`${API_BASE}/projects?page=1&size=100`);
@@ -2881,10 +2940,13 @@ const handleAddGlobalInventory = () => {
                       </div>
 
                       {/* Grid Container for Excel Table (Left) and BOQ Table (Right) */}
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start w-full">
+                      <div id="bom-split-container" className="flex flex-col xl:flex-row gap-0 items-start w-full relative">
                         
                         {/* Excel-like BOQ Template Table (Left) */}
-                        <div className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs overflow-hidden w-full">
+                        <div 
+                          className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs overflow-hidden w-full"
+                          style={isXl ? { width: `calc(${leftWidth}% - 12px)`, flexShrink: 0 } : {}}
+                        >
                           <div className="px-6 py-4 border-b border-[#ECEFF1] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
                             <div>
                               <h3 className="font-sans font-bold text-base text-[#191c1e]">
@@ -3010,8 +3072,26 @@ const handleAddGlobalInventory = () => {
                           </div>
                         </div>
 
+                        {/* Split Resizer Bar */}
+                        {isXl && (
+                          <div
+                            onMouseDown={startDrag}
+                            onTouchStart={startDrag}
+                            className={`w-6 self-stretch flex items-center justify-center cursor-col-resize group relative z-10 select-none flex-shrink-0`}
+                          >
+                            <div className={`w-[2px] h-full bg-slate-200 group-hover:bg-indigo-500 transition-colors ${isDragging ? 'bg-indigo-600 w-[3px]' : ''}`} />
+                            <div className={`absolute top-1/2 -translate-y-1/2 w-4 h-8 bg-white border border-slate-200 rounded-md shadow-sm flex flex-col gap-[3px] items-center justify-center group-hover:border-indigo-400 transition-colors ${isDragging ? 'border-indigo-500 ring-1 ring-indigo-100' : ''}`}>
+                              <div className="w-[1.5px] h-3 bg-slate-400 group-hover:bg-indigo-500" />
+                              <div className="w-[1.5px] h-3 bg-slate-400 group-hover:bg-indigo-500" />
+                            </div>
+                          </div>
+                        )}
+
                         {/* Detailed Interactive BOQ Sheet */}
-                        <div className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs overflow-hidden w-full">
+                        <div 
+                          className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs overflow-hidden w-full"
+                          style={isXl ? { width: `calc(${100 - leftWidth}% - 12px)`, flexShrink: 0 } : {}}
+                        >
                         <div className="px-6 py-4 border-b border-[#ECEFF1] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
                           <div>
                             <h3 className="font-sans font-bold text-base text-[#191c1e]">
