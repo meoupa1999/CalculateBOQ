@@ -685,7 +685,7 @@ export default function App() {
           camerasCount: f.camerasCount,
           domeCount: f.domeCount,
           bulletCount: f.bulletCount,
-          cableLength: f.cableLengthInput !== undefined ? f.cableLengthInput : (f.cableLength || 0),
+          cableLength: f.cableLengthInput !== undefined ? f.cableLengthInput : 0,
         }));
 
       let res;
@@ -3548,7 +3548,7 @@ const handleAddGlobalInventory = () => {
                                          type="number"
                                          min="0"
                                          placeholder="0"
-                                         value={f.cableLengthInput !== undefined ? f.cableLengthInput : (f.cableLength || 0)}
+                                         value={f.cableLengthInput === undefined ? "" : f.cableLengthInput}
                                          onFocus={(e) => e.target.select()}
                                          onChange={(e) => handleUpdateFloorCell(f.floorIndex, "cableLengthInput", Math.max(0, parseInt(e.target.value) || 0))}
                                          className="w-20 bg-[#f8f9fb] border border-[#ECEFF1] hover:border-slate-300 focus:border-[#1A237E] rounded px-2 py-1 text-center font-mono font-semibold focus:outline-none transition"
