@@ -65,6 +65,7 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
         response.setOdf24FOQuantity(odfMap.getOrDefault("24FO", 0));
         response.setPatchCordQuantity(calcuatePatchCord(dtos, recorderMap));
         response.setCablemanageQuantity(calcuateCablemanage(dtos));
+        response.setCableQuantity(calcuateCableQuantity(dtos));
 
         System.out.println("Response BOM: " + response.toString());
 
@@ -307,10 +308,11 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
         return total;
     }
 
-    private String getCabinetType(CalculateBOMRequestDTO dto) {
-        if (dto == null || dto.getCabinets() == null || dto.getCabinets().isEmpty())
-            return "2U";
-        return dto.getCabinets().keySet().iterator().next();
+    public Integer calcuateCableQuantity(List<CalculateBOMRequestDTO> dtos) {
+        return getSafeInt(dtos.stream()
+                .filter(val -> val != null)
+                .map(CalculateBOMRequestDTO::getTotalCableLength)
+                .mapToInt(Integer::intValue)
+                .sum());
     }
-
 }

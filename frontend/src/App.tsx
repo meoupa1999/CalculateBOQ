@@ -3025,7 +3025,7 @@ const handleAddGlobalInventory = () => {
 
                                     const isEditableField = [
                                       "fiberCableQuantity",
-                                      "cableQuantity",
+
                                       "cabinet32UQuantity",
                                       "cabinet42UQuantity",
                                       "ups3000Quantity",
