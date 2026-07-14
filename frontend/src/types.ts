@@ -22,6 +22,21 @@ export interface FloorData {
   cabinetType?: string;
   cabinetIndex?: number;
   cableLengthInput?: number;
+  cabinets?: {
+    cabinetId: string;
+    cabinetType: string;
+    cameraQuantityInCabinet: number;
+    sw24Count: number;
+    sw16Count: number;
+    upsCount: number;
+    pduCount: number;
+    convCount: number;
+    allocations?: {
+      floorIndex: number;
+      domeCount: number;
+      bulletCount: number;
+    }[];
+  }[];
 }
 
 export interface SiteParameters {

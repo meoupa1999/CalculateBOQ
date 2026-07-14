@@ -30,8 +30,30 @@ public class CalculateBOQManualRequestDTO {
     @AllArgsConstructor
     public static class ManualCabinetGroup {
         private Integer cabinetIndex; // tầng user đặt tủ
-        private Integer totalCamera; // tổng cam tính tổng trong nhóm các tầng user chọn luôn
         private Map<Integer, Integer> floorRange; // khoảng index user nhóm tầng ví dụ {"4": 9}
-        private String rackType; // loại tủ của riêng nhóm này
+        private List<Cabinet> cabinets; // danh sách các tủ đặt tại tầng này
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Cabinet {
+        private String id;
+        private String type; // "2U", "6U", ...
+        private Integer totalDome;
+        private Integer totalBullet;
+        private Integer totalCamera;
+        private List<CabinetAllocation> allocations;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CabinetAllocation {
+        private Integer floorIndex;
+        private Integer domeCount;
+        private Integer bulletCount;
     }
 }

@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.sonnh.elv.dto.request.CalculateBOQManualRequestDTO.CabinetAllocation;
+
+import java.util.List;
 
 @Data
 @Builder
@@ -27,4 +30,22 @@ public class CalculateBOQResponseDTO {
     private Integer pduCount;
     private Integer convCount;
     private String cabinetType;
+    private List<CabinetDetailResponseDTO> cabinets;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CabinetDetailResponseDTO {
+        private String cabinetId;
+        private String cabinetType;
+        private Integer cameraQuantityInCabinet;
+        private Integer sw24Count;
+        private Integer sw16Count;
+        private Integer upsCount;
+        private Integer pduCount;
+        private Integer convCount;
+        private List<CabinetAllocation> allocations;
+    }
 }
+

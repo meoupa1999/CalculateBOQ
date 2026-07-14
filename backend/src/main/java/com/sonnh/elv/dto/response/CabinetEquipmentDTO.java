@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.sonnh.elv.dto.request.CalculateBOQManualRequestDTO.CabinetAllocation;
+import java.util.List;
 
 @Data
 @Builder
@@ -18,4 +20,7 @@ public class CabinetEquipmentDTO {
     private Integer ups;
     private Integer pdu;
     private Integer converter;
+    private String cabinetId;
+    private String cabinetType;
+    private List<CabinetAllocation> allocations;
 }

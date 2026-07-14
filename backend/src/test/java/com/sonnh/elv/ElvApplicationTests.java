@@ -610,24 +610,24 @@ class ElvApplicationTests {
         range1.put(4, 9);
         manualGroups.add(CalculateBOQManualRequestDTO.ManualCabinetGroup.builder()
                 .cabinetIndex(4)
-                .totalCamera(6)
                 .floorRange(range1)
+                .cabinets(List.of(CalculateBOQManualRequestDTO.Cabinet.builder().id("cab_4").type("2U").totalCamera(6).build()))
                 .build());
 
         Map<Integer, Integer> range2 = new TreeMap<>();
         range2.put(11, 15);
         manualGroups.add(CalculateBOQManualRequestDTO.ManualCabinetGroup.builder()
                 .cabinetIndex(11)
-                .totalCamera(5)
                 .floorRange(range2)
+                .cabinets(List.of(CalculateBOQManualRequestDTO.Cabinet.builder().id("cab_11").type("2U").totalCamera(5).build()))
                 .build());
 
         Map<Integer, Integer> range3 = new TreeMap<>();
         range3.put(18, 19);
         manualGroups.add(CalculateBOQManualRequestDTO.ManualCabinetGroup.builder()
                 .cabinetIndex(18)
-                .totalCamera(2)
                 .floorRange(range3)
+                .cabinets(List.of(CalculateBOQManualRequestDTO.Cabinet.builder().id("cab_18").type("2U").totalCamera(2).build()))
                 .build());
 
         CalculateBOQManualRequestDTO dto = CalculateBOQManualRequestDTO.builder()
@@ -709,8 +709,8 @@ class ElvApplicationTests {
         rangeTrailing.put(17, 19);
         outOfOrderGroups.add(CalculateBOQManualRequestDTO.ManualCabinetGroup.builder()
                 .cabinetIndex(17)
-                .totalCamera(3)
                 .floorRange(rangeTrailing)
+                .cabinets(List.of(CalculateBOQManualRequestDTO.Cabinet.builder().id("cab_17").type("2U").totalCamera(3).build()))
                 .build());
 
         // Manual group 1: covering floors 0 to 2 (placed at floor 1) - leading edge case
@@ -718,8 +718,8 @@ class ElvApplicationTests {
         rangeLeading.put(0, 2);
         outOfOrderGroups.add(CalculateBOQManualRequestDTO.ManualCabinetGroup.builder()
                 .cabinetIndex(1)
-                .totalCamera(3)
                 .floorRange(rangeLeading)
+                .cabinets(List.of(CalculateBOQManualRequestDTO.Cabinet.builder().id("cab_1").type("2U").totalCamera(3).build()))
                 .build());
 
         CalculateBOQManualRequestDTO dtoEdge = CalculateBOQManualRequestDTO.builder()
@@ -763,16 +763,16 @@ class ElvApplicationTests {
         rangePart1.put(0, 9);
         fullGroups.add(CalculateBOQManualRequestDTO.ManualCabinetGroup.builder()
                 .cabinetIndex(4)
-                .totalCamera(10)
                 .floorRange(rangePart1)
+                .cabinets(List.of(CalculateBOQManualRequestDTO.Cabinet.builder().id("cab_4_full").type("2U").totalCamera(10).build()))
                 .build());
 
         Map<Integer, Integer> rangePart2 = new TreeMap<>();
         rangePart2.put(10, 19);
         fullGroups.add(CalculateBOQManualRequestDTO.ManualCabinetGroup.builder()
                 .cabinetIndex(14)
-                .totalCamera(10)
                 .floorRange(rangePart2)
+                .cabinets(List.of(CalculateBOQManualRequestDTO.Cabinet.builder().id("cab_14_full").type("2U").totalCamera(10).build()))
                 .build());
 
         CalculateBOQManualRequestDTO dtoFull = CalculateBOQManualRequestDTO.builder()
