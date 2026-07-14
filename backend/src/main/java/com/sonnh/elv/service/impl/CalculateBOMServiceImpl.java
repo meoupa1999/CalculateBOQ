@@ -228,12 +228,12 @@ public class CalculateBOMServiceImpl implements CalculateBOMService {
         if ((totalConverter + observerScreen + totalRecorder + totalCisco) % 6 != 0) {
             totalFCC += 1;
         }
-        System.out.println("totalRecorder: " + totalRecorder);
-        System.out.println("totalConverter: " + totalConverter);
-        System.out.println("totalCisco: " + totalCisco);
-        System.out.println("observerScreen: " + observerScreen);
-        System.out.println("totalFCC: " + totalFCC);
-        System.out.println("getTotalCabinet: " + getTotalCabinet(dtos));
+        // System.out.println("totalRecorder: " + totalRecorder);
+        // System.out.println("totalConverter: " + totalConverter);
+        // System.out.println("totalCisco: " + totalCisco);
+        // System.out.println("observerScreen: " + observerScreen);
+        // System.out.println("totalFCC: " + totalFCC);
+        // System.out.println("getTotalCabinet: " + getTotalCabinet(dtos));
         return totalFCC + getTotalCabinet(dtos);
     }
 
