@@ -3659,7 +3659,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
                                     
                                     {/* Editable Cable Length Input */}
-                                     <td className="py-2 px-3">
+                                     <td className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
                                        <input
                                          type="number"
                                          min="0"
@@ -3673,7 +3673,7 @@ const handleAddGlobalInventory = () => {
 
 
                                     {/* Editable Dome Count */}
-                                    <td className="py-2 px-3">
+                                    <td className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
                                       <input
                                         type="number"
                                         min="0"
@@ -3686,7 +3686,7 @@ const handleAddGlobalInventory = () => {
                                     </td>
 
                                     {/* Editable Bullet Count */}
-                                    <td className="py-2 px-3">
+                                    <td className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
                                       <input
                                         type="number"
                                         min="0"
