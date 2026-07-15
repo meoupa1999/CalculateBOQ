@@ -6,3 +6,17 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+/* Sticky Table Header utility */
+.sticky-table-header th {
+  position: sticky !important;
+  top: 64px !important; /* height of header (h-16 = 64px) */
+  z-index: 20 !important;
+  background-color: inherit !important;
+}
+
+/* Sticky Table Wrapper to allow horizontal scroll + vertical sticky header */
+.sticky-table-wrapper {
+  overflow-x: auto !important;
+  overflow-y: clip !important;
+}
+

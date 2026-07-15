@@ -23,6 +23,10 @@ public class CalculateBOQResponseDTO {
     private Integer domeCount;
     private Integer bulletCount;
     private Integer cableLength;
+    private Integer atrium;
+    private Integer downCabinet;
+    private Integer inCabinet;
+    private Integer autocadLength;
     private Integer cameraQuantityInCabinet;
     private Integer sw24Count;
     private Integer sw16Count;

@@ -22,6 +22,10 @@ export interface FloorData {
   cabinetType?: string;
   cabinetIndex?: number;
   cableLengthInput?: number;
+  atrium?: number;
+  downCabinet?: number;
+  inCabinet?: number;
+  autocadLength?: number;
   cabinets?: {
     cabinetId: string;
     cabinetType: string;

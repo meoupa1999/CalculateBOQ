@@ -129,7 +129,7 @@ export default function App() {
   const [newItemUnit, setNewItemUnit] = useState("Cái");
   const [newItemPrice, setNewItemPrice] = useState(100000);
 
-  const API_BASE = "http://localhost:8080/api";
+  const API_BASE = "/api";
 
   // Configuration settings state
   const CONFIG_ID = "a2b0a797-8ff2-4a79-ac5d-78525bd25e90";
@@ -426,6 +426,7 @@ export default function App() {
   };
 
   const handleToggleSelectFloor = (floorIndex: number, event?: React.MouseEvent) => {
+    event?.stopPropagation();
     const isShiftKey = event ? event.shiftKey : false;
     
     setSelectedFloorIndexes((prev) => {
@@ -892,6 +893,10 @@ export default function App() {
                           cabinetType: backendInfo.cabinetType,
                           cabinetIndex: backendInfo.cabinetIndex ?? undefined,
                           cableLength: backendInfo.cableLength ?? 0,
+                          atrium: backendInfo.atrium ?? 0,
+                          downCabinet: backendInfo.downCabinet ?? 0,
+                          inCabinet: backendInfo.inCabinet ?? 0,
+                          autocadLength: backendInfo.autocadLength ?? 0,
                           fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
                           toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
                           cabinets: backendInfo.cabinets ?? [],
@@ -909,6 +914,10 @@ export default function App() {
                         cabinetType: undefined,
                         cabinetIndex: backendInfo.cabinetIndex ?? undefined,
                         cableLength: backendInfo.cableLength ?? 0,
+                        atrium: backendInfo.atrium ?? 0,
+                        downCabinet: backendInfo.downCabinet ?? 0,
+                        inCabinet: backendInfo.inCabinet ?? 0,
+                        autocadLength: backendInfo.autocadLength ?? 0,
                         fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
                         toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
                       };
@@ -2136,6 +2145,12 @@ const handleAddGlobalInventory = () => {
   const summaryTotalUPS2K = selectedTowersForSummary.reduce((acc, t) => acc + (t.floorsData?.filter(f => f.isCabinetPlaced && f.upsType === "2K").length || 0), 0);
   const summaryTotalPDU = selectedTowersForSummary.reduce((acc, t) => acc + (t.floorsData?.reduce((fAcc, curr) => fAcc + (curr.pduCount || 0), 0) || 0), 0);
   const summaryTotalConv = selectedTowersForSummary.reduce((acc, t) => acc + (t.floorsData?.reduce((fAcc, curr) => fAcc + (curr.convCount || 0), 0) || 0), 0);
+  const stickyHeaderStyle: React.CSSProperties = {
+    position: 'sticky',
+    top: '64px',
+    zIndex: 20,
+    backgroundColor: 'inherit',
+  };
 
   return (
     <div className="min-h-screen bg-[#F5F7F9] font-sans text-[#191c1e] antialiased flex flex-col selection:bg-[#1A237E]/10 selection:text-[#1A237E]">
@@ -2563,7 +2578,7 @@ const handleAddGlobalInventory = () => {
                               </div>
                             </div>
                             
-                            <div className="overflow-x-auto p-4 bg-slate-50/30">
+                            <div className="sticky-table-wrapper p-4 bg-slate-50/30">
                               <div className="border border-slate-200 rounded overflow-hidden shadow-xs bg-white min-w-[850px]">
                                 
                                 <div className="border-b border-slate-200 bg-[#F8F9FA] px-4 py-3 text-center">
@@ -3072,7 +3087,7 @@ const handleAddGlobalInventory = () => {
                         
                         {/* Excel-like BOQ Template Table (Left) */}
                         <div 
-                          className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs overflow-hidden w-full"
+                          className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs w-full"
                           style={isXl ? { width: `calc(${leftWidth}% - 12px)`, flexShrink: 0 } : {}}
                         >
                           <div className="px-6 py-4 border-b border-[#ECEFF1] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
@@ -3090,8 +3105,8 @@ const handleAddGlobalInventory = () => {
                           </div>
 
                           {/* Excel Grid container */}
-                          <div className="overflow-x-auto p-4 bg-slate-50/30">
-                            <div className="border border-slate-200 rounded overflow-hidden shadow-xs bg-white min-w-[850px]">
+                          <div className="overflow-x-auto xl:overflow-visible p-4 bg-slate-50/30">
+                            <div className="border border-slate-200 rounded overflow-visible shadow-xs bg-white min-w-[850px]">
                               
                               {/* Spreadsheet Title Block */}
                               <div className="border-b border-slate-200 bg-[#F8F9FA] px-4 py-3 text-center">
@@ -3101,17 +3116,17 @@ const handleAddGlobalInventory = () => {
                               </div>
 
                               <table className="w-full text-xs text-left border-collapse font-sans">
-                                <thead>
+                                <thead className="bg-[#E8EAED] shadow-xs">
                                   {/* Main Table Column Titles */}
                                   <tr className="bg-[#E8EAED] text-[#3c4043] font-bold text-center border-b border-slate-300 divide-x divide-slate-200 select-none">
-                                    <th className="py-2 px-1 text-center w-12">STT</th>
-                                    <th className="py-2 px-2 text-left w-52">VẬT TƯ</th>
-                                    <th className="py-2 px-2 text-left w-72">MÔ TẢ</th>
-                                    <th className="py-2 px-1 w-16">Đ.VỊ</th>
-                                    <th className="py-2 px-1 w-16">SLG</th>
-                                    <th className="py-2 px-1 w-20">Nhân công</th>
-                                    <th className="py-2 px-1 w-20">Tổng công</th>
-                                    <th className="py-2 px-2 text-left w-44">GHI CHÚ</th>
+                                    <th style={stickyHeaderStyle} className="py-2 px-1 text-center w-12">STT</th>
+                                    <th style={stickyHeaderStyle} className="py-2 px-2 text-left w-52">VẬT TƯ</th>
+                                    <th style={stickyHeaderStyle} className="py-2 px-2 text-left w-72">MÔ TẢ</th>
+                                    <th style={stickyHeaderStyle} className="py-2 px-1 w-16">Đ.VỊ</th>
+                                    <th style={stickyHeaderStyle} className="py-2 px-1 w-16">SLG</th>
+                                    <th style={stickyHeaderStyle} className="py-2 px-1 w-20">Nhân công</th>
+                                    <th style={stickyHeaderStyle} className="py-2 px-1 w-20">Tổng công</th>
+                                    <th style={stickyHeaderStyle} className="py-2 px-2 text-left w-44">GHI CHÚ</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 font-sans">
@@ -3217,7 +3232,7 @@ const handleAddGlobalInventory = () => {
 
                         {/* Detailed Interactive BOQ Sheet */}
                         <div 
-                          className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs overflow-hidden w-full"
+                          className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs w-full"
                           style={isXl ? { width: `calc(${100 - leftWidth}% - 12px)`, flexShrink: 0 } : {}}
                         >
                         <div className="px-6 py-4 border-b border-[#ECEFF1] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
@@ -3336,11 +3351,11 @@ const handleAddGlobalInventory = () => {
                           </div>
                         </div>
 
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto xl:overflow-visible">
                           <table className="w-full text-left border-collapse min-w-[900px]">
-                            <thead>
+                            <thead className="bg-slate-50 shadow-xs">
                               <tr className="bg-slate-50 border-b border-[#ECEFF1] text-[11px] font-bold text-[#455A64] uppercase tracking-wider">
-                                <th className="py-3 px-4 w-12 text-center">
+                                <th style={stickyHeaderStyle} className="py-3 px-4 w-12 text-center">
                                   <input
                                     type="checkbox"
                                     checked={selectedFloorIndexes.length === activeTower?.floorsData.length && activeTower?.floorsData.length > 0}
@@ -3349,19 +3364,19 @@ const handleAddGlobalInventory = () => {
                                   />
                                 </th>
                                 {calculationMode === "manual" && (
-                                  <th className="py-3 px-3 w-24 text-center">ĐẶT TỦ (MC)</th>
+                                  <th style={stickyHeaderStyle} className="py-3 px-3 w-24 text-center">ĐẶT TỦ (MC)</th>
                                 )}
-                                <th className="py-3 px-4 w-28">TẦNG</th>
-                                <th className="py-3 px-3 w-32">KHOẢNG CÁCH DÂY (M)</th>
-                                <th className="py-3 px-3 w-28">CAM DOME</th>
-                                <th className="py-3 px-3 w-28">CAM THÂN</th>
-                                <th className="py-3 px-3 w-32">TỦ & SỐ CAM</th>
-                                <th className="py-3 px-3 w-20">SW24</th>
-                                <th className="py-3 px-3 w-20">SW16</th>
-                                <th className="py-3 px-3 w-24">UPS 1K/2K</th>
-                                <th className="py-3 px-3 w-20">PDU</th>
-                                <th className="py-3 px-3 w-28">CONVERTER</th>
-                                 <th className="py-3 px-3 w-16 text-center text-rose-600 font-bold">XÓA</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-4 w-28">TẦNG</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-3 w-32">KHOẢNG CÁCH DÂY (M)</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-3 w-28">CAM DOME</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-3 w-28">CAM THÂN</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-3 w-32">TỔNG CÁP/TẦNG</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-3 w-20">SW24</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-3 w-20">SW16</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-3 w-24">UPS 1K/2K</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-3 w-20">PDU</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-3 w-28">CONVERTER</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-3 w-16 text-center text-rose-600 font-bold">XÓA</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-[#ECEFF1] text-sm">
@@ -3510,7 +3525,7 @@ const handleAddGlobalInventory = () => {
                                         }
                                       }}
                                     >
-                                    <td className="py-2 px-4 text-center">
+                                    <td className="py-2 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                                       <input
                                         type="checkbox"
                                         checked={selectedFloorIndexes.includes(f.floorIndex)}
@@ -3558,7 +3573,7 @@ const handleAddGlobalInventory = () => {
                                       </td>
                                     )}
                                     <td className="py-2 px-4 font-semibold text-[#191c1e]">
-                                      <div className="flex flex-col gap-1.5">
+                                      <div className="flex flex-col gap-1">
                                         <div className="flex items-center gap-2">
                                           <input
                                             type="text"
@@ -3567,14 +3582,6 @@ const handleAddGlobalInventory = () => {
                                             onClick={(e) => e.stopPropagation()}
                                             className="bg-transparent border-0 hover:bg-slate-200/80 focus:bg-white focus:ring-1 focus:ring-[#1A237E]/30 focus:border-[#1A237E] rounded px-1.5 py-0.5 font-semibold text-[#191c1e] text-sm focus:outline-none transition w-36 text-left"
                                           />
-                                          {f.cableLength !== undefined && (
-                                            <span 
-                                              className="inline-flex items-center px-1.5 py-0.5 text-[11px] font-semibold rounded bg-[#E8EAF6] text-[#283593] border border-[#C5CAE9] shadow-xs whitespace-nowrap"
-                                              title="Tổng chiều dài cáp tính toán cho tầng này"
-                                            >
-                                              {f.cableLength}m
-                                            </span>
-                                          )}
                                           {calculationMode === "manual" ? (
                                             manualGroups.some(g => g.cabinetIndex === f.floorIndex) ? (
                                               (() => {
@@ -3630,6 +3637,30 @@ const handleAddGlobalInventory = () => {
                                             )
                                           )}
                                         </div>
+
+                                        {/* Cabinet and Camera Details under the Floor Name */}
+                                        {isCabinetPlaced && (
+                                          <div className="flex flex-wrap gap-1 mt-1 text-left">
+                                            {(() => {
+                                              const floorCabs = f.cabinets || [];
+                                              if (floorCabs.length > 0) {
+                                                return floorCabs.map((c: any, cIdx: number) => (
+                                                  <span key={cIdx} className="inline-flex items-center gap-2 px-2.5 py-1 text-[13px] font-bold rounded-md bg-[#E8EAF6] text-[#1A237E] border border-[#C5CAE9] shadow-sm">
+                                                    <span className="w-2 h-2 rounded-full bg-[#1A237E] animate-pulse"></span>
+                                                    Tủ {c.cabinetType || ""} ({c.cameraQuantityInCabinet ?? 0} Cam)
+                                                  </span>
+                                                ));
+                                              }
+                                              return (
+                                                <span className="inline-flex items-center gap-2 px-2.5 py-1 text-[13px] font-bold rounded-md bg-[#E8EAF6] text-[#1A237E] border border-[#C5CAE9] shadow-sm">
+                                                  <span className="w-2 h-2 rounded-full bg-[#1A237E] animate-pulse"></span>
+                                                  Tủ {f.cabinetType || ""} ({f.cameraQuantityInCabinet ?? 0} Cam)
+                                                </span>
+                                              );
+                                            })()}
+                                          </div>
+                                        )}
+
                                         {/* Warnings in Manual Mode */}
                                         {(() => {
                                           const warn = getFloorWarning(f);
@@ -3698,31 +3729,9 @@ const handleAddGlobalInventory = () => {
                                       />
                                     </td>
 
-                                    {/* Calculated Cab length / Total ports column */}
-                                    <td className="py-2 px-3 text-center">
-                                      {isCabinetPlaced ? (
-                                        (() => {
-                                          const floorCabs = f.cabinets || [];
-                                          if (floorCabs.length > 0) {
-                                            return (
-                                              <div className="flex flex-col gap-1.5 items-center justify-center">
-                                                {floorCabs.map((c: any, cIdx: number) => (
-                                                  <div key={cIdx} className="px-2 py-0.5 font-mono text-[10px] font-semibold text-center border rounded inline-block min-w-[130px] text-[#1A237E] bg-[#E8EAF6] border-[#1A237E]/20 shadow-xs">
-                                                    {`Tủ ${c.cabinetType || ""} (${c.cameraQuantityInCabinet ?? 0} Cam)`}
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            );
-                                          }
-                                          return (
-                                            <div className="px-2 py-1 font-mono text-xs font-semibold text-center border rounded inline-block min-w-[130px] text-[#1A237E] bg-[#E8EAF6] border-[#1A237E]/20">
-                                              {`Tủ ${f.cabinetType || ""} (${f.cameraQuantityInCabinet ?? 0} Cam)`}
-                                            </div>
-                                          );
-                                        })()
-                                      ) : (
-                                        <span className="text-slate-300">-</span>
-                                      )}
+                                    {/* Total calculated cable length for this floor */}
+                                    <td className="py-2 px-3 text-center font-mono font-bold text-[#1A237E]">
+                                      {f.cableLength !== undefined ? `${f.cableLength} m` : "-"}
                                     </td>
 
                                     {/* SW24 read-only calculated */}
@@ -3829,6 +3838,143 @@ const handleAddGlobalInventory = () => {
                         </div>
                       </div>
                     </div>
+                      
+                      {/* BẢNG TÍNH CHI TIẾT CÁP THEO TẦNG */}
+                      <div className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs w-full mt-6">
+                        <div className="px-6 py-4 border-b border-[#ECEFF1] flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50/50">
+                          <div>
+                            <h3 className="font-sans font-bold text-base text-[#191c1e] uppercase tracking-wide flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full bg-[#1A237E]"></span>
+                              Bảng tính chi tiết cáp theo tầng ({activeTower?.name || "Tháp chính"})
+                            </h3>
+                            <p className="text-xs text-[#455A64]">
+                              Phân tích chi tiết các thành phần cáp (thông tầng, xuống tủ, trong tủ, AutoCAD) cho từng tầng
+                            </p>
+                          </div>
+                          <div className="text-xs font-mono text-[#2E7D32] bg-[#E8F5E9] px-2.5 py-1 rounded font-bold border border-[#2E7D32]/20">
+                            CABLE DETAILS
+                          </div>
+                        </div>
+                        
+                        <div className="overflow-x-auto xl:overflow-visible p-4 bg-slate-50/30">
+                          <table className="w-full text-xs text-center border-collapse font-sans border border-slate-200 min-w-[900px] bg-white rounded shadow-xs overflow-visible">
+                            <thead className="bg-[#1A237E] shadow-xs">
+                              <tr className="bg-[#1A237E] text-white font-bold border-b border-slate-300 divide-x divide-slate-200 select-none uppercase tracking-wider text-[10px]">
+                                <th style={stickyHeaderStyle} className="py-3 px-2 w-24">Tủ</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-2 w-28 text-left pl-4">Tầng camera</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-2 w-28">Tầng đặt tủ</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-2 w-24">Số camera</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-2 w-32">Mét AutoCAD</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-2 w-28">Thông tầng</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-2 w-28">Xuống tủ</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-2 w-28">Trong tủ</th>
+                                <th style={stickyHeaderStyle} className="py-3 px-2 w-32">Tổng cáp/tầng</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200">
+                              {(() => {
+                                const floors = activeTower?.floorsData || [];
+                                const basementsCount = activeTower?.basementsCount || 0;
+                                const floorsCount = activeTower?.floorsCount || 0;
+                                const hasRoof = activeTower?.hasRoof || false;
+
+                                const roofFloors = floors.filter(f => hasRoof && f.floorIndex === basementsCount + floorsCount);
+                                const upperFloors = floors.filter(f => f.floorIndex >= basementsCount && f.floorIndex < basementsCount + floorsCount);
+                                const basementFloors = floors.filter(f => f.floorIndex < basementsCount);
+
+                                const sortedUpperFloors = [...upperFloors].sort((a, b) => b.floorIndex - a.floorIndex);
+                                const sortedBasementFloors = [...basementFloors].sort((a, b) => b.floorIndex - a.floorIndex);
+
+                                const allSortedFloors = [
+                                  ...roofFloors,
+                                  ...sortedUpperFloors,
+                                  ...sortedBasementFloors
+                                ];
+
+                                if (allSortedFloors.length === 0) {
+                                  return (
+                                    <tr>
+                                      <td colSpan={9} className="py-8 text-slate-400 italic text-center">
+                                        Không có dữ liệu cho tháp này. Vui lòng bấm Tính toán để bắt đầu.
+                                      </td>
+                                    </tr>
+                                  );
+                                }
+
+                                const totalCameras = allSortedFloors.reduce((sum, f) => sum + (f.camerasCount || 0), 0);
+                                const totalCable = allSortedFloors.reduce((sum, f) => sum + (f.cableLength || 0), 0);
+
+                                return (
+                                  <>
+                                    {allSortedFloors.map((f) => {
+                                      const cabinetFloor = floors.find(fl => fl.floorIndex === f.cabinetIndex);
+                                      const cabinetLabel = cabinetFloor ? cabinetFloor.label : (f.cabinetIndex !== undefined ? `Tầng ${f.cabinetIndex}` : "");
+
+                                      return (
+                                        <tr 
+                                          key={f.floorIndex} 
+                                          className="hover:bg-slate-50 transition divide-x divide-slate-200"
+                                        >
+                                          {/* Tủ (bỏ trống như yêu cầu) */}
+                                          <td className="py-2.5 px-2 text-slate-400 font-semibold bg-slate-50/10"></td>
+                                          {/* Tầng camera */}
+                                          <td className="py-2.5 px-2 text-left pl-4 font-semibold text-slate-800 bg-[#E8F5E9]/10">
+                                            {f.label}
+                                          </td>
+                                          {/* Tầng đặt tủ */}
+                                          <td className="py-2.5 px-2 font-medium text-slate-700 bg-[#E3F2FD]/10">
+                                            {cabinetLabel}
+                                          </td>
+                                          {/* Số camera */}
+                                          <td className="py-2.5 px-2 font-bold text-indigo-700 bg-indigo-50/5">
+                                            {f.camerasCount}
+                                          </td>
+                                          {/* Mét AutoCAD */}
+                                          <td className="py-2.5 px-2 font-mono font-medium text-slate-700">
+                                            {f.autocadLength ?? 0}
+                                          </td>
+                                          {/* Thông tầng */}
+                                          <td className="py-2.5 px-2 font-mono text-slate-600">
+                                            {f.atrium ?? 0}
+                                          </td>
+                                          {/* Xuống tủ */}
+                                          <td className="py-2.5 px-2 font-mono text-slate-600">
+                                            {f.downCabinet ?? 0}
+                                          </td>
+                                          {/* Trong tủ */}
+                                          <td className="py-2.5 px-2 font-mono text-slate-600">
+                                            {f.inCabinet ?? 0}
+                                          </td>
+                                          {/* Tổng cáp/tầng */}
+                                          <td className="py-2.5 px-2 font-mono font-bold text-[#2E7D32] bg-[#E8F5E9]/10">
+                                            {f.cableLength}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                    
+                                    {/* Summary Row */}
+                                    <tr className="bg-[#0D1B2A] text-white font-bold text-center border-t-2 border-slate-700 select-none divide-x divide-slate-700">
+                                      <td colSpan={3} className="py-3 px-4 text-right uppercase tracking-wider text-xs">
+                                        TỔNG SỐ CAM
+                                      </td>
+                                      <td className="py-3 px-2 text-center text-sm font-bold text-yellow-300">
+                                        {totalCameras}
+                                      </td>
+                                      <td colSpan={4} className="py-3 px-4 text-right uppercase tracking-wider text-xs">
+                                        TỔNG SỐ MÉT CÁP
+                                      </td>
+                                      <td className="py-3 px-2 text-center text-sm font-bold text-green-400 font-mono">
+                                        {totalCable}
+                                      </td>
+                                    </tr>
+                                  </>
+                                );
+                              })()}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
                     </>
                   )}
 

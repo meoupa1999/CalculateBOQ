@@ -24,6 +24,18 @@ import lombok.RequiredArgsConstructor;
 public class CalcualateServiceImpl implements CalculateService {
     private final ConfigRepository configRepository;
 
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    private static class CableDetail {
+        private int atrium;
+        private int downCabinet;
+        private int inCabinet;
+        private int autocadLength;
+        private int totalCable;
+    }
+
     @Override
     public List<CalculateBOQResponseDTO> calculateBOQ(CalculateBOQRequestDTO dto) {
         Config config = configRepository
@@ -66,8 +78,13 @@ public class CalcualateServiceImpl implements CalculateService {
                         .cabinetIndex(cabinetIndex);
             }
 
-            int calculatedCable = calculateCableLength(cabinetIndex, floor, dto.getVerticalDistance());
-            builder.cableLength(calculatedCable);
+            CableDetail cableDetail = calculateCableLength(cabinetIndex, floor, dto.getVerticalDistance(),
+                    floor.getCamerasCount());
+            builder.cableLength(cableDetail.getTotalCable())
+                    .atrium(cableDetail.getAtrium())
+                    .downCabinet(cableDetail.getDownCabinet())
+                    .inCabinet(cableDetail.getInCabinet())
+                    .autocadLength(cableDetail.getAutocadLength());
 
             if (isPlaced) {
                 CabinetEquipmentDTO cabinet = mapResult.get(floor.getFloorIndex());
@@ -93,14 +110,31 @@ public class CalcualateServiceImpl implements CalculateService {
         return result;
     }
 
-    private int calculateCableLength(Integer cabinetIndex, FloorRequest floor, Double verticalDistance) {
+    private CableDetail calculateCableLength(Integer cabinetIndex, FloorRequest floor, Double verticalDistance,
+            Integer cameraQuantity) {
         if (cabinetIndex == null) {
-            return 0;
+            return CableDetail.builder()
+                    .atrium(0)
+                    .downCabinet(0)
+                    .inCabinet(0)
+                    .autocadLength(0)
+                    .totalCable(0)
+                    .build();
         }
         int floorDiff = Math.abs(floor.getFloorIndex() - cabinetIndex) + 1;
         int baseCable = floor.getCableLength() != null ? floor.getCableLength() : 0;
         double vDist = verticalDistance != null ? verticalDistance : 0.0;
-        return (int) Math.round((vDist * floorDiff) + baseCable);
+        int atrium = (int) Math.round(floorDiff * vDist * cameraQuantity);
+        int downCabinet = (int) Math.round(cameraQuantity * verticalDistance);
+        int inCabinet = (int) Math.round(cameraQuantity * 3);
+        int totalCable = inCabinet + downCabinet + atrium + baseCable;
+        return CableDetail.builder()
+                .atrium(atrium)
+                .downCabinet(downCabinet)
+                .inCabinet(inCabinet)
+                .autocadLength(baseCable)
+                .totalCable(totalCable)
+                .build();
     }
 
     public Map<Integer, CabinetEquipmentDTO> calculateCabinetPlacementUitls(CalculateBOQRequestDTO dto,
@@ -322,25 +356,27 @@ public class CalcualateServiceImpl implements CalculateService {
     }
 
     /*
-    public Map<Integer, CabinetEquipmentDTO> calculateSwichPOE(Map<Integer, CabinetEquipmentDTO> mapResult,
-            Config config) {
-        for (Integer key : mapResult.keySet()) {
-            int cameraQuantityInCabinet = mapResult.get(key).getCameraQuantityInCabinet();
-            int quantitySw16 = 0;
-            int quantitySw24 = 0;
-            while (cameraQuantityInCabinet > 0) {
-                if (cameraQuantityInCabinet >= config.getSw16ConditionQuanity()) {
-                    mapResult.get(key).setSw24Quantity(++quantitySw24);
-                    cameraQuantityInCabinet -= config.getSw24ConditionQuanity();
-                } else {
-                    mapResult.get(key).setSw16Quantity(++quantitySw16);
-                    cameraQuantityInCabinet -= config.getSw16ConditionQuanity();
-                }
-            }
-        }
-        return mapResult;
-    }
-    */
+     * public Map<Integer, CabinetEquipmentDTO> calculateSwichPOE(Map<Integer,
+     * CabinetEquipmentDTO> mapResult,
+     * Config config) {
+     * for (Integer key : mapResult.keySet()) {
+     * int cameraQuantityInCabinet =
+     * mapResult.get(key).getCameraQuantityInCabinet();
+     * int quantitySw16 = 0;
+     * int quantitySw24 = 0;
+     * while (cameraQuantityInCabinet > 0) {
+     * if (cameraQuantityInCabinet >= config.getSw16ConditionQuanity()) {
+     * mapResult.get(key).setSw24Quantity(++quantitySw24);
+     * cameraQuantityInCabinet -= config.getSw24ConditionQuanity();
+     * } else {
+     * mapResult.get(key).setSw16Quantity(++quantitySw16);
+     * cameraQuantityInCabinet -= config.getSw16ConditionQuanity();
+     * }
+     * }
+     * }
+     * return mapResult;
+     * }
+     */
 
     public Map<Integer, CabinetEquipmentDTO> calculateSwichPOE(Map<Integer, CabinetEquipmentDTO> mapResult,
             Config config) {
@@ -364,7 +400,7 @@ public class CalcualateServiceImpl implements CalculateService {
             int minCapacity = Integer.MAX_VALUE;
 
             // Duyệt từ số lượng switch tối thiểu tăng dần lên
-            for (int S = minSwitches; ; S++) {
+            for (int S = minSwitches;; S++) {
                 for (int x = 0; x <= S; x++) {
                     int y = S - x;
                     int capacity = x * limit24 + y * limit16;
@@ -404,7 +440,7 @@ public class CalcualateServiceImpl implements CalculateService {
             int converterVal = cab.getConverter() != null ? cab.getConverter() : 0;
             int sw16Val = cab.getSw16Quantity() != null ? cab.getSw16Quantity() : 0;
             int sw24Val = cab.getSw24Quantity() != null ? cab.getSw24Quantity() : 0;
-            
+
             int total = converterVal + sw16Val + sw24Val;
             int pdu = total / 6;
             if (total % 6 != 0) {
@@ -689,8 +725,13 @@ public class CalcualateServiceImpl implements CalculateService {
                         .cabinetIndex(cabinetIndex);
             }
 
-            int calculatedCable = calculateCableLength(cabinetIndex, floor, dto.getVerticalDistance());
-            builder.cableLength(calculatedCable);
+            CableDetail cableDetail = calculateCableLength(cabinetIndex, floor, dto.getVerticalDistance(),
+                    floor.getCamerasCount());
+            builder.cableLength(cableDetail.getTotalCable())
+                    .atrium(cableDetail.getAtrium())
+                    .downCabinet(cableDetail.getDownCabinet())
+                    .inCabinet(cableDetail.getInCabinet())
+                    .autocadLength(cableDetail.getAutocadLength());
 
             if (isPlaced) {
                 if (isManualPlaced) {
@@ -710,8 +751,9 @@ public class CalcualateServiceImpl implements CalculateService {
                                 .build());
                     }
                     builder.cabinets(listCabinetDetails);
-                    
-                    // Backward compatibility / Floor aggregation: Sum up details across all cabinets at this floor
+
+                    // Backward compatibility / Floor aggregation: Sum up details across all
+                    // cabinets at this floor
                     if (!listCabinetDetails.isEmpty()) {
                         int totalCam = 0;
                         int totalSw24 = 0;
@@ -720,19 +762,25 @@ public class CalcualateServiceImpl implements CalculateService {
                         int totalPdu = 0;
                         int totalConv = 0;
                         List<String> types = new ArrayList<>();
-                        
+
                         for (CalculateBOQResponseDTO.CabinetDetailResponseDTO cab : listCabinetDetails) {
-                            if (cab.getCameraQuantityInCabinet() != null) totalCam += cab.getCameraQuantityInCabinet();
-                            if (cab.getSw24Count() != null) totalSw24 += cab.getSw24Count();
-                            if (cab.getSw16Count() != null) totalSw16 += cab.getSw16Count();
-                            if (cab.getUpsCount() != null) totalUps += cab.getUpsCount();
-                            if (cab.getPduCount() != null) totalPdu += cab.getPduCount();
-                            if (cab.getConvCount() != null) totalConv += cab.getConvCount();
+                            if (cab.getCameraQuantityInCabinet() != null)
+                                totalCam += cab.getCameraQuantityInCabinet();
+                            if (cab.getSw24Count() != null)
+                                totalSw24 += cab.getSw24Count();
+                            if (cab.getSw16Count() != null)
+                                totalSw16 += cab.getSw16Count();
+                            if (cab.getUpsCount() != null)
+                                totalUps += cab.getUpsCount();
+                            if (cab.getPduCount() != null)
+                                totalPdu += cab.getPduCount();
+                            if (cab.getConvCount() != null)
+                                totalConv += cab.getConvCount();
                             if (cab.getCabinetType() != null && !cab.getCabinetType().isEmpty()) {
                                 types.add(cab.getCabinetType());
                             }
                         }
-                        
+
                         builder.cameraQuantityInCabinet(totalCam)
                                 .sw24Count(totalSw24)
                                 .sw16Count(totalSw16)
@@ -743,8 +791,9 @@ public class CalcualateServiceImpl implements CalculateService {
                     }
                 } else {
                     CabinetEquipmentDTO cabinet = autoMapResult.get(floor.getFloorIndex());
-                    
-                    CalculateBOQResponseDTO.CabinetDetailResponseDTO autoCabinetDetail = CalculateBOQResponseDTO.CabinetDetailResponseDTO.builder()
+
+                    CalculateBOQResponseDTO.CabinetDetailResponseDTO autoCabinetDetail = CalculateBOQResponseDTO.CabinetDetailResponseDTO
+                            .builder()
                             .cabinetId("auto_" + floor.getFloorIndex())
                             .cabinetType(dto.getRackType())
                             .cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
@@ -754,9 +803,9 @@ public class CalcualateServiceImpl implements CalculateService {
                             .pduCount(cabinet.getPdu())
                             .convCount(cabinet.getConverter())
                             .build();
-                    
+
                     builder.cabinets(List.of(autoCabinetDetail));
-                    
+
                     builder.cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
                             .sw24Count(cabinet.getSw24Quantity())
                             .sw16Count(cabinet.getSw16Quantity())
@@ -781,7 +830,8 @@ public class CalcualateServiceImpl implements CalculateService {
         return result;
     }
 
-    private CabinetEquipmentDTO calculateManualCabinetEquipment(CalculateBOQManualRequestDTO.Cabinet manualCab, Config config) {
+    private CabinetEquipmentDTO calculateManualCabinetEquipment(CalculateBOQManualRequestDTO.Cabinet manualCab,
+            Config config) {
         CabinetEquipmentDTO result = new CabinetEquipmentDTO();
         int cameraCount = manualCab.getTotalCamera() != null ? manualCab.getTotalCamera() : 0;
 
@@ -794,7 +844,7 @@ public class CalcualateServiceImpl implements CalculateService {
         int bestY = 0;
         int minCapacity = Integer.MAX_VALUE;
 
-        for (int S = minSwitches; ; S++) {
+        for (int S = minSwitches;; S++) {
             for (int x = 0; x <= S; x++) {
                 int y = S - x;
                 int capacity = x * limit24 + y * limit16;
