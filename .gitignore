@@ -29,3 +29,8 @@ Thumbs.db
 # Ignored sample folder
 backend-sample/
 
+# Spreadsheets, archives, reports, and scratch files
+*.xlsx
+*.zip
+baocao/
+scratch*
