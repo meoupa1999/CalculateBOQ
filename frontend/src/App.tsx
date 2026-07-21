@@ -823,7 +823,7 @@ export default function App() {
       tempV,
       tempRack,
       newFloorsData,
-      calculationMode,
+      nextMode,
       nextGroups,
       tempRack === "2U" ? tempQuantity2U : 1
     );
@@ -3856,14 +3856,10 @@ const handleAddGlobalInventory = () => {
 
                                 const getManualRangeStyle = (f: FloorData) => {
                                   const groupIdx = manualGroups.findIndex(g => {
-                                    const associatedFloors = Array.from(new Set([
-                                      g.cabinetIndex,
-                                      ...g.cabinets.flatMap((c: any) => c.allocations.map((a: any) => a.floorIndex))
-                                    ]));
-                                    if (associatedFloors.length === 0) return false;
-                                    const min = Math.min(...associatedFloors);
-                                    const max = Math.max(...associatedFloors);
-                                    return f.floorIndex >= min && f.floorIndex <= max;
+                                    if (g.cabinetIndex === f.floorIndex) return true;
+                                    return g.cabinets.some((c: any) => 
+                                      c.allocations.some((a: any) => a.floorIndex === f.floorIndex)
+                                    );
                                   });
                                   if (groupIdx === -1) {
                                     const autoStyle = getRangeStyle(f);
@@ -3885,14 +3881,10 @@ const handleAddGlobalInventory = () => {
                                   if (!activeTower || calculationMode !== "manual") return null;
 
                                   const group = manualGroups.find((g) => {
-                                    const associatedFloors = Array.from(new Set([
-                                      g.cabinetIndex,
-                                      ...g.cabinets.flatMap((c: any) => c.allocations.map((a: any) => a.floorIndex))
-                                    ]));
-                                    if (associatedFloors.length === 0) return false;
-                                    const min = Math.min(...associatedFloors);
-                                    const max = Math.max(...associatedFloors);
-                                    return f.floorIndex >= min && f.floorIndex <= max;
+                                    if (g.cabinetIndex === f.floorIndex) return true;
+                                    return g.cabinets.some((c: any) => 
+                                      c.allocations.some((a: any) => a.floorIndex === f.floorIndex)
+                                    );
                                   });
                                   if (!group) return null;
 
@@ -4108,14 +4100,10 @@ const handleAddGlobalInventory = () => {
                                             ) : (
                                               (() => {
                                                 const associatedGroup = manualGroups.find(g => {
-                                                  const associatedFloors = Array.from(new Set([
-                                                    g.cabinetIndex,
-                                                    ...g.cabinets.flatMap((c: any) => c.allocations.map((a: any) => a.floorIndex))
-                                                  ]));
-                                                  if (associatedFloors.length === 0) return false;
-                                                  const min = Math.min(...associatedFloors);
-                                                  const max = Math.max(...associatedFloors);
-                                                  return f.floorIndex >= min && f.floorIndex <= max;
+                                                  if (g.cabinetIndex === f.floorIndex) return true;
+                                                  return g.cabinets.some((c: any) => 
+                                                    c.allocations.some((a: any) => a.floorIndex === f.floorIndex)
+                                                  );
                                                 });
                                                 if (associatedGroup) {
                                                   return (
@@ -5912,7 +5900,11 @@ const handleAddGlobalInventory = () => {
                                         value={alloc.floorIndex}
                                         onChange={(e) => {
                                           const next = [...tempCabinets];
-                                          next[cabIdx].allocations[allocIdx].floorIndex = parseInt(e.target.value);
+                                          const targetFloorIndex = parseInt(e.target.value);
+                                          const targetFloor = activeTower?.floorsData.find(fd => fd.floorIndex === targetFloorIndex);
+                                          next[cabIdx].allocations[allocIdx].floorIndex = targetFloorIndex;
+                                          next[cabIdx].allocations[allocIdx].domeCount = targetFloor ? (targetFloor.domeCount || 0) : 0;
+                                          next[cabIdx].allocations[allocIdx].bulletCount = targetFloor ? (targetFloor.bulletCount || 0) : 0;
                                           setTempCabinets(next);
                                         }}
                                         className="w-full text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
