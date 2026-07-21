@@ -18,6 +18,7 @@ public class CalculateBOQRequestDTO {
     private Double horizontalDistance;
     private Double verticalDistance;
     private String rackType;
+    private Integer quantity2U;
     private List<FloorRequest> floors;
 
     @Data

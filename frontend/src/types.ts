@@ -35,6 +35,7 @@ export interface FloorData {
     upsCount: number;
     pduCount: number;
     convCount: number;
+    quantity2U?: number;
     allocations?: {
       floorIndex: number;
       domeCount: number;
@@ -92,11 +93,14 @@ export interface Tower {
   horizontalDistance: number; // average run to IT room per floor (m)
   verticalDistance: number; // vertical cable run per floor (m)
   rackType: "2U" | "6U" | "10U" | "20U";
+  quantity2U?: number;
   standardPresetId: string;
   floorsData: FloorData[];
   siteParams: SiteParameters;
   hardwareLogic: HardwareLogic;
   customPrices: Record<string, number>; // itemId -> custom override price
+  manualGroups?: any[];
+  calculationMode?: "auto" | "manual";
 }
 
 export interface Project {

@@ -18,5 +18,6 @@ public class CreateTowerReqDto {
     private Integer floorCount;
     private Integer basementCount;
     private Boolean hasRoof;
+    private Integer quantity2U;
 
 }

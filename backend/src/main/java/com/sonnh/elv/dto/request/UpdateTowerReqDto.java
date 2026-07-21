@@ -19,4 +19,5 @@ public class UpdateTowerReqDto {
     private Boolean hasRoof;
     private Double widthLength;
     private Double heightLength;
+    private Integer quantity2U;
 }

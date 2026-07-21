@@ -32,6 +32,7 @@ public class Tower {
     private Boolean hasRoof;
     private Double widthLength;
     private Double heightLength;
+    private Integer quantity2U;
 
     @Column(columnDefinition = "TEXT")
     private String specialName; // JSON mapping of floorIndex -> specialName
@@ -46,7 +47,7 @@ public class Tower {
 
     @Builder.Default
     @OneToMany(mappedBy = "tower")
-    private List<SpecialFloor> specialFloors = new ArrayList<>();
+    private List<Floor> floors = new ArrayList<>();
 
     @Builder.Default
     @Embedded

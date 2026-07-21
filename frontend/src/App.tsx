@@ -317,6 +317,7 @@ export default function App() {
                   horizontalDistance: t.widthLength ?? 50,
                   verticalDistance: t.heightLength ?? 4,
                   rackType: "2U" as const,
+                  quantity2U: t.quantity2U || 1,
                   standardPresetId: selectedPreset.id,
                   siteParams: {
                     ...DEFAULT_SITE_PARAMS,
@@ -502,6 +503,49 @@ export default function App() {
       cabinetPlacements
     );
 
+    // In manual mode, sync the camera updates to the manualGroups allocations
+    let nextGroups = manualGroups;
+    if (calculationMode === "manual") {
+      nextGroups = manualGroups.map((g) => {
+        let groupChanged = false;
+        const newCabinets = g.cabinets.map((cab) => {
+          let cabinetChanged = false;
+          const newAllocations = cab.allocations.map((alloc) => {
+            if (selectedFloorIndexes.includes(alloc.floorIndex)) {
+              cabinetChanged = true;
+              groupChanged = true;
+              
+              const cams = camsCount;
+              const dome = Math.round(cams * 0.5);
+              const bullet = cams - dome;
+              
+              return {
+                ...alloc,
+                domeCount: dome,
+                bulletCount: bullet
+              };
+            }
+            return alloc;
+          });
+          if (cabinetChanged) {
+            return {
+              ...cab,
+              allocations: newAllocations
+            };
+          }
+          return cab;
+        });
+        if (groupChanged) {
+          return {
+            ...g,
+            cabinets: newCabinets
+          };
+        }
+        return g;
+      });
+      setManualGroups(nextGroups);
+    }
+
     setProjects((prev) =>
       prev.map((p) => {
         if (p.id === activeProject.id) {
@@ -510,6 +554,7 @@ export default function App() {
               return {
                 ...t,
                 floorsData: recalculatedFloors,
+                manualGroups: nextGroups,
               };
             }
             return t;
@@ -531,7 +576,10 @@ export default function App() {
       activeTower.horizontalDistance,
       activeTower.verticalDistance,
       activeTower.rackType,
-      recalculatedFloors
+      recalculatedFloors,
+      calculationMode,
+      nextGroups,
+      activeTower.quantity2U || 1
     );
 
     addToast(`Đồng bộ ${camsCount} camera cho ${selectedFloorIndexes.length} tầng thành công!`, "success");
@@ -559,6 +607,7 @@ export default function App() {
   const [tempH, setTempH] = useState(activeTower?.horizontalDistance || 50);
   const [tempV, setTempV] = useState(activeTower?.verticalDistance || 4);
   const [tempRack, setTempRack] = useState<"2U" | "6U" | "10U" | "20U">(activeTower?.rackType || "2U");
+  const [tempQuantity2U, setTempQuantity2U] = useState<number>(activeTower?.quantity2U || 1);
 
   // State to store cabinet placement floors (indices of upper floors that have cabinets)
   const [cabinetPlacements, setCabinetPlacements] = useState<number[]>([]);
@@ -572,6 +621,7 @@ export default function App() {
     cabinets: {
       id: string;
       type: string;
+      quantity2U?: number;
       allocations: {
         floorIndex: number;
         domeCount: number;
@@ -585,12 +635,75 @@ export default function App() {
   const [tempCabinets, setTempCabinets] = useState<{
     id: string;
     type: string;
+    quantity2U?: number;
     allocations: {
       floorIndex: number;
       domeCount: number;
       bulletCount: number;
     }[];
   }[]>([]);
+
+  // Bulk selection states for linked floors within the cabinet config popup
+  const [selectedAllocIds, setSelectedAllocIds] = useState<string[]>([]);
+  const [lastSelectedAllocId, setLastSelectedAllocId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedAllocIds([]);
+    setLastSelectedAllocId(null);
+  }, [editingCabinetIndex]);
+
+  const handleToggleSelectAlloc = (cabIdx: number, allocIdx: number, event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    const id = `${cabIdx}_${allocIdx}`;
+    const isShiftKey = event ? event.shiftKey : false;
+
+    setSelectedAllocIds((prev) => {
+      let newSelection = [...prev];
+
+      if (isShiftKey && lastSelectedAllocId !== null) {
+        const allAllocs: { cabIdx: number; allocIdx: number; id: string }[] = [];
+        tempCabinets.forEach((c, cI) => {
+          c.allocations.forEach((a, aI) => {
+            allAllocs.push({ cabIdx: cI, allocIdx: aI, id: `${cI}_${aI}` });
+          });
+        });
+
+        const startIdx = allAllocs.findIndex(item => item.id === lastSelectedAllocId);
+        const endIdx = allAllocs.findIndex(item => item.id === id);
+
+        if (startIdx !== -1 && endIdx !== -1) {
+          const minIdx = Math.min(startIdx, endIdx);
+          const maxIdx = Math.max(startIdx, endIdx);
+
+          const rangeIds = allAllocs
+            .slice(minIdx, maxIdx + 1)
+            .map(item => item.id);
+
+          const isSelecting = prev.includes(lastSelectedAllocId);
+
+          if (isSelecting) {
+            rangeIds.forEach(rId => {
+              if (!newSelection.includes(rId)) {
+                newSelection.push(rId);
+              }
+            });
+          } else {
+            newSelection = newSelection.filter(rId => !rangeIds.includes(rId));
+          }
+        }
+      } else {
+        if (newSelection.includes(id)) {
+          newSelection = newSelection.filter(item => item !== id);
+        } else {
+          newSelection.push(id);
+        }
+      }
+
+      return newSelection;
+    });
+
+    setLastSelectedAllocId(id);
+  };
 
   const syncFloorsWithManualGroups = (currentFloors: FloorData[], groups: any[]) => {
     const allocMap = new Map<number, { dome: number; bullet: number }>();
@@ -677,7 +790,7 @@ export default function App() {
     return connections;
   };
 
-  const updateTowerFloorsData = (newFloorsData: FloorData[], nextGroups = manualGroups) => {
+  const updateTowerFloorsData = (newFloorsData: FloorData[], nextGroups = manualGroups, nextMode = calculationMode) => {
     if (!activeTower || !activeProject) return;
     setProjects((prev) =>
       prev.map((p) => {
@@ -687,6 +800,8 @@ export default function App() {
               return {
                 ...t,
                 floorsData: newFloorsData,
+                manualGroups: nextGroups,
+                calculationMode: nextMode,
               };
             }
             return t;
@@ -709,7 +824,8 @@ export default function App() {
       tempRack,
       newFloorsData,
       calculationMode,
-      nextGroups
+      nextGroups,
+      tempRack === "2U" ? tempQuantity2U : 1
     );
   };
 
@@ -723,17 +839,19 @@ export default function App() {
       }
       nextGroups = manualGroups.filter((g) => g.cabinetIndex !== floorIndex);
     } else {
+      const floorDataRow = activeTower.floorsData.find(fd => fd.floorIndex === floorIndex);
       const newGroup = {
         cabinetIndex: floorIndex,
         cabinets: [
           {
             id: `cab_${floorIndex}_1_${Date.now()}`,
             type: "2U",
+            quantity2U: 1,
             allocations: [
               {
                 floorIndex: floorIndex,
-                domeCount: 0,
-                bulletCount: 0,
+                domeCount: floorDataRow ? (floorDataRow.domeCount || 0) : 0,
+                bulletCount: floorDataRow ? (floorDataRow.bulletCount || 0) : 0,
               }
             ]
           }
@@ -766,7 +884,8 @@ export default function App() {
     rackType: string,
     floorsData: FloorData[],
     mode: "auto" | "manual" = calculationMode,
-    groups = manualGroups
+    groups = manualGroups,
+    qty2U: number = activeTower?.quantity2U || 1
   ) => {
     if (floorsCount <= 0) {
       setCabinetPlacements([]);
@@ -823,6 +942,7 @@ export default function App() {
             horizontalDistance,
             verticalDistance,
             rackType,
+            quantity2U: qty2U,
             floors: sortedFloors,
             manualGroups: manualGroupsPayload,
           })
@@ -840,6 +960,7 @@ export default function App() {
             horizontalDistance,
             verticalDistance,
             rackType,
+            quantity2U: qty2U,
             floors: sortedFloors
           })
         });
@@ -881,6 +1002,14 @@ export default function App() {
                     if (backendMap.has(f.floorIndex)) {
                       const backendInfo = backendMap.get(f.floorIndex);
                       if (backendInfo.isCabinetPlaced) {
+                        const matchingGroup = mode === "manual" ? groups.find(g => g.cabinetIndex === f.floorIndex) : null;
+                        const mappedCabinets = (backendInfo.cabinets ?? []).map((cab: any) => {
+                          const matchCab = matchingGroup?.cabinets?.find((c: any) => c.id === cab.cabinetId);
+                          return {
+                            ...cab,
+                            quantity2U: mode === "manual" ? (matchCab?.quantity2U || 1) : (qty2U || 1)
+                          };
+                        });
                         return {
                           ...f,
                           sw24Count: backendInfo.sw24Count ?? 0,
@@ -899,7 +1028,7 @@ export default function App() {
                           autocadLength: backendInfo.autocadLength ?? 0,
                           fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
                           toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
-                          cabinets: backendInfo.cabinets ?? [],
+                          cabinets: mappedCabinets,
                         };
                       }
                       return {
@@ -978,8 +1107,17 @@ export default function App() {
       const cabinets: Record<string, number> = {};
       floorsData.forEach((f: any) => {
         if (f.isCabinetPlaced) {
-          const type = f.cabinetType || tower.rackType || "2U";
-          cabinets[type] = (cabinets[type] || 0) + 1;
+          if (f.cabinets && f.cabinets.length > 0) {
+            f.cabinets.forEach((cab: any) => {
+              const type = cab.cabinetType || cab.type || "2U";
+              const qty2U = type === "2U" ? (cab.quantity2U || 1) : 1;
+              cabinets[type] = (cabinets[type] || 0) + qty2U;
+            });
+          } else {
+            const type = f.cabinetType || tower.rackType || "2U";
+            const qty2U = type === "2U" ? (tower.quantity2U || 1) : 1;
+            cabinets[type] = (cabinets[type] || 0) + qty2U;
+          }
         }
       });
       if (Object.keys(cabinets).length === 0) {
@@ -1081,8 +1219,17 @@ export default function App() {
         const cabinets: Record<string, number> = {};
         floorsData.forEach((f: any) => {
           if (f.isCabinetPlaced) {
-            const type = f.cabinetType || t.rackType || "2U";
-            cabinets[type] = (cabinets[type] || 0) + 1;
+            if (f.cabinets && f.cabinets.length > 0) {
+              f.cabinets.forEach((cab: any) => {
+                const type = cab.cabinetType || cab.type || "2U";
+                const qty2U = type === "2U" ? (cab.quantity2U || 1) : 1;
+                cabinets[type] = (cabinets[type] || 0) + qty2U;
+              });
+            } else {
+              const type = f.cabinetType || t.rackType || "2U";
+              const qty2U = type === "2U" ? (t.quantity2U || 1) : 1;
+              cabinets[type] = (cabinets[type] || 0) + qty2U;
+            }
           }
         });
         if (Object.keys(cabinets).length === 0) {
@@ -1153,6 +1300,13 @@ export default function App() {
       setTempH(activeTower?.horizontalDistance);
       setTempV(activeTower?.verticalDistance);
       setTempRack(activeTower?.rackType);
+      setTempQuantity2U(activeTower?.quantity2U || 1);
+
+      const nextMode = activeTower?.calculationMode || "auto";
+      const nextGroups = activeTower?.manualGroups || [];
+
+      setCalculationMode(nextMode);
+      setManualGroups(nextGroups);
       
       // Load cabinet placement for current active tower
       fetchCabinetPlacement(
@@ -1162,7 +1316,10 @@ export default function App() {
         activeTower?.horizontalDistance || 0,
         activeTower?.verticalDistance || 0,
         activeTower?.rackType || "2U",
-        activeTower?.floorsData || []
+        activeTower?.floorsData || [],
+        nextMode,
+        nextGroups,
+        activeTower?.rackType === "2U" ? (activeTower?.quantity2U || 1) : 1
       );
     }
   }, [activeTower?.id]);
@@ -1214,7 +1371,10 @@ export default function App() {
                 horizontalDistance: tempH,
                 verticalDistance: tempV,
                 rackType: tempRack,
+                quantity2U: tempRack === "2U" ? tempQuantity2U : 1,
                 floorsData: updatedFloorsData,
+                manualGroups: t.manualGroups || [],
+                calculationMode: t.calculationMode || "auto",
               };
             }
             return t;
@@ -1240,7 +1400,8 @@ export default function App() {
           basementCount: tempBasements,
           hasRoof: tempHasRoof,
           widthLength: tempH,
-          heightLength: tempV
+          heightLength: tempV,
+          quantity2U: tempRack === "2U" ? tempQuantity2U : 1
         })
       })
       .then(res => {
@@ -1252,7 +1413,10 @@ export default function App() {
             tempH,
             tempV,
             tempRack,
-            updatedFloorsData
+            updatedFloorsData,
+            calculationMode,
+            manualGroups,
+            tempRack === "2U" ? tempQuantity2U : 1
           );
         }
       })
@@ -1286,6 +1450,7 @@ export default function App() {
 
     setManualGroups([]);
     setCabinetPlacements([]);
+    setCalculationMode("auto");
 
     setProjects((prev) =>
       prev.map((p) => {
@@ -1295,6 +1460,8 @@ export default function App() {
               return {
                 ...t,
                 floorsData: resetFloors,
+                manualGroups: [],
+                calculationMode: "auto",
               };
             }
             return t;
@@ -1319,7 +1486,8 @@ export default function App() {
         basementCount: activeTower.basementsCount,
         hasRoof: activeTower.hasRoof,
         widthLength: activeTower.horizontalDistance,
-        heightLength: activeTower.verticalDistance
+        heightLength: activeTower.verticalDistance,
+        quantity2U: activeTower.quantity2U || 1
       })
     })
     .then((res) => {
@@ -1333,7 +1501,8 @@ export default function App() {
           activeTower.rackType,
           resetFloors,
           "auto",
-          []
+          [],
+          activeTower.quantity2U || 1
         );
       }
     })
@@ -1388,6 +1557,59 @@ export default function App() {
       cabinetPlacements
     );
 
+    // In manual mode, sync the camera updates to the manualGroups allocations
+    let nextGroups = manualGroups;
+    if (calculationMode === "manual") {
+      nextGroups = manualGroups.map((g) => {
+        let groupChanged = false;
+        const newCabinets = g.cabinets.map((cab) => {
+          let cabinetChanged = false;
+          const newAllocations = cab.allocations.map((alloc) => {
+            const shouldUpdateAlloc = alloc.floorIndex === floorIndex || (isSelected && selectedFloorIndexes.includes(alloc.floorIndex));
+            if (shouldUpdateAlloc) {
+              cabinetChanged = true;
+              groupChanged = true;
+              
+              let newDome = alloc.domeCount;
+              let newBullet = alloc.bulletCount;
+              
+              if (field === "camerasCount") {
+                const cams = Number(value);
+                newDome = Math.round(cams * 0.5);
+                newBullet = cams - newDome;
+              } else if (field === "domeCount") {
+                newDome = Number(value);
+              } else if (field === "bulletCount") {
+                newBullet = Number(value);
+              }
+              
+              return {
+                ...alloc,
+                domeCount: newDome,
+                bulletCount: newBullet
+              };
+            }
+            return alloc;
+          });
+          if (cabinetChanged) {
+            return {
+              ...cab,
+              allocations: newAllocations
+            };
+          }
+          return cab;
+        });
+        if (groupChanged) {
+          return {
+            ...g,
+            cabinets: newCabinets
+          };
+        }
+        return g;
+      });
+      setManualGroups(nextGroups);
+    }
+
     setProjects((prev) =>
       prev.map((p) => {
         if (p.id === activeProject.id) {
@@ -1396,6 +1618,7 @@ export default function App() {
               return {
                 ...t,
                 floorsData: recalculatedFloors,
+                manualGroups: nextGroups,
               };
             }
             return t;
@@ -1417,7 +1640,10 @@ export default function App() {
       activeTower.horizontalDistance,
       activeTower.verticalDistance,
       activeTower.rackType,
-      recalculatedFloors
+      recalculatedFloors,
+      calculationMode,
+      nextGroups,
+      activeTower.quantity2U || 1
     );
   };
 
@@ -1495,6 +1721,7 @@ export default function App() {
                 basementsCount: newBasementsCount,
                 hasRoof: newHasRoof,
                 floorsData: recalculatedFloors,
+                manualGroups: newManualGroups,
               };
             }
             return t;
@@ -1530,7 +1757,10 @@ export default function App() {
           activeTower.horizontalDistance,
           activeTower.verticalDistance,
           activeTower.rackType,
-          recalculatedFloors
+          recalculatedFloors,
+          calculationMode,
+          manualGroups,
+          activeTower.quantity2U || 1
         );
       }
     })
@@ -1999,12 +2229,24 @@ const handleAddGlobalInventory = () => {
       sw16Count += f.sw16Count;
       
       // Rack counts based on active project's rack size configuration
-      const needsCabinet = f.isCabinetPlaced || cabinetPlacements.includes(f.floorIndex);
-      if (needsCabinet) {
-        if (activeTower?.rackType === "2U") rack2u += 1;
-        else if (activeTower?.rackType === "6U") rack6u += 1;
-        else if (activeTower?.rackType === "10U") rack10u += 1;
-        else if (activeTower?.rackType === "20U") rack20u += 1;
+      if (f.isCabinetPlaced) {
+        if (f.cabinets && f.cabinets.length > 0) {
+          f.cabinets.forEach((cab: any) => {
+            const type = cab.cabinetType || cab.type || "2U";
+            const qty2U = type === "2U" ? (cab.quantity2U || 1) : 1;
+            if (type === "2U") rack2u += qty2U;
+            else if (type === "6U") rack6u += 1;
+            else if (type === "10U") rack10u += 1;
+            else if (type === "20U") rack20u += 1;
+          });
+        } else {
+          const type = f.cabinetType || activeTower?.rackType || "2U";
+          const qty2U = type === "2U" ? (activeTower?.quantity2U || 1) : 1;
+          if (type === "2U") rack2u += qty2U;
+          else if (type === "6U") rack6u += 1;
+          else if (type === "10U") rack10u += 1;
+          else if (type === "20U") rack20u += 1;
+        }
       }
 
       if (f.upsType === "1K") ups1k += 1;
@@ -2761,19 +3003,35 @@ const handleAddGlobalInventory = () => {
                             className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded px-3 py-2 text-base font-semibold text-center focus:border-[#1A237E] focus:outline-none transition font-mono"
                           />
                         </div>
-                        <div>
-                          <label className="block text-left text-xs font-bold text-[#455A64] uppercase tracking-wide mb-1.5">
-                            Loại tủ
-                          </label>
-                          <select
-                            value={tempRack}
-                            onChange={(e) => setTempRack(e.target.value as any)}
-                            className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded px-3 py-2 text-base font-semibold text-center focus:border-[#1A237E] focus:outline-none transition"
-                          >
-                            <option value="2U">2U</option>
-                            <option value="6U">6U</option>
-                            <option value="10U">10U</option>
-                          </select>
+                        <div className="flex flex-col gap-4">
+                          <div>
+                            <label className="block text-left text-xs font-bold text-[#455A64] uppercase tracking-wide mb-1.5">
+                              Loại tủ
+                            </label>
+                            <select
+                              value={tempRack}
+                              onChange={(e) => setTempRack(e.target.value as any)}
+                              className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded px-3 py-2 text-base font-semibold text-center focus:border-[#1A237E] focus:outline-none transition"
+                            >
+                              <option value="2U">2U</option>
+                              <option value="6U">6U</option>
+                              <option value="10U">10U</option>
+                            </select>
+                          </div>
+                          {tempRack === "2U" && (
+                            <div>
+                              <label className="block text-left text-xs font-bold text-[#455A64] uppercase tracking-wide mb-1.5">
+                                Số lượng 2U / tầng
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                value={tempQuantity2U}
+                                onChange={(e) => setTempQuantity2U(Math.max(1, parseInt(e.target.value) || 1))}
+                                className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded px-3 py-2 text-base font-semibold text-center focus:border-[#1A237E] focus:outline-none transition font-mono"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -2808,7 +3066,8 @@ const handleAddGlobalInventory = () => {
                                 basementCount: tempBasements,
                                 hasRoof: tempHasRoof,
                                 widthLength: tempH,
-                                heightLength: tempV
+                                heightLength: tempV,
+                                quantity2U: tempRack === "2U" ? tempQuantity2U : 1
                               })
                             });
                             if (!response.ok) throw new Error("Failed to create tower");
@@ -2832,7 +3091,10 @@ const handleAddGlobalInventory = () => {
                               tempH,
                               tempV,
                               tempRack,
-                              defaultFloors
+                              defaultFloors,
+                              calculationMode,
+                              manualGroups,
+                              tempRack === "2U" ? tempQuantity2U : 1
                             );
                           } catch (err) {
                             console.error("Error creating tower", err);
@@ -3042,19 +3304,35 @@ const handleAddGlobalInventory = () => {
                           </div>
 
                           {/* Cabinet Type Selector */}
-                          <div>
-                            <label className="block text-xs font-bold text-[#455A64] uppercase tracking-wide mb-1.5">
-                              Loại Tủ
-                            </label>
-                            <select
-                              value={tempRack}
-                              onChange={(e) => setTempRack(e.target.value as any)}
-                              className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded px-3 py-2 text-sm font-medium focus:border-[#1A237E] focus:outline-none transition text-center"
-                            >
-                              <option value="2U">2U</option>
-                              <option value="6U">6U</option>
-                              <option value="10U">10U</option>
-                            </select>
+                          <div className="flex flex-col gap-4">
+                            <div>
+                              <label className="block text-xs font-bold text-[#455A64] uppercase tracking-wide mb-1.5">
+                                Loại Tủ
+                              </label>
+                              <select
+                                value={tempRack}
+                                onChange={(e) => setTempRack(e.target.value as any)}
+                                className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded px-3 py-2 text-sm font-medium focus:border-[#1A237E] focus:outline-none transition text-center"
+                              >
+                                <option value="2U">2U</option>
+                                <option value="6U">6U</option>
+                                <option value="10U">10U</option>
+                              </select>
+                            </div>
+                            {tempRack === "2U" && (
+                              <div>
+                                <label className="block text-xs font-bold text-[#455A64] uppercase tracking-wide mb-1.5">
+                                  Số lượng 2U / tầng
+                                </label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={tempQuantity2U}
+                                  onChange={(e) => setTempQuantity2U(Math.max(1, parseInt(e.target.value) || 1))}
+                                  className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded px-3 py-2 text-sm font-medium focus:border-[#1A237E] focus:outline-none transition font-mono text-center"
+                                />
+                              </div>
+                            )}
                           </div>
 
                           {/* Compute Trigger Button */}
@@ -3251,6 +3529,7 @@ const handleAddGlobalInventory = () => {
                               <button
                                 onClick={() => {
                                   setCalculationMode("auto");
+                                  updateTowerFloorsData(activeTower?.floorsData || [], manualGroups, "auto");
                                   fetchCabinetPlacement(
                                     tempFloors,
                                     tempBasements,
@@ -3259,7 +3538,9 @@ const handleAddGlobalInventory = () => {
                                     tempV,
                                     tempRack,
                                     activeTower?.floorsData || [],
-                                    "auto"
+                                    "auto",
+                                    manualGroups,
+                                    tempRack === "2U" ? tempQuantity2U : 1
                                   );
                                 }}
                                 className={`px-3 py-1 text-xs font-semibold font-sans transition-all duration-200 rounded-md ${
@@ -3273,6 +3554,7 @@ const handleAddGlobalInventory = () => {
                               <button
                                 onClick={() => {
                                   setCalculationMode("manual");
+                                  updateTowerFloorsData(activeTower?.floorsData || [], manualGroups, "manual");
                                   fetchCabinetPlacement(
                                     tempFloors,
                                     tempBasements,
@@ -3281,7 +3563,9 @@ const handleAddGlobalInventory = () => {
                                     tempV,
                                     tempRack,
                                     activeTower?.floorsData || [],
-                                    "manual"
+                                    "manual",
+                                    manualGroups,
+                                    tempRack === "2U" ? tempQuantity2U : 1
                                   );
                                 }}
                                 className={`px-3 py-1 text-xs font-semibold font-sans transition-all duration-200 rounded-md ${
@@ -3294,60 +3578,13 @@ const handleAddGlobalInventory = () => {
                               </button>
                             </div>
 
-                            {selectedFloorIndexes.length > 0 ? (
-                              <div className="flex items-center gap-3 bg-[#E8EAF6] px-3 py-1.5 rounded-lg border border-[#1A237E]/20">
-                                <span className="text-xs font-semibold text-[#1A237E]">
-                                  Đã chọn {selectedFloorIndexes.length} tầng
-                                </span>
-                                <div className="flex items-center gap-1.5">
-                                  <input
-                                    id="bulk-camera-input"
-                                    type="number"
-                                    min="0"
-                                    placeholder="Số cam"
-                                    className="w-16 bg-white border border-[#ECEFF1] rounded px-2 py-1 text-xs font-semibold text-center focus:border-[#1A237E] focus:outline-none"
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        const val = parseInt((e.target as HTMLInputElement).value);
-                                        if (!isNaN(val) && val >= 0) {
-                                          handleBulkUpdateCamera(val);
-                                        }
-                                      }
-                                    }}
-                                  />
-                                  <button
-                                    onClick={() => {
-                                      const el = document.getElementById("bulk-camera-input") as HTMLInputElement;
-                                      if (el) {
-                                        const val = parseInt(el.value);
-                                        if (!isNaN(val) && val >= 0) {
-                                          handleBulkUpdateCamera(val);
-                                        } else {
-                                          alert("Vui lòng nhập số camera hợp lệ!");
-                                        }
-                                      }
-                                    }}
-                                    className="bg-[#1A237E] hover:bg-[#1A237E]/90 text-white text-xs font-bold px-2.5 py-1.5 rounded transition shadow-sm"
-                                  >
-                                    Đồng bộ
-                                  </button>
-                                </div>
-                                <button
-                                  onClick={() => setSelectedFloorIndexes([])}
-                                  className="text-xs text-slate-500 hover:text-red-600 font-medium ml-1 transition"
-                                >
-                                  Hủy
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={handleExportCSV}
-                                title="Tải về file excel CSV"
-                                className="p-1.5 text-[#455A64] hover:text-[#1A237E] hover:bg-slate-100 rounded transition"
-                              >
-                                <Download className="w-5 h-5" />
-                              </button>
-                            )}
+                            <button
+                              onClick={handleExportCSV}
+                              title="Tải về file excel CSV"
+                              className="p-1.5 text-[#455A64] hover:text-[#1A237E] hover:bg-slate-100 rounded transition"
+                            >
+                              <Download className="w-5 h-5" />
+                            </button>
                           </div>
                         </div>
 
@@ -3478,16 +3715,17 @@ const handleAddGlobalInventory = () => {
                                   let distanceExceeded = false;
                                   if (f.camerasCount > 0 && singleRunDistance > maxCableLength) {
                                     distanceExceeded = true;
-                                  }
-
-                                  let cameraExceeded = false;
+                                  }                                  let cameraExceeded = false;
                                   let totalCamsInCabinet = 0;
+                                  let limit2U = 20;
                                   group.cabinets.forEach((c: any) => {
                                     if (c.type === "2U") {
+                                      const currentLimit = 20 * (c.quantity2U || 1);
                                       const totalCams = c.allocations.reduce((sum: number, a: any) => sum + a.domeCount + a.bulletCount, 0);
-                                      if (totalCams > 20) {
+                                      if (totalCams > currentLimit) {
                                         cameraExceeded = true;
                                         totalCamsInCabinet = totalCams;
+                                        limit2U = currentLimit;
                                       }
                                     }
                                   });
@@ -3498,6 +3736,7 @@ const handleAddGlobalInventory = () => {
                                     maxCableLength,
                                     cameraExceeded,
                                     totalCamsInCabinet,
+                                    limit2U,
                                     isCabinetPlaced: cabinetIndex === f.floorIndex,
                                   };
                                 };
@@ -3514,9 +3753,84 @@ const handleAddGlobalInventory = () => {
                                         selectedFloorIndexes.includes(f.floorIndex) 
                                           ? 'bg-slate-300 font-semibold text-slate-900' 
                                           : styleGroup.bg
-                                      } ${styleGroup.border} ${isActiveCabinet ? 'ring-2 ring-emerald-500 ring-inset' : ''}`}
-                                      onClick={(e) => {
-                                        if (calculationMode === "manual") {
+                                      } ${styleGroup.border} ${isActiveCabinet ? 'ring-2 ring-emerald-500 ring-inset' : ''}`}                                      onClick={(e) => {
+                                        if (calculationMode === "manual" && activeTower) {
+                                          if (e.ctrlKey || e.metaKey) {
+                                            if (activeCabinetIndex === null) {
+                                              addToast("Vui lòng chọn/đặt tủ (bằng cách click dòng có đặt tủ) trước khi giữ Ctrl + click để liên kết!", "info");
+                                              return;
+                                            }
+                                            const activeGroup = manualGroups.find(g => g.cabinetIndex === activeCabinetIndex);
+                                            if (activeGroup && activeGroup.cabinets && activeGroup.cabinets.length > 1) {
+                                              addToast("Tủ đang chọn là tủ kép (nhiều tủ). Vui lòng nhấn nút bánh răng của tủ để phân bổ chi tiết!", "error");
+                                              return;
+                                            }
+                                            if (f.floorIndex !== activeCabinetIndex) {
+                                              if (activeGroup && activeGroup.cabinets && activeGroup.cabinets.length > 0) {
+                                                const cab = activeGroup.cabinets[0];
+                                                const isAllocated = cab.allocations.some(a => a.floorIndex === f.floorIndex);
+                                                if (!isAllocated && cab.type === "2U") {
+                                                  const currentTotal = cab.allocations.reduce((sum, a) => sum + a.domeCount + a.bulletCount, 0);
+                                                  const newFloorCamCount = (f.domeCount || 0) + (f.bulletCount || 0);
+                                                  const newTotal = currentTotal + newFloorCamCount;
+                                                  const limit2U = 20 * (cab.quantity2U || 1);
+                                                  if (newTotal > limit2U) {
+                                                    addToast(`Không thể liên kết thêm tầng này vì tổng số camera (${newTotal} cam) vượt quá giới hạn tối đa của tủ 2U (${limit2U} cam)!`, "error");
+                                                    return;
+                                                  }
+                                                }
+                                              }
+                                              const updatedGroups = manualGroups.map((g) => {
+                                                if (g.cabinetIndex === activeCabinetIndex) {
+                                                  let found = false;
+                                                  const newCabinets = g.cabinets.map((cab) => {
+                                                    const isAllocated = cab.allocations.some(a => a.floorIndex === f.floorIndex);
+                                                    if (isAllocated) {
+                                                      found = true;
+                                                      return {
+                                                        ...cab,
+                                                        allocations: cab.allocations.filter(a => a.floorIndex !== f.floorIndex)
+                                                      };
+                                                    }
+                                                    return cab;
+                                                  });
+
+                                                  if (!found) {
+                                                    const updatedCabinets = [...g.cabinets];
+                                                    if (updatedCabinets.length > 0) {
+                                                      updatedCabinets[0] = {
+                                                        ...updatedCabinets[0],
+                                                        allocations: [
+                                                          ...updatedCabinets[0].allocations,
+                                                          {
+                                                            floorIndex: f.floorIndex,
+                                                            domeCount: f.domeCount || 0,
+                                                            bulletCount: f.bulletCount || 0
+                                                          }
+                                                        ]
+                                                      };
+                                                    }
+                                                    return {
+                                                      ...g,
+                                                      cabinets: updatedCabinets
+                                                    };
+                                                  } else {
+                                                    return {
+                                                      ...g,
+                                                      cabinets: newCabinets
+                                                    };
+                                                  }
+                                                }
+                                                return g;
+                                              });
+
+                                              setManualGroups(updatedGroups);
+                                              const updatedFloorsData = syncFloorsWithManualGroups(activeTower.floorsData, updatedGroups);
+                                              updateTowerFloorsData(updatedFloorsData, updatedGroups);
+                                            }
+                                            return;
+                                          }
+
                                           const isCab = manualGroups.some(g => g.cabinetIndex === f.floorIndex);
                                           if (isCab) {
                                             setActiveCabinetIndex(f.floorIndex);
@@ -3643,18 +3957,33 @@ const handleAddGlobalInventory = () => {
                                           <div className="flex flex-wrap gap-1 mt-1 text-left">
                                             {(() => {
                                               const floorCabs = f.cabinets || [];
+                                              const isManualGroup = calculationMode === "manual" && manualGroups.some(g => g.cabinetIndex === f.floorIndex);
+                                              console.log("Cabinet Render:", {
+                                                floorIndex: f.floorIndex,
+                                                label: f.label,
+                                                cabinetType: f.cabinetType,
+                                                calculationMode,
+                                                tempQuantity2U,
+                                                activeTowerQty2U: activeTower?.quantity2U,
+                                                floorCabsLength: floorCabs.length,
+                                                floorCabs
+                                              });
                                               if (floorCabs.length > 0) {
-                                                return floorCabs.map((c: any, cIdx: number) => (
-                                                  <span key={cIdx} className="inline-flex items-center gap-2 px-2.5 py-1 text-[13px] font-bold rounded-md bg-[#E8EAF6] text-[#1A237E] border border-[#C5CAE9] shadow-sm">
-                                                    <span className="w-2 h-2 rounded-full bg-[#1A237E] animate-pulse"></span>
-                                                    Tủ {c.cabinetType || ""} ({c.cameraQuantityInCabinet ?? 0} Cam)
-                                                  </span>
-                                                ));
+                                                return floorCabs.map((c: any, cIdx: number) => {
+                                                  const qty = isManualGroup ? (c.quantity2U || 1) : tempQuantity2U;
+                                                  return (
+                                                    <span key={cIdx} className="inline-flex items-center gap-2 px-2.5 py-1 text-[13px] font-bold rounded-md bg-[#E8EAF6] text-[#1A237E] border border-[#C5CAE9] shadow-sm">
+                                                      <span className="w-2 h-2 rounded-full bg-[#1A237E] animate-pulse"></span>
+                                                      {c.cabinetType === "2U" && qty > 1 ? `${qty} ` : ""}Tủ {c.cabinetType || ""} ({c.cameraQuantityInCabinet ?? 0} Cam)
+                                                    </span>
+                                                  );
+                                                });
                                               }
+                                              const fallbackQty = isManualGroup ? (activeTower?.quantity2U || 1) : tempQuantity2U;
                                               return (
                                                 <span className="inline-flex items-center gap-2 px-2.5 py-1 text-[13px] font-bold rounded-md bg-[#E8EAF6] text-[#1A237E] border border-[#C5CAE9] shadow-sm">
                                                   <span className="w-2 h-2 rounded-full bg-[#1A237E] animate-pulse"></span>
-                                                  Tủ {f.cabinetType || ""} ({f.cameraQuantityInCabinet ?? 0} Cam)
+                                                  {f.cabinetType === "2U" && fallbackQty > 1 ? `${fallbackQty} ` : ""}Tủ {f.cabinetType || ""} ({f.cameraQuantityInCabinet ?? 0} Cam)
                                                 </span>
                                               );
                                             })()}
@@ -3680,7 +4009,7 @@ const handleAddGlobalInventory = () => {
                                                   <svg className="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                                   </svg>
-                                                  QUÁ TẢI TỦ 2U: {warn.totalCamsInCabinet} cam &gt; 20 cam
+                                                  QUÁ TẢI TỦ 2U: {warn.totalCamsInCabinet} cam &gt; {warn.limit2U} cam
                                                 </span>
                                               )}
                                             </div>
@@ -3915,8 +4244,17 @@ const handleAddGlobalInventory = () => {
                                           key={f.floorIndex} 
                                           className="hover:bg-slate-50 transition divide-x divide-slate-200"
                                         >
-                                          {/* Tủ (bỏ trống như yêu cầu) */}
-                                          <td className="py-2.5 px-2 text-slate-400 font-semibold bg-slate-50/10"></td>
+                                          {/* Tủ */}
+                                          <td className="py-2.5 px-2 text-slate-700 font-semibold bg-slate-50/10">
+                                            {(() => {
+                                              if (!cabinetLabel) return "";
+                                              const cleaned = cabinetLabel.trim();
+                                              if (cleaned.toLowerCase().startsWith("tầng ")) {
+                                                return "Tủ " + cleaned.substring(5).trim();
+                                              }
+                                              return "Tủ " + cleaned;
+                                            })()}
+                                          </td>
                                           {/* Tầng camera */}
                                           <td className="py-2.5 px-2 text-left pl-4 font-semibold text-slate-800 bg-[#E8F5E9]/10">
                                             {f.label}
@@ -5206,9 +5544,10 @@ const handleAddGlobalInventory = () => {
                       {
                         id: `cab_${editingCabinetIndex}_${tempCabinets.length + 1}_${Date.now()}`,
                         type: "2U",
+                        quantity2U: 1,
                         allocations: [
                           {
-                            floorIndex: editingCabinetIndex,
+                            floorIndex: editingCabinetIndex!,
                             domeCount: 0,
                             bulletCount: 0,
                           }
@@ -5262,12 +5601,15 @@ const handleAddGlobalInventory = () => {
                               onChange={(e) => {
                                 const next = [...tempCabinets];
                                 const nextType = e.target.value;
+                                const currentQty2U = cab.quantity2U || 1;
+                                const limit2U = 20 * currentQty2U;
                                 if (nextType === "2U") {
                                   const totalCam = cab.allocations.reduce((sum: number, a: any) => sum + a.domeCount + a.bulletCount, 0);
-                                  if (totalCam > 20) {
-                                    addToast("Không thể đổi sang tủ 2U vì số lượng camera hiện tại đã vượt quá 20!", "error");
+                                  if (totalCam > limit2U) {
+                                    addToast(`Không thể đổi sang tủ 2U vì số lượng camera hiện tại đã vượt quá ${limit2U}!`, "error");
                                     return;
                                   }
+                                  next[cabIdx].quantity2U = currentQty2U;
                                 }
                                 next[cabIdx].type = nextType;
                                 setTempCabinets(next);
@@ -5279,12 +5621,35 @@ const handleAddGlobalInventory = () => {
                               <option value="10U">10U Rack</option>
                               <option value="20U">20U Rack</option>
                             </select>
+                            {cab.type === "2U" && (
+                              <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded px-2 py-1 shadow-xs">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide whitespace-nowrap">SL 2U:</span>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={cab.quantity2U || 1}
+                                  onChange={(e) => {
+                                    const val = Math.max(1, parseInt(e.target.value) || 1);
+                                    const next = [...tempCabinets];
+                                    const limit2U = 20 * val;
+                                    const totalCam = cab.allocations.reduce((sum: number, a: any) => sum + a.domeCount + a.bulletCount, 0);
+                                    if (totalCam > limit2U) {
+                                      addToast(`Không thể giảm số lượng tủ 2U vì tổng số camera (${totalCam}) vượt quá giới hạn ${limit2U}!`, "error");
+                                      return;
+                                    }
+                                    next[cabIdx].quantity2U = val;
+                                    setTempCabinets(next);
+                                  }}
+                                  className="w-10 text-xs font-mono font-bold bg-transparent border-0 focus:ring-0 p-0 text-center focus:outline-none"
+                                />
+                              </div>
+                            )}
                             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
                               Tổng: {totalCam} Cam ({totalDome} Dome, {totalBullet} Thân)
                             </span>
-                            {cab.type === "2U" && totalCam > 20 && (
+                            {cab.type === "2U" && totalCam > (20 * (cab.quantity2U || 1)) && (
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-100 animate-pulse">
-                                Quá tải tủ 2U (&gt;20 cam)
+                                Quá tải tủ 2U (&gt;{20 * (cab.quantity2U || 1)} cam)
                               </span>
                             )}
                           </div>
@@ -5316,6 +5681,8 @@ const handleAddGlobalInventory = () => {
                                   bulletCount: 0,
                                 });
                                 setTempCabinets(next);
+                                setSelectedAllocIds([]);
+                                setLastSelectedAllocId(null);
                               }}
                               className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
                             >
@@ -5332,111 +5699,146 @@ const handleAddGlobalInventory = () => {
                             </p>
                           ) : (
                             <div className="flex flex-col gap-2">
-                              {cab.allocations.map((alloc, allocIdx) => (
-                                <div key={allocIdx} className="grid grid-cols-12 gap-3 items-center bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
-                                  {/* Select Floor */}
-                                  <div className="col-span-5">
-                                    <select
-                                      value={alloc.floorIndex}
-                                      onChange={(e) => {
-                                        const next = [...tempCabinets];
-                                        next[cabIdx].allocations[allocIdx].floorIndex = parseInt(e.target.value);
-                                        setTempCabinets(next);
-                                      }}
-                                      className="w-full text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                    >
-                                      {activeTower?.floorsData.map((fd) => (
-                                        <option key={fd.floorIndex} value={fd.floorIndex}>
-                                          {fd.label} (Index: {fd.floorIndex})
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
+                              {cab.allocations.map((alloc, allocIdx) => {
+                                const allocId = `${cabIdx}_${allocIdx}`;
+                                const isSelected = selectedAllocIds.includes(allocId);
+                                return (
+                                  <div key={allocIdx} className={`grid grid-cols-12 gap-3 items-center p-2.5 rounded-lg border transition ${isSelected ? 'bg-blue-50/50 border-blue-200' : 'bg-slate-50/50 border-slate-100'}`}>
+                                    {/* Selection Checkbox */}
+                                    <div className="col-span-1 flex items-center justify-center">
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onClick={(e) => handleToggleSelectAlloc(cabIdx, allocIdx, e)}
+                                        onChange={() => {}}
+                                        className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer"
+                                      />
+                                    </div>
 
-                                  {/* Dome Count */}
-                                  <div className="col-span-3 flex items-center gap-1.5">
-                                    <span className="text-[10px] text-slate-500 font-bold uppercase whitespace-nowrap">Dome:</span>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      value={alloc.domeCount === 0 ? "" : alloc.domeCount}
-                                      placeholder="0"
-                                      onChange={(e) => {
-                                        const val = Math.max(0, parseInt(e.target.value) || 0);
-                                        const next = [...tempCabinets];
-                                        const cab = next[cabIdx];
-                                        if (cab.type === "2U") {
-                                          const currentAllocTotal = cab.allocations.reduce((sum, a, idx) => {
-                                            if (idx === allocIdx) {
-                                              return sum + a.bulletCount;
+                                    {/* Select Floor */}
+                                    <div className="col-span-4">
+                                      <select
+                                        value={alloc.floorIndex}
+                                        onChange={(e) => {
+                                          const next = [...tempCabinets];
+                                          next[cabIdx].allocations[allocIdx].floorIndex = parseInt(e.target.value);
+                                          setTempCabinets(next);
+                                        }}
+                                        className="w-full text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                                      >
+                                        {activeTower?.floorsData.map((fd) => (
+                                          <option key={fd.floorIndex} value={fd.floorIndex}>
+                                            {fd.label} (Index: {fd.floorIndex})
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+
+                                    {/* Dome Count */}
+                                    <div className="col-span-3 flex items-center gap-1.5">
+                                      <span className="text-[10px] text-slate-500 font-bold uppercase whitespace-nowrap">Dome:</span>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={alloc.domeCount === 0 ? "" : alloc.domeCount}
+                                        placeholder="0"
+                                        onChange={(e) => {
+                                          const val = Math.max(0, parseInt(e.target.value) || 0);
+                                          const next = [...tempCabinets];
+                                          const targets = isSelected 
+                                            ? selectedAllocIds.map(sId => {
+                                                const [cI, aI] = sId.split("_").map(Number);
+                                                return { cabIdx: cI, allocIdx: aI };
+                                              })
+                                            : [{ cabIdx, allocIdx }];
+
+                                          targets.forEach((target) => {
+                                            const tCab = next[target.cabIdx];
+                                            if (tCab.type === "2U") {
+                                              const limit2U = 20 * (tCab.quantity2U || 1);
+                                              const currentAllocTotal = tCab.allocations.reduce((sum, a, idx) => {
+                                                if (idx === target.allocIdx) {
+                                                  return sum + a.bulletCount;
+                                                }
+                                                return sum + a.domeCount + a.bulletCount;
+                                              }, 0);
+                                              if (currentAllocTotal + val > limit2U) {
+                                                tCab.allocations[target.allocIdx].domeCount = limit2U - currentAllocTotal;
+                                                return;
+                                              }
                                             }
-                                            return sum + a.domeCount + a.bulletCount;
-                                          }, 0);
-                                          if (currentAllocTotal + val > 20) {
-                                            addToast("Tủ 2U chỉ hỗ trợ tối đa 20 camera!", "error");
-                                            cab.allocations[allocIdx].domeCount = 20 - currentAllocTotal;
-                                            setTempCabinets(next);
-                                            return;
-                                          }
-                                        }
-                                        cab.allocations[allocIdx].domeCount = val;
-                                        setTempCabinets(next);
-                                      }}
-                                      className="w-full text-xs font-mono font-bold bg-white border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
-                                    />
-                                  </div>
+                                            tCab.allocations[target.allocIdx].domeCount = val;
+                                          });
 
-                                  {/* Bullet Count */}
-                                  <div className="col-span-3 flex items-center gap-1.5">
-                                    <span className="text-[10px] text-slate-500 font-bold uppercase whitespace-nowrap">Thân:</span>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      value={alloc.bulletCount === 0 ? "" : alloc.bulletCount}
-                                      placeholder="0"
-                                      onChange={(e) => {
-                                        const val = Math.max(0, parseInt(e.target.value) || 0);
-                                        const next = [...tempCabinets];
-                                        const cab = next[cabIdx];
-                                        if (cab.type === "2U") {
-                                          const currentAllocTotal = cab.allocations.reduce((sum, a, idx) => {
-                                            if (idx === allocIdx) {
-                                              return sum + a.domeCount;
+                                          setTempCabinets(next);
+                                        }}
+                                        className="w-full text-xs font-mono font-bold bg-white border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
+                                      />
+                                    </div>
+
+                                    {/* Bullet Count */}
+                                    <div className="col-span-3 flex items-center gap-1.5">
+                                      <span className="text-[10px] text-slate-500 font-bold uppercase whitespace-nowrap">Thân:</span>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={alloc.bulletCount === 0 ? "" : alloc.bulletCount}
+                                        placeholder="0"
+                                        onChange={(e) => {
+                                          const val = Math.max(0, parseInt(e.target.value) || 0);
+                                          const next = [...tempCabinets];
+                                          const targets = isSelected 
+                                            ? selectedAllocIds.map(sId => {
+                                                const [cI, aI] = sId.split("_").map(Number);
+                                                return { cabIdx: cI, allocIdx: aI };
+                                              })
+                                            : [{ cabIdx, allocIdx }];
+
+                                          targets.forEach((target) => {
+                                            const tCab = next[target.cabIdx];
+                                            if (tCab.type === "2U") {
+                                              const limit2U = 20 * (tCab.quantity2U || 1);
+                                              const currentAllocTotal = tCab.allocations.reduce((sum, a, idx) => {
+                                                if (idx === target.allocIdx) {
+                                                  return sum + a.domeCount;
+                                                }
+                                                return sum + a.domeCount + a.bulletCount;
+                                              }, 0);
+                                              if (currentAllocTotal + val > limit2U) {
+                                                tCab.allocations[target.allocIdx].bulletCount = limit2U - currentAllocTotal;
+                                                return;
+                                              }
                                             }
-                                            return sum + a.domeCount + a.bulletCount;
-                                          }, 0);
-                                          if (currentAllocTotal + val > 20) {
-                                            addToast("Tủ 2U chỉ hỗ trợ tối đa 20 camera!", "error");
-                                            cab.allocations[allocIdx].bulletCount = 20 - currentAllocTotal;
-                                            setTempCabinets(next);
-                                            return;
-                                          }
-                                        }
-                                        cab.allocations[allocIdx].bulletCount = val;
-                                        setTempCabinets(next);
-                                      }}
-                                      className="w-full text-xs font-mono font-bold bg-white border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
-                                    />
-                                  </div>
+                                            tCab.allocations[target.allocIdx].bulletCount = val;
+                                          });
 
-                                  {/* Delete Allocation */}
-                                  <div className="col-span-1 flex justify-end">
-                                    <button
-                                      onClick={() => {
-                                        const next = [...tempCabinets];
-                                        next[cabIdx].allocations = next[cabIdx].allocations.filter((_, idx) => idx !== allocIdx);
-                                        setTempCabinets(next);
-                                      }}
-                                      className="text-slate-400 hover:text-rose-600 p-1 hover:bg-rose-50 rounded transition"
-                                      title="Xóa liên kết"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                      </svg>
-                                    </button>
+                                          setTempCabinets(next);
+                                        }}
+                                        className="w-full text-xs font-mono font-bold bg-white border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
+                                      />
+                                    </div>
+
+                                    {/* Delete Allocation */}
+                                    <div className="col-span-1 flex justify-end">
+                                      <button
+                                        onClick={() => {
+                                          const next = [...tempCabinets];
+                                          next[cabIdx].allocations = next[cabIdx].allocations.filter((_, idx) => idx !== allocIdx);
+                                          setTempCabinets(next);
+                                          setSelectedAllocIds([]);
+                                          setLastSelectedAllocId(null);
+                                        }}
+                                        className="text-slate-400 hover:text-rose-600 p-1 hover:bg-rose-50 rounded transition"
+                                        title="Xóa liên kết"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                      </button>
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                         </div>
@@ -5460,16 +5862,21 @@ const handleAddGlobalInventory = () => {
                   if (editingCabinetIndex === null) return;
 
                   // Validate 2U cabinet limit
+                  let limitExceededMessage = "";
                   const hasExceeded = tempCabinets.some((cab) => {
                     if (cab.type === "2U") {
+                      const limit2U = 20 * (cab.quantity2U || 1);
                       const totalCams = cab.allocations.reduce((sum, a) => sum + a.domeCount + a.bulletCount, 0);
-                      return totalCams > 20;
+                      if (totalCams > limit2U) {
+                        limitExceededMessage = `Có tủ 2U vượt quá giới hạn camera (${totalCams} > ${limit2U} cam)! Vui lòng chọn loại tủ lớn hơn, tăng số lượng tủ hoặc phân bổ lại camera trước khi áp dụng.`;
+                        return true;
+                      }
                     }
                     return false;
                   });
 
                   if (hasExceeded) {
-                    addToast("Có tủ 2U vượt quá giới hạn 20 camera! Vui lòng chọn loại tủ lớn hơn hoặc phân bổ lại camera trước khi áp dụng.", "error");
+                    addToast(limitExceededMessage || `Có tủ 2U vượt quá giới hạn camera!`, "error");
                     return;
                   }
 

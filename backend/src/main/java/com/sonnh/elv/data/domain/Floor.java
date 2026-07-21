@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Entity
 @Table(
-    name = "special_floor",
+    name = "floor",
     uniqueConstraints = {
         @UniqueConstraint(columnNames = {"tower_id", "floorIndex"})
     }
@@ -19,7 +19,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SpecialFloor {
+public class Floor {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

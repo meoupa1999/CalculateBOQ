@@ -19,6 +19,7 @@ public class TowerResponseDto {
     private Boolean hasRoof;
     private Double widthLength;
     private Double heightLength;
+    private Integer quantity2U;
     private String specialName;
     private UUID projectId;
     private UUID configId;

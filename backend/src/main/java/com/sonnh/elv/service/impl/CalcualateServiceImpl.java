@@ -121,7 +121,7 @@ public class CalcualateServiceImpl implements CalculateService {
                     .totalCable(0)
                     .build();
         }
-        int floorDiff = Math.abs(floor.getFloorIndex() - cabinetIndex) + 1;
+        int floorDiff = Math.abs(floor.getFloorIndex() - cabinetIndex);
         int baseCable = floor.getCableLength() != null ? floor.getCableLength() : 0;
         double vDist = verticalDistance != null ? verticalDistance : 0.0;
         int atrium = (int) Math.round(floorDiff * vDist * cameraQuantity);
@@ -139,6 +139,7 @@ public class CalcualateServiceImpl implements CalculateService {
 
     public Map<Integer, CabinetEquipmentDTO> calculateCabinetPlacementUitls(CalculateBOQRequestDTO dto,
             Map<Integer, CabinetEquipmentDTO> mapResult, Config config, int min, int max) {
+        int qty2U = dto.getQuantity2U() != null && dto.getQuantity2U() > 0 ? dto.getQuantity2U() : 1;
         // tính pivot
         int pivot = 0;
         int maxFloorInRange = 0;
@@ -263,7 +264,7 @@ public class CalcualateServiceImpl implements CalculateService {
                 System.out.println("maxFloorInRange: " + maxFloorInRange);
                 if (from < maxSize && floor.getFloorIndex() == to) {
                     totalCamera2U += floor.getCamerasCount();
-                    if (totalCamera2U <= config.getSw24ConditionQuanity()) {
+                    if (totalCamera2U <= config.getSw24ConditionQuanity() * qty2U) {
                         System.out.println("Put vao map");
                         CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
                         cabinetEquipmentDTO.setFrom(from);
@@ -281,7 +282,8 @@ public class CalcualateServiceImpl implements CalculateService {
                             cabinetIndex = from + (maxFloorInRange - from) / 2;
                         }
                     } else {
-                        System.out.println("Vượt quá " + config.getSw24ConditionQuanity() + " camera, dat tu som");
+                        System.out.println(
+                                "Vượt quá " + (config.getSw24ConditionQuanity() * qty2U) + " camera, dat tu som");
                         if (to - 1 >= from) {
                             CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
                             cabinetEquipmentDTO.setFrom(from);
@@ -301,7 +303,7 @@ public class CalcualateServiceImpl implements CalculateService {
                         }
                     }
                 } else if (from < maxSize && floor.getFloorIndex() < maxFloorInRange) {
-                    if (totalCamera2U + floor.getCamerasCount() <= config.getSw24ConditionQuanity()) {
+                    if (totalCamera2U + floor.getCamerasCount() <= config.getSw24ConditionQuanity() * qty2U) {
                         totalCamera2U += floor.getCamerasCount();
                     } else {
                         CabinetEquipmentDTO cabinetEquipmentDTO = new CabinetEquipmentDTO();
@@ -473,6 +475,7 @@ public class CalcualateServiceImpl implements CalculateService {
                 .horizontalDistance(dto.getHorizontalDistance())
                 .verticalDistance(dto.getVerticalDistance())
                 .rackType(dto.getRackType())
+                .quantity2U(dto.getQuantity2U())
                 .floors(dto.getFloors())
                 .build();
 
