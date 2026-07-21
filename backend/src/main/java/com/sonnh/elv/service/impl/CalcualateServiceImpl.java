@@ -594,57 +594,16 @@ public class CalcualateServiceImpl implements CalculateService {
             CabinetEquipmentDTO coveringCabinet = null;
             Integer cabinetIndex = null;
 
-            // 1. Check if this floor is a manual cabinet host
-            if (manualCalculatedResult.containsKey(floor.getFloorIndex())) {
-                cabinetIndex = floor.getFloorIndex();
-            } else {
-                // 2. Check if this floor is allocated to some cabinet in manualGroups
-                if (dto.getManualGroups() != null) {
-                    for (CalculateBOQManualRequestDTO.ManualCabinetGroup group : dto.getManualGroups()) {
-                        if (group.getCabinets() != null) {
-                            for (CalculateBOQManualRequestDTO.Cabinet cab : group.getCabinets()) {
-                                if (cab.getAllocations() != null) {
-                                    for (CalculateBOQManualRequestDTO.CabinetAllocation alloc : cab.getAllocations()) {
-                                        if (alloc.getFloorIndex() != null && alloc.getFloorIndex().equals(floor.getFloorIndex())) {
-                                            cabinetIndex = group.getCabinetIndex();
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (cabinetIndex != null) break;
-                            }
-                        }
-                        if (cabinetIndex != null) break;
-                    }
+            // Tìm cabinetIndex theo floorRangesMap (manual groups)
+            for (Integer key : floorRangesMap.keySet()) {
+                if (floor.getFloorIndex() >= key && floor.getFloorIndex() <= floorRangesMap.get(key)) {
+                    cabinetIndex = rangeToCabinetMap.get(key);
+                    coveringCabinet = CabinetEquipmentDTO.builder()
+                            .from(key)
+                            .to(floorRangesMap.get(key))
+                            .build();
+                    break;
                 }
-            }
-
-            if (cabinetIndex != null) {
-                // Find min and max for this cabinet group
-                Integer minF = cabinetIndex;
-                Integer maxF = cabinetIndex;
-                if (dto.getManualGroups() != null) {
-                    for (CalculateBOQManualRequestDTO.ManualCabinetGroup group : dto.getManualGroups()) {
-                        if (group.getCabinetIndex().equals(cabinetIndex)) {
-                            if (group.getCabinets() != null) {
-                                for (CalculateBOQManualRequestDTO.Cabinet cab : group.getCabinets()) {
-                                    if (cab.getAllocations() != null) {
-                                        for (CalculateBOQManualRequestDTO.CabinetAllocation alloc : cab.getAllocations()) {
-                                            if (alloc.getFloorIndex() != null) {
-                                                minF = Math.min(minF, alloc.getFloorIndex());
-                                                maxF = Math.max(maxF, alloc.getFloorIndex());
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                coveringCabinet = CabinetEquipmentDTO.builder()
-                        .from(minF)
-                        .to(maxF)
-                        .build();
             }
 
             if (cabinetIndex == null) {
@@ -665,30 +624,8 @@ public class CalcualateServiceImpl implements CalculateService {
                         .cabinetIndex(cabinetIndex);
             }
 
-            int camerasForCable = floor.getCamerasCount();
-            if (cabinetIndex != null && manualCalculatedResult.containsKey(cabinetIndex)) {
-                int allocatedCams = 0;
-                if (dto.getManualGroups() != null) {
-                    for (CalculateBOQManualRequestDTO.ManualCabinetGroup group : dto.getManualGroups()) {
-                        if (group.getCabinetIndex().equals(cabinetIndex) && group.getCabinets() != null) {
-                            for (CalculateBOQManualRequestDTO.Cabinet cab : group.getCabinets()) {
-                                if (cab.getAllocations() != null) {
-                                    for (CalculateBOQManualRequestDTO.CabinetAllocation alloc : cab.getAllocations()) {
-                                        if (alloc.getFloorIndex() != null && alloc.getFloorIndex().equals(floor.getFloorIndex())) {
-                                            allocatedCams += (alloc.getDomeCount() != null ? alloc.getDomeCount() : 0)
-                                                    + (alloc.getBulletCount() != null ? alloc.getBulletCount() : 0);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                camerasForCable = allocatedCams;
-            }
-
             CableDetail cableDetail = calculateCableLength(cabinetIndex, floor, dto.getVerticalDistance(),
-                    camerasForCable);
+                    floor.getCamerasCount());
             builder.cableLength(cableDetail.getTotalCable())
                     .atrium(cableDetail.getAtrium())
                     .downCabinet(cableDetail.getDownCabinet())
