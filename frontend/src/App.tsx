@@ -1077,18 +1077,22 @@ export default function App() {
       let res;
       if (mode === "manual") {
         const manualGroupsPayload = groups.map((g) => {
-          const associatedFloors = Array.from(new Set([
+          // Gom đúng các floorIndex được allocate (bao gồm cabinetIndex + allocations)
+          const allocatedFloors = Array.from(new Set([
             g.cabinetIndex,
             ...g.cabinets.flatMap((c: any) => c.allocations.map((a: any) => a.floorIndex))
-          ]));
-          const minF = Math.min(...associatedFloors);
-          const maxF = Math.max(...associatedFloors);
+          ])).sort((a, b) => a - b);
+
+          // floorRange: gửi đúng min/max của các tầng thực sự được allocate
+          const minF = allocatedFloors.length > 0 ? Math.min(...allocatedFloors) : g.cabinetIndex;
+          const maxF = allocatedFloors.length > 0 ? Math.max(...allocatedFloors) : g.cabinetIndex;
+
           return {
             cabinetIndex: g.cabinetIndex,
             floorRange: { [minF]: maxF },
             cabinets: g.cabinets.map((c: any) => {
-              const totalDome = c.allocations.reduce((sum: number, a: any) => sum + a.domeCount, 0);
-              const totalBullet = c.allocations.reduce((sum: number, a: any) => sum + a.bulletCount, 0);
+              const totalDome = c.allocations.reduce((sum: number, a: any) => sum + (a.domeCount || 0), 0);
+              const totalBullet = c.allocations.reduce((sum: number, a: any) => sum + (a.bulletCount || 0), 0);
               return {
                 id: c.id,
                 type: c.type,
