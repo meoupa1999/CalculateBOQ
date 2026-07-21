@@ -900,30 +900,43 @@ export default function App() {
           const hasManualAllocations = data.some((item: any) => 
             item.isCabinetPlaced && 
             item.cabinets && 
-            item.cabinets.some((c: any) => c.allocations && c.allocations.length > 0)
+            item.cabinets.some((c: any) => c.allocations !== null && c.allocations !== undefined)
           );
 
           const reconstructedGroups: any[] = [];
           if (hasManualAllocations) {
             data.forEach((item: any) => {
               if (item.isCabinetPlaced && item.cabinets && item.cabinets.length > 0) {
-                const allocationsFloors = item.cabinets.flatMap((c: any) => (c.allocations || []).map((a: any) => a.floorIndex));
-                const minFloor = allocationsFloors.length > 0 ? Math.min(...allocationsFloors) : item.floorIndex;
-                const maxFloor = allocationsFloors.length > 0 ? Math.max(...allocationsFloors) : item.floorIndex;
-                
-                const floorRange: Record<number, number> = {};
-                floorRange[minFloor] = maxFloor;
+                const manualCabs = item.cabinets.filter((cab: any) => cab.allocations !== null && cab.allocations !== undefined);
+                if (manualCabs.length > 0) {
+                  const allocationsFloors = manualCabs.flatMap((c: any) => (c.allocations || []).map((a: any) => a.floorIndex));
+                  const minFloor = allocationsFloors.length > 0 ? Math.min(...allocationsFloors) : item.floorIndex;
+                  const maxFloor = allocationsFloors.length > 0 ? Math.max(...allocationsFloors) : item.floorIndex;
+                  
+                  const floorRange: Record<number, number> = {};
+                  floorRange[minFloor] = maxFloor;
 
-                reconstructedGroups.push({
-                  cabinetIndex: item.floorIndex,
-                  cabinets: item.cabinets.map((cab: any) => ({
-                    id: cab.cabinetId,
-                    type: cab.cabinetType,
-                    quantity2U: cab.quantity2U || 1,
-                    allocations: cab.allocations || []
-                  })),
-                  floorRange
-                });
+                  reconstructedGroups.push({
+                    cabinetIndex: item.floorIndex,
+                    cabinets: manualCabs.map((cab: any) => {
+                      const hasAlloc = cab.allocations && cab.allocations.length > 0;
+                      const defaultAlloc = hasAlloc ? cab.allocations : [
+                        {
+                          floorIndex: item.floorIndex,
+                          domeCount: item.domeCount || 0,
+                          bulletCount: item.bulletCount || 0,
+                        }
+                      ];
+                      return {
+                        id: cab.cabinetId,
+                        type: cab.cabinetType,
+                        quantity2U: cab.quantity2U || 1,
+                        allocations: defaultAlloc
+                      };
+                    }),
+                    floorRange
+                  });
+                }
               }
             });
             setCalculationMode("manual");
@@ -972,8 +985,10 @@ export default function App() {
                           });
                           return {
                             ...f,
-                            // Không overwrite camerasCount/domeCount/bulletCount từ DB
-                            // vì đây là dữ liệu user nhập, không phải dữ liệu cabinet
+                            camerasCount: backendInfo.camerasCount ?? f.camerasCount ?? 0,
+                            domeCount: backendInfo.domeCount ?? f.domeCount ?? 0,
+                            bulletCount: backendInfo.bulletCount ?? f.bulletCount ?? 0,
+                            cableLengthInput: backendInfo.autocadLength !== undefined ? backendInfo.autocadLength : f.cableLengthInput,
                             sw24Count: backendInfo.sw24Count ?? 0,
                             sw16Count: backendInfo.sw16Count ?? 0,
                             upsType: backendInfo.upsCount === 1 ? "1K" : (backendInfo.upsCount === 2 ? "2K" : "None"),
@@ -995,7 +1010,10 @@ export default function App() {
                         }
                         return {
                           ...f,
-                          // Không overwrite camerasCount/domeCount/bulletCount
+                          camerasCount: backendInfo.camerasCount ?? f.camerasCount ?? 0,
+                          domeCount: backendInfo.domeCount ?? f.domeCount ?? 0,
+                          bulletCount: backendInfo.bulletCount ?? f.bulletCount ?? 0,
+                          cableLengthInput: backendInfo.autocadLength !== undefined ? backendInfo.autocadLength : f.cableLengthInput,
                           sw24Count: 0,
                           sw16Count: 0,
                           upsType: "None",
@@ -1193,6 +1211,7 @@ export default function App() {
                           camerasCount: backendInfo.camerasCount ?? f.camerasCount ?? 0,
                           domeCount: backendInfo.domeCount ?? f.domeCount ?? 0,
                           bulletCount: backendInfo.bulletCount ?? f.bulletCount ?? 0,
+                          cableLengthInput: backendInfo.autocadLength !== undefined ? backendInfo.autocadLength : f.cableLengthInput,
                           sw24Count: backendInfo.sw24Count ?? 0,
                           sw16Count: backendInfo.sw16Count ?? 0,
                           upsType: backendInfo.upsCount === 1 ? "1K" : (backendInfo.upsCount === 2 ? "2K" : "None"),
@@ -1217,6 +1236,7 @@ export default function App() {
                         camerasCount: backendInfo.camerasCount ?? f.camerasCount ?? 0,
                         domeCount: backendInfo.domeCount ?? f.domeCount ?? 0,
                         bulletCount: backendInfo.bulletCount ?? f.bulletCount ?? 0,
+                        cableLengthInput: backendInfo.autocadLength !== undefined ? backendInfo.autocadLength : f.cableLengthInput,
                         sw24Count: 0,
                         sw16Count: 0,
                         upsType: "None",
@@ -5743,6 +5763,7 @@ const handleAddGlobalInventory = () => {
                 </span>
                 <button
                   onClick={() => {
+                    const floorDataRow = activeTower?.floorsData.find(fd => fd.floorIndex === editingCabinetIndex);
                     setTempCabinets([
                       ...tempCabinets,
                       {
@@ -5752,8 +5773,8 @@ const handleAddGlobalInventory = () => {
                         allocations: [
                           {
                             floorIndex: editingCabinetIndex!,
-                            domeCount: 0,
-                            bulletCount: 0,
+                            domeCount: floorDataRow ? (floorDataRow.domeCount || 0) : 0,
+                            bulletCount: floorDataRow ? (floorDataRow.bulletCount || 0) : 0,
                           }
                         ]
                       }
@@ -5877,12 +5898,13 @@ const handleAddGlobalInventory = () => {
                               Phân bổ tầng liên kết
                             </span>
                             <button
-                              onClick={() => {
+                                onClick={() => {
                                 const next = [...tempCabinets];
+                                const floorDataRow = activeTower?.floorsData.find(fd => fd.floorIndex === editingCabinetIndex);
                                 next[cabIdx].allocations.push({
-                                  floorIndex: editingCabinetIndex,
-                                  domeCount: 0,
-                                  bulletCount: 0,
+                                  floorIndex: editingCabinetIndex!,
+                                  domeCount: floorDataRow ? (floorDataRow.domeCount || 0) : 0,
+                                  bulletCount: floorDataRow ? (floorDataRow.bulletCount || 0) : 0,
                                 });
                                 setTempCabinets(next);
                                 setSelectedAllocIds([]);
