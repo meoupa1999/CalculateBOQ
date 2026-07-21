@@ -885,6 +885,18 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         if (data && data.length > 0) {
+          // Kiểm tra data DB có hợp lệ không: nếu có cabinets nhưng tất cả cameraQuantity = 0
+          // thì data bị lỗi từ lần save trước → fallback sang tính lại
+          const placedFloors = data.filter((item: any) => item.isCabinetPlaced);
+          const allCabinetsZero = placedFloors.length > 0 && placedFloors.every((item: any) =>
+            (item.cameraQuantityInCabinet ?? 0) === 0 &&
+            (!item.cabinets || item.cabinets.every((c: any) => (c.cameraQuantityInCabinet ?? 0) === 0))
+          );
+          if (allCabinetsZero) {
+            console.warn("DB data corrupt: all cabinet camera counts are 0, triggering recalculation");
+            return false;
+          }
+
           const hasManualAllocations = data.some((item: any) => 
             item.isCabinetPlaced && 
             item.cabinets && 
@@ -960,9 +972,8 @@ export default function App() {
                           });
                           return {
                             ...f,
-                            camerasCount: backendInfo.camerasCount ?? f.camerasCount ?? 0,
-                            domeCount: backendInfo.domeCount ?? f.domeCount ?? 0,
-                            bulletCount: backendInfo.bulletCount ?? f.bulletCount ?? 0,
+                            // Không overwrite camerasCount/domeCount/bulletCount từ DB
+                            // vì đây là dữ liệu user nhập, không phải dữ liệu cabinet
                             sw24Count: backendInfo.sw24Count ?? 0,
                             sw16Count: backendInfo.sw16Count ?? 0,
                             upsType: backendInfo.upsCount === 1 ? "1K" : (backendInfo.upsCount === 2 ? "2K" : "None"),
@@ -984,9 +995,7 @@ export default function App() {
                         }
                         return {
                           ...f,
-                          camerasCount: backendInfo.camerasCount ?? f.camerasCount ?? 0,
-                          domeCount: backendInfo.domeCount ?? f.domeCount ?? 0,
-                          bulletCount: backendInfo.bulletCount ?? f.bulletCount ?? 0,
+                          // Không overwrite camerasCount/domeCount/bulletCount
                           sw24Count: 0,
                           sw16Count: 0,
                           upsType: "None",
