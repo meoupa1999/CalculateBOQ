@@ -641,7 +641,7 @@ class ElvApplicationTests {
                 .manualGroups(manualGroups)
                 .build();
 
-        List<CalculateBOQResponseDTO> results = calculateService.calculateBOQManual(dto);
+        List<CalculateBOQResponseDTO> results = calculateService.calculateBOQManual(null, dto);
 
         // In kết quả các tủ được xếp ra màn hình console
         System.out.println("--- KẾT QUẢ XẾP TỦ THỦ CÔNG & TỰ ĐỘNG ---");
@@ -695,7 +695,7 @@ class ElvApplicationTests {
                 .floors(floors)
                 .manualGroups(null)
                 .build();
-        List<CalculateBOQResponseDTO> resultsEmpty = calculateService.calculateBOQManual(dtoEmpty);
+        List<CalculateBOQResponseDTO> resultsEmpty = calculateService.calculateBOQManual(null, dtoEmpty);
         long autoCabinetCount = resultsEmpty.stream().filter(CalculateBOQResponseDTO::getIsCabinetPlaced).count();
         assertTrue(autoCabinetCount > 0, "Khi không cấu hình manual, hệ thống phải tự động xếp tủ");
 
@@ -733,7 +733,7 @@ class ElvApplicationTests {
                 .manualGroups(outOfOrderGroups)
                 .build();
 
-        List<CalculateBOQResponseDTO> resultsEdge = calculateService.calculateBOQManual(dtoEdge);
+        List<CalculateBOQResponseDTO> resultsEdge = calculateService.calculateBOQManual(null, dtoEdge);
 
         // Verify out-of-order and boundaries work
         assertTrue(resultsEdge.get(1).getIsCabinetPlaced(), "Tầng 1 (thủ công) phải có tủ");
@@ -786,7 +786,7 @@ class ElvApplicationTests {
                 .manualGroups(fullGroups)
                 .build();
 
-        List<CalculateBOQResponseDTO> resultsFull = calculateService.calculateBOQManual(dtoFull);
+        List<CalculateBOQResponseDTO> resultsFull = calculateService.calculateBOQManual(null, dtoFull);
 
         long totalPlacedFull = resultsFull.stream().filter(CalculateBOQResponseDTO::getIsCabinetPlaced).count();
         assertEquals(2, totalPlacedFull, "Chỉ được phép có đúng 2 tủ thủ công khi toàn bộ các tầng đều được phủ thủ công");

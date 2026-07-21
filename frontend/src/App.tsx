@@ -844,7 +844,7 @@ export default function App() {
         cabinetIndex: floorIndex,
         cabinets: [
           {
-            id: `cab_${floorIndex}_1_${Date.now()}`,
+            id: crypto.randomUUID(),
             type: "2U",
             quantity2U: 1,
             allocations: [
@@ -874,6 +874,165 @@ export default function App() {
     // Deprecated: Managed inside the cabinet config modal
   };
 
+  // Fetch saved cabinet placement from DB
+  const fetchSavedCabinetPlacement = async (towerId: string): Promise<boolean> => {
+    if (!towerId) return false;
+    const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (!isUuid(towerId)) return false;
+
+    try {
+      const res = await fetch(`${API_BASE}/calculate/cabinet-placement?towerId=${towerId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          const hasManualAllocations = data.some((item: any) => 
+            item.isCabinetPlaced && 
+            item.cabinets && 
+            item.cabinets.some((c: any) => c.allocations && c.allocations.length > 0)
+          );
+
+          const reconstructedGroups: any[] = [];
+          if (hasManualAllocations) {
+            data.forEach((item: any) => {
+              if (item.isCabinetPlaced && item.cabinets && item.cabinets.length > 0) {
+                const allocationsFloors = item.cabinets.flatMap((c: any) => (c.allocations || []).map((a: any) => a.floorIndex));
+                const minFloor = allocationsFloors.length > 0 ? Math.min(...allocationsFloors) : item.floorIndex;
+                const maxFloor = allocationsFloors.length > 0 ? Math.max(...allocationsFloors) : item.floorIndex;
+                
+                const floorRange: Record<number, number> = {};
+                floorRange[minFloor] = maxFloor;
+
+                reconstructedGroups.push({
+                  cabinetIndex: item.floorIndex,
+                  cabinets: item.cabinets.map((cab: any) => ({
+                    id: cab.cabinetId,
+                    type: cab.cabinetType,
+                    quantity2U: cab.quantity2U || 1,
+                    allocations: cab.allocations || []
+                  })),
+                  floorRange
+                });
+              }
+            });
+            setCalculationMode("manual");
+            setManualGroups(reconstructedGroups);
+          } else {
+            setCalculationMode("auto");
+            setManualGroups([]);
+          }
+
+          const cabinetFloorIndices = data
+            .filter((item: any) => item.isCabinetPlaced)
+            .map((item: any) => item.floorIndex);
+          setCabinetPlacements(cabinetFloorIndices);
+
+          const cabinetRanges = data
+            .filter((item: any) => item.isCabinetPlaced)
+            .map((item: any) => ({
+              floorIndex: item.floorIndex,
+              fromIndex: item.fromIndex,
+              toIndex: item.toIndex,
+            }));
+
+          const backendMap = new Map<number, any>();
+          data.forEach((item: any) => backendMap.set(item.floorIndex, item));
+
+          setProjects((prev) =>
+            prev.map((p) => {
+              if (p.id === activeProjectId) {
+                const updatedTowers = p.towers.map((t) => {
+                  if (t.id === towerId) {
+                    const updatedFloors = t.floorsData.map((f) => {
+                      const coveringCabinet = cabinetRanges.find(
+                        (c: any) => f.floorIndex >= c.fromIndex && f.floorIndex <= c.toIndex
+                      );
+
+                      if (backendMap.has(f.floorIndex)) {
+                        const backendInfo = backendMap.get(f.floorIndex);
+                        if (backendInfo.isCabinetPlaced) {
+                          const matchingGroup = hasManualAllocations ? reconstructedGroups.find((g: any) => g.cabinetIndex === f.floorIndex) : null;
+                          const mappedCabinets = (backendInfo.cabinets ?? []).map((cab: any) => {
+                            const matchCab = matchingGroup?.cabinets?.find((c: any) => c.id === cab.cabinetId);
+                            return {
+                              ...cab,
+                              quantity2U: hasManualAllocations ? (matchCab?.quantity2U || 1) : 1
+                            };
+                          });
+                          return {
+                            ...f,
+                            camerasCount: backendInfo.camerasCount ?? f.camerasCount ?? 0,
+                            domeCount: backendInfo.domeCount ?? f.domeCount ?? 0,
+                            bulletCount: backendInfo.bulletCount ?? f.bulletCount ?? 0,
+                            sw24Count: backendInfo.sw24Count ?? 0,
+                            sw16Count: backendInfo.sw16Count ?? 0,
+                            upsType: backendInfo.upsCount === 1 ? "1K" : (backendInfo.upsCount === 2 ? "2K" : "None"),
+                            pduCount: backendInfo.pduCount ?? 0,
+                            convCount: backendInfo.convCount ?? 0,
+                            cameraQuantityInCabinet: backendInfo.cameraQuantityInCabinet ?? 0,
+                            isCabinetPlaced: true,
+                            cabinetType: backendInfo.cabinetType,
+                            cabinetIndex: backendInfo.cabinetIndex ?? undefined,
+                            cableLength: backendInfo.cableLength ?? 0,
+                            atrium: backendInfo.atrium ?? 0,
+                            downCabinet: backendInfo.downCabinet ?? 0,
+                            inCabinet: backendInfo.inCabinet ?? 0,
+                            autocadLength: backendInfo.autocadLength ?? 0,
+                            fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
+                            toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
+                            cabinets: mappedCabinets,
+                          };
+                        }
+                        return {
+                          ...f,
+                          camerasCount: backendInfo.camerasCount ?? f.camerasCount ?? 0,
+                          domeCount: backendInfo.domeCount ?? f.domeCount ?? 0,
+                          bulletCount: backendInfo.bulletCount ?? f.bulletCount ?? 0,
+                          sw24Count: 0,
+                          sw16Count: 0,
+                          upsType: "None",
+                          pduCount: 0,
+                          convCount: 0,
+                          cameraQuantityInCabinet: 0,
+                          isCabinetPlaced: false,
+                          cabinetType: undefined,
+                          cabinetIndex: backendInfo.cabinetIndex ?? undefined,
+                          cableLength: backendInfo.cableLength ?? 0,
+                          atrium: backendInfo.atrium ?? 0,
+                          downCabinet: backendInfo.downCabinet ?? 0,
+                          inCabinet: backendInfo.inCabinet ?? 0,
+                          autocadLength: backendInfo.autocadLength ?? 0,
+                          fromIndex: coveringCabinet ? coveringCabinet.fromIndex : undefined,
+                          toIndex: coveringCabinet ? coveringCabinet.toIndex : undefined,
+                        };
+                      }
+                      return f;
+                    });
+                    return {
+                      ...t,
+                      floorsData: updatedFloors,
+                      manualGroups: hasManualAllocations ? reconstructedGroups : [],
+                      calculationMode: hasManualAllocations ? "manual" : "auto",
+                    };
+                  }
+                  return t;
+                });
+                return {
+                  ...p,
+                  towers: updatedTowers,
+                };
+              }
+              return p;
+            })
+          );
+          return true;
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching saved cabinet placement:", err);
+    }
+    return false;
+  };
+
   // Fetch cabinet placement from API
   const fetchCabinetPlacement = async (
     floorsCount: number,
@@ -892,6 +1051,9 @@ export default function App() {
       return;
     }
     try {
+      const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      const towerIdParam = activeTower?.id && isUuid(activeTower.id) ? `?towerId=${activeTower.id}` : "";
+
       const sortedFloors = [...floorsData]
         .sort((a, b) => a.floorIndex - b.floorIndex)
         .map(f => ({
@@ -930,7 +1092,7 @@ export default function App() {
           };
         });
 
-        res = await fetch(`${API_BASE}/calculate/cabinet-placement-manual`, {
+        res = await fetch(`${API_BASE}/calculate/cabinet-placement-manual${towerIdParam}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -948,7 +1110,7 @@ export default function App() {
           })
         });
       } else {
-        res = await fetch(`${API_BASE}/calculate/cabinet-placement`, {
+        res = await fetch(`${API_BASE}/calculate/cabinet-placement${towerIdParam}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -1001,6 +1163,9 @@ export default function App() {
 
                     if (backendMap.has(f.floorIndex)) {
                       const backendInfo = backendMap.get(f.floorIndex);
+                      if (backendInfo.floorIndex === 7) {
+                        console.log("Floor 7 Backend Info:", JSON.stringify(backendInfo));
+                      }
                       if (backendInfo.isCabinetPlaced) {
                         const matchingGroup = mode === "manual" ? groups.find(g => g.cabinetIndex === f.floorIndex) : null;
                         const mappedCabinets = (backendInfo.cabinets ?? []).map((cab: any) => {
@@ -1012,6 +1177,9 @@ export default function App() {
                         });
                         return {
                           ...f,
+                          camerasCount: backendInfo.camerasCount ?? f.camerasCount ?? 0,
+                          domeCount: backendInfo.domeCount ?? f.domeCount ?? 0,
+                          bulletCount: backendInfo.bulletCount ?? f.bulletCount ?? 0,
                           sw24Count: backendInfo.sw24Count ?? 0,
                           sw16Count: backendInfo.sw16Count ?? 0,
                           upsType: backendInfo.upsCount === 1 ? "1K" : (backendInfo.upsCount === 2 ? "2K" : "None"),
@@ -1033,6 +1201,9 @@ export default function App() {
                       }
                       return {
                         ...f,
+                        camerasCount: backendInfo.camerasCount ?? f.camerasCount ?? 0,
+                        domeCount: backendInfo.domeCount ?? f.domeCount ?? 0,
+                        bulletCount: backendInfo.bulletCount ?? f.bulletCount ?? 0,
                         sw24Count: 0,
                         sw16Count: 0,
                         upsType: "None",
@@ -1309,18 +1480,38 @@ export default function App() {
       setManualGroups(nextGroups);
       
       // Load cabinet placement for current active tower
-      fetchCabinetPlacement(
-        activeTower?.floorsCount || 0,
-        activeTower?.basementsCount || 0,
-        activeTower?.hasRoof || false,
-        activeTower?.horizontalDistance || 0,
-        activeTower?.verticalDistance || 0,
-        activeTower?.rackType || "2U",
-        activeTower?.floorsData || [],
-        nextMode,
-        nextGroups,
-        activeTower?.rackType === "2U" ? (activeTower?.quantity2U || 1) : 1
-      );
+      const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      if (activeTower?.id && isUuid(activeTower.id)) {
+        fetchSavedCabinetPlacement(activeTower.id).then((loaded) => {
+          if (!loaded) {
+            fetchCabinetPlacement(
+              activeTower?.floorsCount || 0,
+              activeTower?.basementsCount || 0,
+              activeTower?.hasRoof || false,
+              activeTower?.horizontalDistance || 0,
+              activeTower?.verticalDistance || 0,
+              activeTower?.rackType || "2U",
+              activeTower?.floorsData || [],
+              nextMode,
+              nextGroups,
+              activeTower?.rackType === "2U" ? (activeTower?.quantity2U || 1) : 1
+            );
+          }
+        });
+      } else {
+        fetchCabinetPlacement(
+          activeTower?.floorsCount || 0,
+          activeTower?.basementsCount || 0,
+          activeTower?.hasRoof || false,
+          activeTower?.horizontalDistance || 0,
+          activeTower?.verticalDistance || 0,
+          activeTower?.rackType || "2U",
+          activeTower?.floorsData || [],
+          nextMode,
+          nextGroups,
+          activeTower?.rackType === "2U" ? (activeTower?.quantity2U || 1) : 1
+        );
+      }
     }
   }, [activeTower?.id]);
 
@@ -5542,7 +5733,7 @@ const handleAddGlobalInventory = () => {
                     setTempCabinets([
                       ...tempCabinets,
                       {
-                        id: `cab_${editingCabinetIndex}_${tempCabinets.length + 1}_${Date.now()}`,
+                        id: crypto.randomUUID(),
                         type: "2U",
                         quantity2U: 1,
                         allocations: [
@@ -5955,7 +6146,7 @@ const handleAddGlobalInventory = () => {
                         <div key={cab.id || cabIdx} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col gap-2.5">
                           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                             <span className="font-bold text-slate-800 text-sm">
-                              Tủ #{cabIdx + 1}: {cab.type} ({cab.id?.split('_').slice(-2).join('_') || cab.id})
+                              Tủ #{cabIdx + 1}: {cab.type} ({cab.id?.includes('-') ? cab.id.slice(-8) : (cab.id?.split('_').slice(-2).join('_') || cab.id)})
                             </span>
                             <span className="px-2 py-0.5 text-xs font-bold bg-emerald-50 text-emerald-700 rounded-md border border-emerald-100">
                               Tổng: {totalCams} Cam
@@ -6019,7 +6210,7 @@ const handleAddGlobalInventory = () => {
                           <div className="text-xs text-slate-600 flex flex-col gap-1.5">
                             <div className="flex justify-between items-center py-1">
                               <span className="text-slate-500 font-medium">Tủ nhận dây:</span>
-                              <span className="font-semibold text-slate-800">{conn.cabinetType} ({conn.cabinetId?.split('_').slice(-2).join('_') || conn.cabinetId})</span>
+                              <span className="font-semibold text-slate-800">{conn.cabinetType} ({conn.cabinetId?.includes('-') ? conn.cabinetId.slice(-8) : (conn.cabinetId?.split('_').slice(-2).join('_') || conn.cabinetId)})</span>
                             </div>
                             <div className="flex justify-between items-center py-1">
                               <span className="text-slate-500 font-medium">Camera Dome:</span>

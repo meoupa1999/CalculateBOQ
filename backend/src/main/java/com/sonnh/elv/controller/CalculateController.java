@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/calculate")
@@ -25,17 +26,27 @@ public class CalculateController {
 
     @PostMapping("/cabinet-placement")
     public ResponseEntity<List<CalculateBOQResponseDTO>> getCabinetPlacement(
+            @RequestParam(required = false) UUID towerId,
             @RequestBody CalculateBOQRequestDTO dto
     ) {
-        List<CalculateBOQResponseDTO> placement = calculateService.calculateBOQ(dto);
+        List<CalculateBOQResponseDTO> placement = calculateService.calculateBOQ(towerId, dto);
         return ResponseEntity.ok(placement);
     }
 
     @PostMapping("/cabinet-placement-manual")
     public ResponseEntity<List<CalculateBOQResponseDTO>> getCabinetPlacementManual(
+            @RequestParam(required = false) UUID towerId,
             @RequestBody CalculateBOQManualRequestDTO dto
     ) {
-        List<CalculateBOQResponseDTO> placement = calculateService.calculateBOQManual(dto);
+        List<CalculateBOQResponseDTO> placement = calculateService.calculateBOQManual(towerId, dto);
+        return ResponseEntity.ok(placement);
+    }
+
+    @GetMapping("/cabinet-placement")
+    public ResponseEntity<List<CalculateBOQResponseDTO>> getCalculateBOQ(
+            @RequestParam UUID towerId
+    ) {
+        List<CalculateBOQResponseDTO> placement = calculateService.getCalculateBOQ(towerId);
         return ResponseEntity.ok(placement);
     }
 

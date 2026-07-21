@@ -4,15 +4,13 @@ import com.sonnh.elv.data.domain.embedded.Audit;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(
-    name = "floor",
-    uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"tower_id", "floorIndex"})
-    }
-)
+@Table(name = "floor", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "tower_id", "floorIndex" })
+})
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
@@ -49,6 +47,28 @@ public class Floor {
 
     private Integer converterCount;
 
+    private Integer fromIndex;
+
+    private Integer toIndex;
+
+    private Integer cabinetIndex;
+
+    private Boolean isCabinetPlaced;
+
+    private Integer cableLength;
+
+    private Integer atrium;
+
+    private Integer downCabinet;
+
+    private Integer inCabinet;
+
+    private Integer autocadLength;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "floor")
+    private List<Cabinet> cabinets = new java.util.ArrayList<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tower_id")
     private Tower tower;
@@ -56,4 +76,9 @@ public class Floor {
     @Builder.Default
     @Embedded
     private Audit audit = new Audit();
+
+    public void addTower(Tower tower) {
+        tower.getFloors().add(this);
+        this.setTower(tower);
+    }
 }

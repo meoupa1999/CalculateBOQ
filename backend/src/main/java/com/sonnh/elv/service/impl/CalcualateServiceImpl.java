@@ -1,5 +1,6 @@
 package com.sonnh.elv.service.impl;
 
+import com.sonnh.elv.data.domain.Cabinet;
 import com.sonnh.elv.data.domain.Config;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,19 +11,33 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.sonnh.elv.data.domain.Floor;
+import com.sonnh.elv.data.domain.Tower;
+import com.sonnh.elv.data.repository.CabinetRepository;
 import com.sonnh.elv.data.repository.ConfigRepository;
+import com.sonnh.elv.data.repository.FloorRepository;
+import com.sonnh.elv.data.repository.TowerRepository;
 import com.sonnh.elv.dto.request.CalculateBOQRequestDTO;
 import com.sonnh.elv.dto.request.CalculateBOQRequestDTO.FloorRequest;
 import com.sonnh.elv.dto.request.CalculateBOQManualRequestDTO;
 import com.sonnh.elv.dto.response.CabinetEquipmentDTO;
 import com.sonnh.elv.dto.response.CalculateBOQResponseDTO;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.sonnh.elv.dto.request.CalculateBOQManualRequestDTO.CabinetAllocation;
+import java.util.Comparator;
 import com.sonnh.elv.service.CalculateService;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CalcualateServiceImpl implements CalculateService {
     private final ConfigRepository configRepository;
+    private final FloorRepository floorRepository;
+    private final TowerRepository towerRepository;
+    private final CabinetRepository cabinetRepository;
 
     @lombok.Data
     @lombok.Builder
@@ -37,7 +52,7 @@ public class CalcualateServiceImpl implements CalculateService {
     }
 
     @Override
-    public List<CalculateBOQResponseDTO> calculateBOQ(CalculateBOQRequestDTO dto) {
+    public List<CalculateBOQResponseDTO> calculateBOQ(UUID towerId, CalculateBOQRequestDTO dto) {
         Config config = configRepository
                 .findById(UUID.fromString("a2b0a797-8ff2-4a79-ac5d-78525bd25e90")).get();
         Map<Integer, CabinetEquipmentDTO> mapResult = new TreeMap<>();
@@ -58,6 +73,8 @@ public class CalcualateServiceImpl implements CalculateService {
                     .floorIndex(floor.getFloorIndex())
                     .label(floor.getLabel())
                     .camerasCount(floor.getCamerasCount())
+                    .domeCount(floor.getDomeCount())
+                    .bulletCount(floor.getBulletCount())
                     .isCabinetPlaced(isPlaced);
 
             // Find covering cabinet range
@@ -88,13 +105,27 @@ public class CalcualateServiceImpl implements CalculateService {
 
             if (isPlaced) {
                 CabinetEquipmentDTO cabinet = mapResult.get(floor.getFloorIndex());
+
+                CalculateBOQResponseDTO.CabinetDetailResponseDTO autoCabinetDetail = CalculateBOQResponseDTO.CabinetDetailResponseDTO
+                        .builder()
+                        .cabinetId(UUID.randomUUID().toString())
+                        .cabinetType(dto.getRackType())
+                        .cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
+                        .sw24Count(cabinet.getSw24Quantity())
+                        .sw16Count(cabinet.getSw16Quantity())
+                        .upsCount(cabinet.getUps())
+                        .pduCount(cabinet.getPdu())
+                        .convCount(cabinet.getConverter())
+                        .build();
+
                 builder.cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
                         .sw24Count(cabinet.getSw24Quantity())
                         .sw16Count(cabinet.getSw16Quantity())
                         .upsCount(cabinet.getUps())
                         .pduCount(cabinet.getPdu())
                         .convCount(cabinet.getConverter())
-                        .cabinetType(dto.getRackType());
+                        .cabinetType(dto.getRackType())
+                        .cabinets(List.of(autoCabinetDetail));
             } else {
                 builder.cameraQuantityInCabinet(0)
                         .sw24Count(0)
@@ -102,9 +133,27 @@ public class CalcualateServiceImpl implements CalculateService {
                         .upsCount(0)
                         .pduCount(0)
                         .convCount(0)
-                        .cabinetType(null);
+                        .cabinetType(null)
+                        .cabinets(new ArrayList<>());
             }
             result.add(builder.build());
+        }
+
+        if (towerId != null) {
+            Tower tower = towerRepository.findById(towerId).orElse(null);
+            if (tower != null) {
+                List<Floor> existingFloors = floorRepository.findByTowerId(towerId);
+                existingFloors.stream().forEach(floor -> {
+                    cabinetRepository.deleteAll(floor.getCabinets());
+                });
+                cabinetRepository.flush();
+                floorRepository.deleteAll(existingFloors);
+                floorRepository.flush();
+                tower.getFloors().clear();
+                for (CalculateBOQResponseDTO resDto : result) {
+                    saveFloorToDb(resDto, tower);
+                }
+            }
         }
 
         return result;
@@ -430,7 +479,7 @@ public class CalcualateServiceImpl implements CalculateService {
     }
 
     @Override
-    public List<CalculateBOQResponseDTO> calculateBOQManual(CalculateBOQManualRequestDTO dto) {
+    public List<CalculateBOQResponseDTO> calculateBOQManual(UUID towerId, CalculateBOQManualRequestDTO dto) {
         Config config = configRepository
                 .findById(UUID.fromString("a2b0a797-8ff2-4a79-ac5d-78525bd25e90")).get();
         // lấy map các nhóm tầng manual từ frontend
@@ -538,6 +587,8 @@ public class CalcualateServiceImpl implements CalculateService {
                     .floorIndex(floor.getFloorIndex())
                     .label(floor.getLabel())
                     .camerasCount(floor.getCamerasCount())
+                    .domeCount(floor.getDomeCount())
+                    .bulletCount(floor.getBulletCount())
                     .isCabinetPlaced(isPlaced);
 
             CabinetEquipmentDTO coveringCabinet = null;
@@ -641,7 +692,7 @@ public class CalcualateServiceImpl implements CalculateService {
 
                     CalculateBOQResponseDTO.CabinetDetailResponseDTO autoCabinetDetail = CalculateBOQResponseDTO.CabinetDetailResponseDTO
                             .builder()
-                            .cabinetId("auto_" + floor.getFloorIndex())
+                            .cabinetId(UUID.randomUUID().toString())
                             .cabinetType(dto.getRackType())
                             .cameraQuantityInCabinet(cabinet.getCameraQuantityInCabinet())
                             .sw24Count(cabinet.getSw24Quantity())
@@ -672,6 +723,23 @@ public class CalcualateServiceImpl implements CalculateService {
                         .cabinets(new ArrayList<>());
             }
             result.add(builder.build());
+        }
+
+        if (towerId != null) {
+            Tower tower = towerRepository.findById(towerId).orElse(null);
+            if (tower != null) {
+                List<Floor> existingFloors = floorRepository.findByTowerId(towerId);
+                existingFloors.stream().forEach(floor -> {
+                    cabinetRepository.deleteAll(floor.getCabinets());
+                });
+                cabinetRepository.flush();
+                floorRepository.deleteAll(existingFloors);
+                floorRepository.flush();
+                tower.getFloors().clear();
+                for (CalculateBOQResponseDTO resDto : result) {
+                    saveFloorToDb(resDto, tower);
+                }
+            }
         }
 
         return result;
@@ -725,6 +793,142 @@ public class CalcualateServiceImpl implements CalculateService {
         }
         result.setPdu(pdu);
         result.setCameraQuantityInCabinet(cameraCount);
+
+        return result;
+    }
+
+    private void saveFloorToDb(CalculateBOQResponseDTO dto, Tower tower) {
+        Floor floor = Floor.builder()
+                .floorIndex(dto.getFloorIndex())
+                .floorName(dto.getLabel())
+                .cameraCount(dto.getCamerasCount())
+                .domeCount(dto.getDomeCount())
+                .bulletCount(dto.getBulletCount())
+                .cabinetCount(dto.getIsCabinetPlaced() != null && dto.getIsCabinetPlaced()
+                        ? dto.getCabinets().size()
+                        : 0)
+                .sw24Count(dto.getSw24Count())
+                .sw16Count(dto.getSw16Count())
+                .upsType(dto.getCabinetType())
+                .pduCount(dto.getPduCount())
+                .converterCount(dto.getConvCount())
+                .fromIndex(dto.getFromIndex())
+                .toIndex(dto.getToIndex())
+                .cabinetIndex(dto.getCabinetIndex())
+                .isCabinetPlaced(dto.getIsCabinetPlaced())
+                .cableLength(dto.getCableLength())
+                .atrium(dto.getAtrium())
+                .downCabinet(dto.getDownCabinet())
+                .inCabinet(dto.getInCabinet())
+                .autocadLength(dto.getAutocadLength())
+                .build();
+        floor.addTower(tower);
+        floorRepository.save(floor);
+
+        if (dto.getCabinets() != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            dto.getCabinets().stream()
+                    .map(cabinetDto -> {
+                        String allocationsJson = null;
+                        try {
+                            if (cabinetDto.getAllocations() != null) {
+                                allocationsJson = objectMapper.writeValueAsString(cabinetDto.getAllocations());
+                            }
+                        } catch (JsonProcessingException e) {
+                            // ignore
+                        }
+                        return Cabinet.builder()
+                                .id(isValidUuid(cabinetDto.getCabinetId()) ? UUID.fromString(cabinetDto.getCabinetId()) : null)
+                                .cabinetType(cabinetDto.getCabinetType())
+                                .cameraQuantity(cabinetDto.getCameraQuantityInCabinet())
+                                .sw24Count(cabinetDto.getSw24Count())
+                                .sw16Count(cabinetDto.getSw16Count())
+                                .upsCount(cabinetDto.getUpsCount())
+                                .pduCount(cabinetDto.getPduCount())
+                                .converterCount(cabinetDto.getConvCount())
+                                .allocationsJson(allocationsJson)
+                                .floor(floor)
+                                .build();
+                    })
+                    .forEach(cabinet -> {
+                        cabinet.addFloor(floor);
+                        cabinetRepository.save(cabinet);
+                    });
+        }
+    }
+
+    private boolean isValidUuid(String str) {
+        if (str == null) return false;
+        try {
+            UUID.fromString(str);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public List<CalculateBOQResponseDTO> getCalculateBOQ(UUID towerId) {
+        List<Floor> floors = floorRepository.findByTowerId(towerId);
+        floors.sort(Comparator.comparing(Floor::getFloorIndex));
+
+        List<CalculateBOQResponseDTO> result = new ArrayList<>();
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        for (Floor floor : floors) {
+            List<CalculateBOQResponseDTO.CabinetDetailResponseDTO> cabinetDetails = new ArrayList<>();
+            for (Cabinet cabinet : floor.getCabinets()) {
+                List<CabinetAllocation> allocations = null;
+                if (cabinet.getAllocationsJson() != null) {
+                    try {
+                        allocations = objectMapper.readValue(cabinet.getAllocationsJson(),
+                                new com.fasterxml.jackson.core.type.TypeReference<List<CabinetAllocation>>() {});
+                    } catch (JsonProcessingException e) {
+                        // ignore
+                    }
+                }
+                cabinetDetails.add(CalculateBOQResponseDTO.CabinetDetailResponseDTO.builder()
+                        .cabinetId(cabinet.getId() != null ? cabinet.getId().toString() : null)
+                        .cabinetType(cabinet.getCabinetType())
+                        .cameraQuantityInCabinet(cabinet.getCameraQuantity())
+                        .sw24Count(cabinet.getSw24Count())
+                        .sw16Count(cabinet.getSw16Count())
+                        .upsCount(cabinet.getUpsCount())
+                        .pduCount(cabinet.getPduCount())
+                        .convCount(cabinet.getConverterCount())
+                        .allocations(allocations)
+                        .build());
+            }
+
+            result.add(CalculateBOQResponseDTO.builder()
+                    .floorIndex(floor.getFloorIndex())
+                    .fromIndex(floor.getFromIndex())
+                    .toIndex(floor.getToIndex())
+                    .cabinetIndex(floor.getCabinetIndex())
+                    .isCabinetPlaced(floor.getIsCabinetPlaced())
+                    .label(floor.getFloorName())
+                    .camerasCount(floor.getCameraCount())
+                    .domeCount(floor.getDomeCount())
+                    .bulletCount(floor.getBulletCount())
+                    .cableLength(floor.getCableLength())
+                    .atrium(floor.getAtrium())
+                    .downCabinet(floor.getDownCabinet())
+                    .inCabinet(floor.getInCabinet())
+                    .autocadLength(floor.getAutocadLength())
+                    .cameraQuantityInCabinet(floor.getCabinets() != null
+                            ? floor.getCabinets().stream().mapToInt(c -> c.getCameraQuantity() != null ? c.getCameraQuantity() : 0).sum()
+                            : 0)
+                    .sw24Count(floor.getSw24Count())
+                    .sw16Count(floor.getSw16Count())
+                    .upsCount(floor.getCabinets() != null
+                            ? floor.getCabinets().stream().mapToInt(c -> c.getUpsCount() != null ? c.getUpsCount() : 0).sum()
+                            : 0)
+                    .pduCount(floor.getPduCount())
+                    .convCount(floor.getConverterCount())
+                    .cabinetType(floor.getUpsType())
+                    .cabinets(cabinetDetails)
+                    .build());
+        }
 
         return result;
     }
