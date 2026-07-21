@@ -1488,9 +1488,12 @@ export default function App() {
       setCalculationMode(nextMode);
       setManualGroups(nextGroups);
       
-      // Load cabinet placement for current active tower
+      // Chỉ load từ DB 1 lần khi tower chưa có kết quả tính toán (isCabinetPlaced chưa set)
       const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-      if (activeTower?.id && isUuid(activeTower.id)) {
+      const hasCabinetResult = activeTower?.floorsData?.some(f => f.isCabinetPlaced === true);
+      
+      if (!hasCabinetResult && activeTower?.id && isUuid(activeTower.id)) {
+        // Lần đầu load tower từ DB (chưa có kết quả tính toán trong state)
         fetchSavedCabinetPlacement(activeTower.id).then((loaded) => {
           if (!loaded) {
             fetchCabinetPlacement(
@@ -1507,7 +1510,8 @@ export default function App() {
             );
           }
         });
-      } else {
+      } else if (!hasCabinetResult) {
+        // Tower chưa có ID (mới tạo) → tính toán luôn
         fetchCabinetPlacement(
           activeTower?.floorsCount || 0,
           activeTower?.basementsCount || 0,
@@ -1521,6 +1525,7 @@ export default function App() {
           activeTower?.rackType === "2U" ? (activeTower?.quantity2U || 1) : 1
         );
       }
+      // Nếu hasCabinetResult = true → đã có kết quả trong state, không cần gọi lại
     }
   }, [activeTower?.id]);
 
