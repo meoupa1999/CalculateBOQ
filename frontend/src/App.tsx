@@ -1545,87 +1545,94 @@ export default function App() {
       addToast("Khoảng cách ngang/dọc phải lớn hơn 0!", "error");
       return;
     }
-    const localPlacements = localCalculateCabinetPlacement(tempFloors, tempH, tempV);
-    const newCabinetPlacements = localPlacements.map(lvl => tempBasements + lvl - 1);
-    setCabinetPlacements(newCabinetPlacements);
 
-    // Perform BOQ calculation
-    const updatedFloorsData = calculateProjectBOQ(
-      tempFloors,
-      tempH,
-      tempV,
-      tempRack,
-      activeTower?.siteParams,
-      activeTower?.hardwareLogic,
-      activeTower?.floorsData, // pass current to try to retain customized floor cam numbers if within bounds
-      tempBasements,
-      tempHasRoof,
-      newCabinetPlacements
-    );
-
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id === activeProject.id) {
-          const updatedTowers = p.towers.map((t) => {
-            if (t.id === activeTower?.id) {
-              return {
-                ...t,
-                floorsCount: tempFloors,
-                basementsCount: tempBasements,
-                hasRoof: tempHasRoof,
-                horizontalDistance: tempH,
-                verticalDistance: tempV,
-                rackType: tempRack,
-                quantity2U: tempRack === "2U" ? tempQuantity2U : 1,
-                floorsData: updatedFloorsData,
-                manualGroups: t.manualGroups || [],
-                calculationMode: t.calculationMode || "auto",
-              };
-            }
-            return t;
-          });
-          return {
-            ...p,
-            towers: updatedTowers,
-          };
-        }
-        return p;
-      })
-    );
-
-    // Call PUT /api/towers/{id} to update tower in backend
-    if (activeTower) {
-      fetch(`${API_BASE}/towers/${activeTower.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          configId: "a2b0a797-8ff2-4a79-ac5d-78525bd25e90",
-          name: activeTower.name,
-          floorCount: tempFloors,
-          basementCount: tempBasements,
-          hasRoof: tempHasRoof,
-          widthLength: tempH,
-          heightLength: tempV,
-          quantity2U: tempRack === "2U" ? tempQuantity2U : 1
+    // Lưu tower settings vào backend trước
+    const saveTowerAndRecalculate = (floorsDataToUse: FloorData[]) => {
+      setProjects((prev) =>
+        prev.map((p) => {
+          if (p.id === activeProject.id) {
+            const updatedTowers = p.towers.map((t) => {
+              if (t.id === activeTower?.id) {
+                return {
+                  ...t,
+                  floorsCount: tempFloors,
+                  basementsCount: tempBasements,
+                  hasRoof: tempHasRoof,
+                  horizontalDistance: tempH,
+                  verticalDistance: tempV,
+                  rackType: tempRack,
+                  quantity2U: tempRack === "2U" ? tempQuantity2U : 1,
+                  floorsData: floorsDataToUse,
+                  manualGroups: t.manualGroups || [],
+                  calculationMode: t.calculationMode || "auto",
+                };
+              }
+              return t;
+            });
+            return { ...p, towers: updatedTowers };
+          }
+          return p;
         })
-      })
-      .then(res => {
-        if (res.ok) {
-          fetchCabinetPlacement(
-            tempFloors,
-            tempBasements,
-            tempHasRoof,
-            tempH,
-            tempV,
-            tempRack,
-            updatedFloorsData,
-            calculationMode,
-            manualGroups,
-            tempRack === "2U" ? tempQuantity2U : 1
-          );
-        }
-      })
-      .catch(err => console.error("Error saving recalculated tower to backend", err));
+      );
+
+      if (activeTower) {
+        fetch(`${API_BASE}/towers/${activeTower.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            configId: "a2b0a797-8ff2-4a79-ac5d-78525bd25e90",
+            name: activeTower.name,
+            floorCount: tempFloors,
+            basementCount: tempBasements,
+            hasRoof: tempHasRoof,
+            widthLength: tempH,
+            heightLength: tempV,
+            quantity2U: tempRack === "2U" ? tempQuantity2U : 1
+          })
+        })
+        .then(res => {
+          if (res.ok) {
+            fetchCabinetPlacement(
+              tempFloors,
+              tempBasements,
+              tempHasRoof,
+              tempH,
+              tempV,
+              tempRack,
+              floorsDataToUse,
+              calculationMode,
+              manualGroups,
+              tempRack === "2U" ? tempQuantity2U : 1
+            );
+          }
+        })
+        .catch(err => console.error("Error saving recalculated tower to backend", err));
+      }
+    };
+
+    if (calculationMode === "manual") {
+      // Trong chế độ thủ công: giữ nguyên floorsData hiện tại, chỉ update settings tower
+      // Không chạy calculateProjectBOQ để tránh reset isCabinetPlaced và gây flicker
+      saveTowerAndRecalculate(activeTower.floorsData);
+    } else {
+      // Chế độ tự động: chạy local calculation trước để estimate cabinet placement
+      const localPlacements = localCalculateCabinetPlacement(tempFloors, tempH, tempV);
+      const newCabinetPlacements = localPlacements.map(lvl => tempBasements + lvl - 1);
+      setCabinetPlacements(newCabinetPlacements);
+
+      const updatedFloorsData = calculateProjectBOQ(
+        tempFloors,
+        tempH,
+        tempV,
+        tempRack,
+        activeTower?.siteParams,
+        activeTower?.hardwareLogic,
+        activeTower?.floorsData,
+        tempBasements,
+        tempHasRoof,
+        newCabinetPlacements
+      );
+      saveTowerAndRecalculate(updatedFloorsData);
     }
 
     addToast("Tính toán lại BOQ thành công!", "success");
