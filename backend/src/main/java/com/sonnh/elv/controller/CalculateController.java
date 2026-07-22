@@ -23,6 +23,22 @@ public class CalculateController {
 
     private final CalculateService calculateService;
     private final CalculateBOMService calculateBOMService;
+    private final com.sonnh.elv.service.ExcelExportService excelExportService;
+
+    @GetMapping("/export-excel")
+    public org.springframework.http.ResponseEntity<org.springframework.core.io.InputStreamResource> exportExcel(
+            @RequestParam UUID projectId
+    ) {
+        java.io.ByteArrayInputStream in = excelExportService.exportProjectExcel(projectId);
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=BOQ_Export.xlsx");
+        headers.add("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+        return org.springframework.http.ResponseEntity
+                .ok()
+                .headers(headers)
+                .body(new org.springframework.core.io.InputStreamResource(in));
+    }
 
     @PostMapping("/cabinet-placement")
     public ResponseEntity<List<CalculateBOQResponseDTO>> getCabinetPlacement(
