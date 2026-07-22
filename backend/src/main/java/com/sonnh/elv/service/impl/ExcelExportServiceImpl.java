@@ -274,43 +274,95 @@ public class ExcelExportServiceImpl implements ExcelExportService {
                                 case 0:
                                     break;
                                 case 1:
-                                    if (rowData.getConverter() != null) cell.setCellValue(rowData.getConverter());
+                                    if (rowData.getConverter() != null && rowData.getConverter() != 0) {
+                                        cell.setCellValue(rowData.getConverter());
+                                    } else {
+                                        cell.setBlank();
+                                    }
                                     break;
                                 case 2:
-                                    if (rowData.getPdu() != null) cell.setCellValue(rowData.getPdu());
+                                    if (rowData.getPdu() != null && rowData.getPdu() != 0) {
+                                        cell.setCellValue(rowData.getPdu());
+                                    } else {
+                                        cell.setBlank();
+                                    }
                                     break;
                                 case 3:
-                                    if (rowData.getUps() != null) cell.setCellValue(rowData.getUps());
+                                    if (rowData.getUps() != null && rowData.getUps() != 0) {
+                                        cell.setCellValue(rowData.getUps());
+                                    } else {
+                                        cell.setBlank();
+                                    }
                                     break;
                                 case 4:
-                                    if (rowData.getSw24() != null) cell.setCellValue(rowData.getSw24());
+                                    if (rowData.getSw24() != null && rowData.getSw24() != 0) {
+                                        cell.setCellValue(rowData.getSw24());
+                                    } else {
+                                        cell.setBlank();
+                                    }
                                     break;
                                 case 5:
-                                    if (rowData.getSw16() != null) cell.setCellValue(rowData.getSw16());
+                                    if (rowData.getSw16() != null && rowData.getSw16() != 0) {
+                                        cell.setCellValue(rowData.getSw16());
+                                    } else {
+                                        cell.setBlank();
+                                    }
                                     break;
                                 case 6:
-                                    if (rowData.getCabinet2U() != null) cell.setCellValue(rowData.getCabinet2U());
+                                    if (rowData.getCabinet2U() != null && rowData.getCabinet2U() != 0) {
+                                        cell.setCellValue(rowData.getCabinet2U());
+                                    } else {
+                                        cell.setBlank();
+                                    }
                                     break;
                                 case 7:
-                                    if (rowData.getCabinet6U() != null) cell.setCellValue(rowData.getCabinet6U());
+                                    if (rowData.getCabinet6U() != null && rowData.getCabinet6U() != 0) {
+                                        cell.setCellValue(rowData.getCabinet6U());
+                                    } else {
+                                        cell.setBlank();
+                                    }
                                     break;
                                 case 8:
-                                    if (rowData.getCameraToCabinet() != null) cell.setCellValue(rowData.getCameraToCabinet());
+                                    if (rowData.getCameraToCabinet() != null && rowData.getCameraToCabinet() != 0) {
+                                        cell.setCellValue(rowData.getCameraToCabinet());
+                                    } else {
+                                        cell.setBlank();
+                                    }
                                     break;
                                 case 9:
-                                    if (rowData.getCameraBullet() != null) cell.setCellValue(rowData.getCameraBullet());
+                                    if (rowData.getCameraBullet() != null && rowData.getCameraBullet() != 0) {
+                                        cell.setCellValue(rowData.getCameraBullet());
+                                    } else {
+                                        cell.setBlank();
+                                    }
                                     break;
                                 case 10:
-                                    if (rowData.getCameraDome() != null) cell.setCellValue(rowData.getCameraDome());
+                                    if (rowData.getCameraDome() != null && rowData.getCameraDome() != 0) {
+                                        cell.setCellValue(rowData.getCameraDome());
+                                    } else {
+                                        cell.setBlank();
+                                    }
                                     break;
                                 case 11:
-                                    if (rowData.getTotalCamera() != null) cell.setCellValue(rowData.getTotalCamera());
+                                    if (rowData.getTotalCamera() != null && rowData.getTotalCamera() != 0) {
+                                        cell.setCellValue(rowData.getTotalCamera());
+                                    } else {
+                                        cell.setBlank();
+                                    }
                                     break;
                                 case 12:
-                                    if (rowData.getFloorName() != null) cell.setCellValue(rowData.getFloorName());
+                                    if (rowData.getFloorName() != null) {
+                                        cell.setCellValue(rowData.getFloorName());
+                                    } else {
+                                        cell.setBlank();
+                                    }
                                     break;
                                 case 13:
-                                    if (rowData.getCableLength() != null) cell.setCellValue(rowData.getCableLength());
+                                    if (rowData.getCableLength() != null && rowData.getCableLength() != 0.0) {
+                                        cell.setCellValue(rowData.getCableLength());
+                                    } else {
+                                        cell.setBlank();
+                                    }
                                     break;
                             }
                         }
