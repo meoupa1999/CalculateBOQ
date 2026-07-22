@@ -38,9 +38,18 @@ public class ExcelExportServiceImpl implements ExcelExportService {
     private CalculateBOMService calculateBOMService;
 
     @Override
-    public ByteArrayInputStream exportProjectExcel(UUID projectId) {
+    public ByteArrayInputStream exportProjectExcel(UUID projectId, List<UUID> towerIds) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new EntityNotFoundException("Project not found with ID: " + projectId));
+
+        List<Tower> towers;
+        if (towerIds != null && !towerIds.isEmpty()) {
+            towers = project.getTowers().stream()
+                    .filter(t -> towerIds.contains(t.getId()))
+                    .collect(java.util.stream.Collectors.toList());
+        } else {
+            towers = project.getTowers();
+        }
 
         try (InputStream is = getClass().getResourceAsStream("/templates/BOQ_TEMPLATE.xlsx")) {
             if (is == null) {
@@ -49,11 +58,11 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             Workbook workbook = WorkbookFactory.create(is);
 
             // 1. Process BOQ Sheet (Sheet index 0)
-            writeBOQSheet(workbook, project);
+            writeBOQSheet(workbook, towers);
 
             // 2. Process BOM Sheet (Sheet index 1)
             try {
-                List<CalculateBOMRequestDTO> bomRequests = buildBOMRequests(project);
+                List<CalculateBOMRequestDTO> bomRequests = buildBOMRequests(towers);
                 CalculateBOMResponseDTO bomResponse = calculateBOMService.calculateBOM(bomRequests);
                 writeBOMSheet(workbook, bomResponse);
             } catch (Exception e) {
@@ -63,7 +72,7 @@ public class ExcelExportServiceImpl implements ExcelExportService {
 
             // 3. Process Cable Calculation Sheet (Sheet index 2: "tính cáp")
             try {
-                writeCableCalculationSheet(workbook, project);
+                writeCableCalculationSheet(workbook, towers);
             } catch (Exception e) {
                 System.err.println("Error writing Cable Calculation sheet: " + e.getMessage());
                 e.printStackTrace();
@@ -86,10 +95,9 @@ public class ExcelExportServiceImpl implements ExcelExportService {
         }
     }
 
-    private void writeBOQSheet(Workbook workbook, Project project) {
+    private void writeBOQSheet(Workbook workbook, List<Tower> towers) {
         Sheet sheet = workbook.getSheetAt(0); // Sheet 'BOQ' at index 0
 
-        List<Tower> towers = project.getTowers();
         List<List<BOQRowExcelDTO>> towersData = new ArrayList<>();
         List<int[]> towersColors = new ArrayList<>(); // Color index for each row of each tower
         int maxFloors = 0;
@@ -374,14 +382,13 @@ public class ExcelExportServiceImpl implements ExcelExportService {
         }
     }
 
-    private void writeCableCalculationSheet(Workbook workbook, Project project) {
+    private void writeCableCalculationSheet(Workbook workbook, List<Tower> towers) {
         Sheet sheet = workbook.getSheet("tính cáp");
         if (sheet == null && workbook.getNumberOfSheets() > 2) {
             sheet = workbook.getSheetAt(2);
         }
         if (sheet == null) return;
 
-        List<Tower> towers = project.getTowers();
         int maxFloors = 0;
         List<List<CalculateBOQResponseDTO>> towersBOQ = new ArrayList<>();
         
@@ -782,12 +789,12 @@ public class ExcelExportServiceImpl implements ExcelExportService {
         cell.setCellFormula(formula.toString());
     }
 
-    private List<CalculateBOMRequestDTO> buildBOMRequests(Project project) {
+    private List<CalculateBOMRequestDTO> buildBOMRequests(List<Tower> towers) {
         List<CalculateBOMRequestDTO> bomRequests = new ArrayList<>();
-        if (project == null || project.getTowers() == null) {
+        if (towers == null) {
             return bomRequests;
         }
-        for (Tower tower : project.getTowers()) {
+        for (Tower tower : towers) {
             List<CalculateBOQResponseDTO> boqResponse = calculateService.getCalculateBOQ(tower.getId());
             if (boqResponse == null || boqResponse.isEmpty()) {
                 continue;

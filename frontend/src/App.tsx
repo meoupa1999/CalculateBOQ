@@ -194,6 +194,7 @@ export default function App() {
   const [selectedTowersSummary, setSelectedTowersSummary] = useState<Record<string, boolean>>({});
   const [summaryBomData, setSummaryBomData] = useState<any>(null);
   const [isCalculatingSummary, setIsCalculatingSummary] = useState<boolean>(false);
+  const [isExportingExcel, setIsExportingExcel] = useState<boolean>(false);
 
   const [leftWidth, setLeftWidth] = useState<number>(50);
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -1492,6 +1493,45 @@ export default function App() {
       addToast("Lỗi khi tính tổng BOM!", "error");
     } finally {
       setIsCalculatingSummary(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    if (!activeProject) return;
+    const selectedTowers = activeProject.towers.filter(t => selectedTowersSummary[t.id]);
+    if (selectedTowers.length === 0) {
+      addToast("Vui lòng chọn ít nhất một tháp để xuất Excel!", "error");
+      return;
+    }
+
+    try {
+      setIsExportingExcel(true);
+      const towerIdsParam = selectedTowers.map(t => `towerIds=${t.id}`).join("&");
+      const url = `${API_BASE}/calculate/export-excel?projectId=${activeProject.id}&${towerIdsParam}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Không thể xuất file Excel");
+      }
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      
+      const cleanProjectName = activeProject.name.replace(/\s+/g, "_");
+      link.setAttribute("download", `BOQ_${cleanProjectName}_Export.xlsx`);
+      
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      addToast("Xuất file Excel thành công!", "success");
+    } catch (err) {
+      console.error(err);
+      addToast("Lỗi khi xuất file Excel!", "error");
+    } finally {
+      setIsExportingExcel(false);
     }
   };
 
@@ -2913,23 +2953,43 @@ const handleAddGlobalInventory = () => {
                             >
                               Bỏ chọn tất cả
                             </button>
-                            <button
-                              onClick={handleCalculateSummary}
-                              disabled={isCalculatingSummary}
-                              className="bg-[#E65100] hover:bg-[#E65100]/95 disabled:bg-slate-300 text-white font-bold px-5 py-1.5 rounded text-xs transition flex items-center gap-1.5 ml-auto shadow-sm"
-                            >
-                              {isCalculatingSummary ? (
-                                <>
-                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                  <span>Đang tính toán...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <RefreshCw className="w-3.5 h-3.5" />
-                                  <span>Tính tổng BOM</span>
-                                </>
-                              )}
-                            </button>
+                            <div className="flex items-center gap-2 ml-auto">
+                              <button
+                                onClick={handleCalculateSummary}
+                                disabled={isCalculatingSummary}
+                                className="bg-[#E65100] hover:bg-[#E65100]/95 disabled:bg-slate-300 text-white font-bold px-5 py-1.5 rounded text-xs transition flex items-center gap-1.5 shadow-sm"
+                              >
+                                {isCalculatingSummary ? (
+                                  <>
+                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                    <span>Đang tính toán...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <RefreshCw className="w-3.5 h-3.5" />
+                                    <span>Tính tổng BOM</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                onClick={handleExportExcel}
+                                disabled={isExportingExcel}
+                                className="bg-[#2e7d32] hover:bg-[#1b5e20] disabled:bg-slate-300 text-white font-bold px-5 py-1.5 rounded text-xs transition flex items-center gap-1.5 shadow-sm"
+                              >
+                                {isExportingExcel ? (
+                                  <>
+                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                    <span>Đang xuất...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                                    <span>Xuất Excel</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>

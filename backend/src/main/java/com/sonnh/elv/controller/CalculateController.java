@@ -27,9 +27,10 @@ public class CalculateController {
 
     @GetMapping("/export-excel")
     public org.springframework.http.ResponseEntity<org.springframework.core.io.InputStreamResource> exportExcel(
-            @RequestParam UUID projectId
+            @RequestParam UUID projectId,
+            @RequestParam(required = false) List<UUID> towerIds
     ) {
-        java.io.ByteArrayInputStream in = excelExportService.exportProjectExcel(projectId);
+        java.io.ByteArrayInputStream in = excelExportService.exportProjectExcel(projectId, towerIds);
         org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=BOQ_Export.xlsx");
         headers.add("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
