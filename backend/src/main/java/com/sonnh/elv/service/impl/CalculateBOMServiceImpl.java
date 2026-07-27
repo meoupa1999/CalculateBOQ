@@ -1,7 +1,8 @@
 package com.sonnh.elv.service.impl;
 
 import com.sonnh.elv.dto.request.CalculateBOMRequestDTO;
-import com.sonnh.elv.dto.response.CalculateBOMResponseDTO;
+import com.sonnh.elv.data.domain.ProductType;
+import com.sonnh.elv.data.repository.ProductTypeRepository;
 import com.sonnh.elv.service.CalculateBOMService;
 import lombok.RequiredArgsConstructor;
 
@@ -15,59 +16,163 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CalculateBOMServiceImpl implements CalculateBOMService {
 
+    private static final String CAMERA_DOME = "CAMERA_DOME";
+    private static final String CAMERA_BULLET = "CAMERA_BULLET";
+    private static final String RECORDER_16 = "RECORDER_16";
+    private static final String RECORDER_32 = "RECORDER_32";
+    private static final String HARD_DISK_10T = "HARD_DISK_10T";
+    private static final String SWITCH_16_CISCO = "SWITCH_16_CISCO";
+    private static final String SWITCH_24_CISCO = "SWITCH_24_CISCO";
+    private static final String SWITCH_16_POE = "SWITCH_16_POE";
+    private static final String SWITCH_24_POE = "SWITCH_24_POE";
+    private static final String OBSERVER_SCREEN_43 = "OBSERVER_SCREEN_43";
+    private static final String CONVERTER_GIGABIT = "CONVERTER_GIGABIT";
+    private static final String RACK_CABINET_2U = "RACK_CABINET_2U";
+    private static final String RACK_CABINET_6U = "RACK_CABINET_6U";
+    private static final String RACK_CABINET_10U = "RACK_CABINET_10U";
+    private static final String RACK_CABINET_20U = "RACK_CABINET_20U";
+    private static final String RACK_CABINET_32U = "RACK_CABINET_32U";
+    private static final String RACK_CABINET_42U = "RACK_CABINET_42U";
+    private static final String ELECTRIC_CABLE_CVV = "ELECTRIC_CABLE_CVV";
+    private static final String PDU_POWER_6 = "PDU_POWER_6";
+    private static final String UPS_1000VA = "UPS_1000VA";
+    private static final String UPS_3000VA = "UPS_3000VA";
+    private static final String AMP_CAT5_CONNECTOR = "AMP_CAT5_CONNECTOR";
+    private static final String FIBER_PATCH_CORD_3M = "FIBER_PATCH_CORD_3M";
+    private static final String ODF_4FO = "ODF_4FO";
+    private static final String ODF_12FO = "ODF_12FO";
+    private static final String ODF_24FO = "ODF_24FO";
+    private static final String LAN_PATCH_CORD = "LAN_PATCH_CORD";
+    private static final String CABLE_MANAGEMENT_19 = "CABLE_MANAGEMENT_19";
+    private static final String LAN_CABLE_CAT5E = "LAN_CABLE_CAT5E";
+    private static final String FIBER_CABLE_4FO = "FIBER_CABLE_4FO";
+
+    private final ProductTypeRepository productTypeRepository;
+
     private int getSafeInt(Integer val) {
         return val == null ? 0 : val;
     }
 
     @Override
-    public CalculateBOMResponseDTO calculateBOM(List<CalculateBOMRequestDTO> dtos) {
+    public Map<String, Integer> calculateBOM(List<CalculateBOMRequestDTO> dtos) {
         System.out.println(dtos);
         // ------------------
-        CalculateBOMResponseDTO response = new CalculateBOMResponseDTO();
+        Map<String, Integer> response = new HashMap<>();
         if (dtos == null || dtos.isEmpty()) {
             return response;
         }
 
-        response.setCamDomeQuantity(calculateTotalCameraDome(dtos));
-        response.setCamBulletQuantity(calculateTotalCamerBullet(dtos));
+        List<ProductType> productTypes = productTypeRepository.findAll();
 
         Map<String, Integer> recorderMap = calculateRecorder16And32(dtos);
-        response.setRecorder16Quantity(recorderMap.get("recorder16Quantity"));
-        response.setRecorder32Quantity(recorderMap.get("recorder32Quantity"));
-        response.setHardDiskQuantity(calculateHardDisk(dtos, recorderMap));
-
         Map<String, Integer> ciscoMap = calculateswich16And24CISCO(dtos, recorderMap);
-        response.setSwich16CISCOQuantity(ciscoMap.get("sw16"));
-        response.setSwich24CISCOQuantity(ciscoMap.get("sw24"));
-
-        response.setSwich16POEQuantity(calculateSwitch16POE(dtos));
-        response.setSwich24POEQuantity(calculateSwitch24POE(dtos));
-        response.setObserScreenQuantity(calculateOberserScreen(dtos, recorderMap));
-        response.setConverterQuantity(calculateConverter(dtos));
-
         Map<String, Integer> cabinetMap = calculateCabinet(dtos);
-        response.setCabinet2UQuantity(cabinetMap.getOrDefault("2U", 0));
-        response.setCabinet6UQuantity(cabinetMap.getOrDefault("6U", 0));
-        response.setCabinet10UQuantity(cabinetMap.getOrDefault("10U", 0));
-        response.setCabinet20UQuantity(cabinetMap.getOrDefault("20U", 0));
-        response.setCabinet32UQuantity(cabinetMap.getOrDefault("32U", 0));
-        response.setCabinet42UQuantity(cabinetMap.getOrDefault("42U", 0));
-
-        response.setCvvCable(calculateCVVCable(dtos));
-        response.setPduQuantity(calcuatePDUPower(dtos, recorderMap));
-        response.setUps1000Quantity(calculateUPSS1000(dtos));
-        response.setAmpCatQuantity(calculateAmpCat(dtos));
-        response.setFiberOpticalPatchQuantity(calcuateFiberOpticalPatch(dtos));
-        response.setOdf4FOQuantity(calcuateODF4FO(dtos));
         Map<String, Integer> odfMap = calcuateODF12FOAnd24FO(dtos);
-        response.setOdf12FOQuantity(odfMap.getOrDefault("12FO", 0));
-        response.setOdf24FOQuantity(odfMap.getOrDefault("24FO", 0));
-        response.setPatchCordQuantity(calcuatePatchCord(dtos, recorderMap));
-        response.setCablemanageQuantity(calcuateCablemanage(dtos));
-        response.setCableQuantity(calcuateCableQuantity(dtos));
+
+        for (ProductType pt : productTypes) {
+            String code = pt.getCode();
+            if (code == null) {
+                continue;
+            }
+
+            int qty = 0;
+            switch (code) {
+                case CAMERA_DOME:
+                    qty = calculateTotalCameraDome(dtos);
+                    break;
+                case CAMERA_BULLET:
+                    qty = calculateTotalCamerBullet(dtos);
+                    break;
+                case RECORDER_16:
+                    qty = recorderMap.getOrDefault("recorder16Quantity", 0);
+                    break;
+                case RECORDER_32:
+                    qty = recorderMap.getOrDefault("recorder32Quantity", 0);
+                    break;
+                case HARD_DISK_10T:
+                    qty = calculateHardDisk(dtos, recorderMap);
+                    break;
+                case SWITCH_16_CISCO:
+                    qty = ciscoMap.getOrDefault("sw16", 0);
+                    break;
+                case SWITCH_24_CISCO:
+                    qty = ciscoMap.getOrDefault("sw24", 0);
+                    break;
+                case SWITCH_16_POE:
+                    qty = calculateSwitch16POE(dtos);
+                    break;
+                case SWITCH_24_POE:
+                    qty = calculateSwitch24POE(dtos);
+                    break;
+                case OBSERVER_SCREEN_43:
+                    qty = calculateOberserScreen(dtos, recorderMap);
+                    break;
+                case CONVERTER_GIGABIT:
+                    qty = calculateConverter(dtos);
+                    break;
+                case RACK_CABINET_2U:
+                    qty = cabinetMap.getOrDefault("2U", 0);
+                    break;
+                case RACK_CABINET_6U:
+                    qty = cabinetMap.getOrDefault("6U", 0);
+                    break;
+                case RACK_CABINET_10U:
+                    qty = cabinetMap.getOrDefault("10U", 0);
+                    break;
+                case RACK_CABINET_20U:
+                    qty = cabinetMap.getOrDefault("20U", 0);
+                    break;
+                case RACK_CABINET_32U:
+                    qty = cabinetMap.getOrDefault("32U", 0);
+                    break;
+                case RACK_CABINET_42U:
+                    qty = cabinetMap.getOrDefault("42U", 0);
+                    break;
+                case ELECTRIC_CABLE_CVV:
+                    qty = calculateCVVCable(dtos);
+                    break;
+                case PDU_POWER_6:
+                    qty = calcuatePDUPower(dtos, recorderMap);
+                    break;
+                case UPS_1000VA:
+                    qty = calculateUPSS1000(dtos);
+                    break;
+                case AMP_CAT5_CONNECTOR:
+                    qty = calculateAmpCat(dtos);
+                    break;
+                case FIBER_PATCH_CORD_3M:
+                    qty = calcuateFiberOpticalPatch(dtos);
+                    break;
+                case ODF_4FO:
+                    qty = calcuateODF4FO(dtos);
+                    break;
+                case ODF_12FO:
+                    qty = odfMap.getOrDefault("12FO", 0);
+                    break;
+                case ODF_24FO:
+                    qty = odfMap.getOrDefault("24FO", 0);
+                    break;
+                case LAN_PATCH_CORD:
+                    qty = calcuatePatchCord(dtos, recorderMap);
+                    break;
+                case CABLE_MANAGEMENT_19:
+                    qty = calcuateCablemanage(dtos);
+                    break;
+                case LAN_CABLE_CAT5E:
+                    qty = calcuateCableQuantity(dtos);
+                    break;
+                case FIBER_CABLE_4FO:
+                    qty = 0;
+                    break;
+                default:
+                    qty = 0;
+                    break;
+            }
+
+            response.put(code, qty);
+        }
 
         System.out.println("Response BOM: " + response.toString());
-
         return response;
     }
 

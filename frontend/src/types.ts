@@ -145,3 +145,36 @@ export interface SystemConfig {
   pdu: number;
   converter: number;
 }
+
+export interface DynamicProduct {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface DynamicProductType {
+  id: string;
+  code: string;
+  name: string;
+  formula?: string;
+  orderIndex?: number;
+  note?: string;
+  unit?: string;
+  labor?: number;
+  products: DynamicProduct[];
+}
+
+export interface DynamicCategory {
+  id: string;
+  name: string;
+  description?: string;
+  orderIndex?: number;
+  children?: DynamicCategory[];
+  productTypes?: DynamicProductType[];
+}
+
+export interface ProductTypeOption {
+  id: string;
+  code: string;
+  name: string;
+}

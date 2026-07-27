@@ -1,10 +1,9 @@
 package com.sonnh.elv.service;
 
 import com.sonnh.elv.dto.request.CalculateBOMRequestDTO;
-import com.sonnh.elv.dto.response.CalculateBOMResponseDTO;
-
 import java.util.List;
+import java.util.Map;
 
 public interface CalculateBOMService {
-    CalculateBOMResponseDTO calculateBOM(List<CalculateBOMRequestDTO> dtos);
+    Map<String, Integer> calculateBOM(List<CalculateBOMRequestDTO> dtos);
 }

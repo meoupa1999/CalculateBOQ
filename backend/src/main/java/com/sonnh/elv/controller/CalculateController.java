@@ -4,9 +4,9 @@ import com.sonnh.elv.dto.request.CalculateBOQRequestDTO;
 import com.sonnh.elv.dto.request.CalculateBOQManualRequestDTO;
 import com.sonnh.elv.dto.request.CalculateBOMRequestDTO;
 import com.sonnh.elv.dto.response.CalculateBOQResponseDTO;
-import com.sonnh.elv.dto.response.CalculateBOMResponseDTO;
 import com.sonnh.elv.service.CalculateService;
 import com.sonnh.elv.service.CalculateBOMService;
+import java.util.Map;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -68,10 +68,10 @@ public class CalculateController {
     }
 
     @PostMapping("/bom")
-    public ResponseEntity<CalculateBOMResponseDTO> getBOM(
+    public ResponseEntity<Map<String, Integer>> getBOM(
             @RequestBody List<CalculateBOMRequestDTO> dtos
     ) {
-        CalculateBOMResponseDTO bom = calculateBOMService.calculateBOM(dtos);
+        Map<String, Integer> bom = calculateBOMService.calculateBOM(dtos);
         return ResponseEntity.ok(bom);
     }
 }

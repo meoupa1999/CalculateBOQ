@@ -30,4 +30,10 @@ public class ConfigController {
         configService.updateConfig(id, request);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/bom")
+    public ResponseEntity<Void> configBOM(@RequestBody com.sonnh.elv.dto.request.BOMBatchRequestDTO request) {
+        configService.configBOM(request);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -6,8 +6,8 @@ import com.sonnh.elv.data.repository.ProjectRepository;
 import com.sonnh.elv.dto.excel.BOQRowExcelDTO;
 import com.sonnh.elv.dto.response.CalculateBOQResponseDTO;
 import com.sonnh.elv.dto.request.CalculateBOMRequestDTO;
-import com.sonnh.elv.dto.response.CalculateBOMResponseDTO;
 import com.sonnh.elv.service.CalculateService;
+import java.util.Map;
 import com.sonnh.elv.service.CalculateBOMService;
 import com.sonnh.elv.service.ExcelExportService;
 import jakarta.persistence.EntityNotFoundException;
@@ -63,7 +63,7 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             // 2. Process BOM Sheet (Sheet index 1)
             try {
                 List<CalculateBOMRequestDTO> bomRequests = buildBOMRequests(towers);
-                CalculateBOMResponseDTO bomResponse = calculateBOMService.calculateBOM(bomRequests);
+                Map<String, Integer> bomResponse = calculateBOMService.calculateBOM(bomRequests);
                 writeBOMSheet(workbook, bomResponse);
             } catch (Exception e) {
                 System.err.println("Error writing BOM sheet: " + e.getMessage());
@@ -943,7 +943,7 @@ public class ExcelExportServiceImpl implements ExcelExportService {
         return bomRequests;
     }
 
-    private void writeBOMSheet(Workbook workbook, CalculateBOMResponseDTO bomResponse) {
+    private void writeBOMSheet(Workbook workbook, Map<String, Integer> bomResponse) {
         Sheet bomSheet = workbook.getSheet("BOM");
         if (bomSheet == null && workbook.getNumberOfSheets() > 1) {
             bomSheet = workbook.getSheetAt(1);
@@ -952,41 +952,41 @@ public class ExcelExportServiceImpl implements ExcelExportService {
 
         // Map of row index (0-indexed) to calculated quantity
         java.util.Map<Integer, Integer> bomQtyMap = new java.util.HashMap<>();
-        bomQtyMap.put(8, bomResponse.getCamDomeQuantity());         // Row 9 (Camera Dome)
-        bomQtyMap.put(9, bomResponse.getCamBulletQuantity());       // Row 10 (Camera Bullet)
-        bomQtyMap.put(10, bomResponse.getRecorder16Quantity());     // Row 11 (Recorder 16ch)
-        bomQtyMap.put(11, bomResponse.getRecorder32Quantity());     // Row 12 (Recorder 32ch)
-        bomQtyMap.put(12, bomResponse.getHardDiskQuantity());       // Row 13 (HDD)
-        bomQtyMap.put(13, bomResponse.getSwich16POEQuantity());     // Row 14 (Sw POE 16)
-        bomQtyMap.put(14, bomResponse.getSwich24POEQuantity());     // Row 15 (Sw POE 24)
-        bomQtyMap.put(15, bomResponse.getSwich16CISCOQuantity());   // Row 16 (Cisco 16 port)
-        bomQtyMap.put(16, bomResponse.getSwich24CISCOQuantity());   // Row 17 (Cisco 24 port) - NEW
-        bomQtyMap.put(17, bomResponse.getObserScreenQuantity());    // Row 18 (Samsung Screen)
+        bomQtyMap.put(8, bomResponse.get("CAMERA_DOME"));         // Row 9 (Camera Dome)
+        bomQtyMap.put(9, bomResponse.get("CAMERA_BULLET"));       // Row 10 (Camera Bullet)
+        bomQtyMap.put(10, bomResponse.get("RECORDER_16"));        // Row 11 (Recorder 16ch)
+        bomQtyMap.put(11, bomResponse.get("RECORDER_32"));        // Row 12 (Recorder 32ch)
+        bomQtyMap.put(12, bomResponse.get("HARD_DISK_10T"));      // Row 13 (HDD)
+        bomQtyMap.put(13, bomResponse.get("SWITCH_16_POE"));      // Row 14 (Sw POE 16)
+        bomQtyMap.put(14, bomResponse.get("SWITCH_24_POE"));      // Row 15 (Sw POE 24)
+        bomQtyMap.put(15, bomResponse.get("SWITCH_16_CISCO"));    // Row 16 (Cisco 16 port)
+        bomQtyMap.put(16, bomResponse.get("SWITCH_24_CISCO"));    // Row 17 (Cisco 24 port) - NEW
+        bomQtyMap.put(17, bomResponse.get("OBSERVER_SCREEN_43")); // Row 18 (Samsung Screen)
 
-        bomQtyMap.put(22, bomResponse.getFiberCableQuantity());     // Row 23 (Cáp quang 4FO)
-        bomQtyMap.put(23, bomResponse.getCableQuantity());          // Row 24 (Cáp mạng Cat5E)
-        bomQtyMap.put(24, bomResponse.getCableQuantity());          // Row 25 (Cáp mạng Cat5E) - NEW
-        bomQtyMap.put(25, bomResponse.getConverterQuantity());      // Row 26 (Converter)
-        bomQtyMap.put(27, bomResponse.getCabinet2UQuantity());      // Row 28 (Tủ 2U)
-        bomQtyMap.put(28, bomResponse.getCabinet6UQuantity());      // Row 29 (Tủ 6U)
-        bomQtyMap.put(29, bomResponse.getCabinet10UQuantity());     // Row 30 (Tủ 10U)
-        bomQtyMap.put(30, bomResponse.getCabinet32UQuantity());     // Row 31 (Tủ 32U)
-        bomQtyMap.put(31, bomResponse.getCabinet32UQuantity());     // Row 32 (Tủ 32U) - NEW
-        bomQtyMap.put(32, bomResponse.getCabinet42UQuantity());     // Row 33 (Tủ 42U)
-        bomQtyMap.put(33, bomResponse.getOdf12FOQuantity());        // Row 34 (ODF 12FO) - NEW
-        bomQtyMap.put(34, bomResponse.getOdf24FOQuantity());        // Row 35 (ODF 24FO)
+        bomQtyMap.put(22, bomResponse.get("FIBER_CABLE_4FO"));    // Row 23 (Cáp quang 4FO)
+        bomQtyMap.put(23, bomResponse.get("LAN_CABLE_CAT5E"));    // Row 24 (Cáp mạng Cat5E)
+        bomQtyMap.put(24, bomResponse.get("LAN_CABLE_CAT5E"));    // Row 25 (Cáp mạng Cat5E) - NEW
+        bomQtyMap.put(25, bomResponse.get("CONVERTER_GIGABIT"));  // Row 26 (Converter)
+        bomQtyMap.put(27, bomResponse.get("RACK_CABINET_2U"));    // Row 28 (Tủ 2U)
+        bomQtyMap.put(28, bomResponse.get("RACK_CABINET_6U"));    // Row 29 (Tủ 6U)
+        bomQtyMap.put(29, bomResponse.get("RACK_CABINET_10U"));   // Row 30 (Tủ 10U)
+        bomQtyMap.put(30, bomResponse.get("RACK_CABINET_32U"));   // Row 31 (Tủ 32U)
+        bomQtyMap.put(31, bomResponse.get("RACK_CABINET_32U"));   // Row 32 (Tủ 32U) - NEW
+        bomQtyMap.put(32, bomResponse.get("RACK_CABINET_42U"));   // Row 33 (Tủ 42U)
+        bomQtyMap.put(33, bomResponse.get("ODF_12FO"));           // Row 34 (ODF 12FO) - NEW
+        bomQtyMap.put(34, bomResponse.get("ODF_24FO"));           // Row 35 (ODF 24FO)
 
-        bomQtyMap.put(36, bomResponse.getCvvCable());               // Row 37 (Dây điện CVV)
-        bomQtyMap.put(37, bomResponse.getPduQuantity());            // Row 38 (PDU)
+        bomQtyMap.put(36, bomResponse.get("ELECTRIC_CABLE_CVV")); // Row 37 (Dây điện CVV)
+        bomQtyMap.put(37, bomResponse.get("PDU_POWER_6"));        // Row 38 (PDU)
 
-        bomQtyMap.put(39, bomResponse.getUps1000Quantity());        // Row 40 (UPS 1000)
-        bomQtyMap.put(40, bomResponse.getUps3000Quantity());        // Row 41 (UPS 3000)
+        bomQtyMap.put(39, bomResponse.get("UPS_1000VA"));        // Row 40 (UPS 1000)
+        bomQtyMap.put(40, bomResponse.get("UPS_3000VA"));        // Row 41 (UPS 3000)
 
-        bomQtyMap.put(44, bomResponse.getAmpCatQuantity());         // Row 45 (Đầu mạng AMP)
-        bomQtyMap.put(45, bomResponse.getFiberOpticalPatchQuantity()); // Row 46 (Dây nhảy quang)
-        bomQtyMap.put(46, bomResponse.getOdf4FOQuantity());         // Row 47 (ODF 4FO)
-        bomQtyMap.put(47, bomResponse.getPatchCordQuantity());      // Row 48 (Dây nhảy mạng Cat5)
-        bomQtyMap.put(48, bomResponse.getCablemanageQuantity());    // Row 49 (Thanh quản lý)
+        bomQtyMap.put(44, bomResponse.get("AMP_CAT5_CONNECTOR"));  // Row 45 (Đầu mạng AMP)
+        bomQtyMap.put(45, bomResponse.get("FIBER_PATCH_CORD_3M")); // Row 46 (Dây nhảy quang)
+        bomQtyMap.put(46, bomResponse.get("ODF_4FO"));             // Row 47 (ODF 4FO)
+        bomQtyMap.put(47, bomResponse.get("LAN_PATCH_CORD"));      // Row 48 (Dây nhảy mạng Cat5)
+        bomQtyMap.put(48, bomResponse.get("CABLE_MANAGEMENT_19")); // Row 49 (Thanh quản lý)
 
         // Populate Column E (SLG, index 4) and Column G (Tổng nhân công, index 6)
         for (int r = 8; r < 60; r++) {
