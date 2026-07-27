@@ -57,6 +57,14 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             }
             Workbook workbook = WorkbookFactory.create(is);
 
+            // Ensure all sheets are editable by disabling protection
+            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                Sheet sheet = workbook.getSheetAt(i);
+                if (sheet != null) {
+                    sheet.protectSheet(null);
+                }
+            }
+
             // 1. Process BOQ Sheet (Sheet index 0)
             writeBOQSheet(workbook, towers);
 
