@@ -151,42 +151,39 @@ export const TowerBOMTable: React.FC<TowerBOMTableProps> = ({
                 <td className={sttClass}>{item.stt}</td>
                 <td className={nameClass}>
                   {item.products && item.products.length > 0 ? (
-                    <div className="flex flex-col gap-1 w-full">
-                      <span className="font-semibold text-slate-800">{item.name}</span>
-                      <div className="relative mt-0.5 w-full">
-                        {/* Styled custom display box that allows text wrapping */}
-                        <div className="w-full bg-[#f8f9fb] border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 flex items-center justify-between gap-1 cursor-pointer hover:bg-slate-100/50 transition pr-6 relative min-h-[26px]">
-                          <span className="text-wrap break-words text-slate-800 font-medium leading-normal block py-0.5">
-                            {selectedProduct?.name || "Chọn sản phẩm..."}
-                          </span>
-                          <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                            <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                          </div>
+                    <div className="relative w-full">
+                      {/* Styled custom display box that allows text wrapping */}
+                      <div className="w-full bg-[#f8f9fb] border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 flex items-center justify-between gap-1 cursor-pointer hover:bg-slate-100/50 transition pr-6 relative min-h-[26px]">
+                        <span className="text-wrap break-words text-slate-800 font-semibold leading-normal block py-0.5">
+                          {selectedProduct?.name || "Chọn sản phẩm..."}
+                        </span>
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                         </div>
-                        {/* Actual invisible select dropdown overlays the box */}
-                        <select
-                          value={selectedProductId || ""}
-                          onChange={(e) => {
-                            const prodId = e.target.value;
-                            setSelectedProducts(prev => {
-                              const towerId = activeTower?.id || "";
-                              const towerProds = prev[towerId] || {};
-                              return {
-                                ...prev,
-                                [towerId]: {
-                                  ...towerProds,
-                                  [item.code || ""]: prodId
-                                }
-                              };
-                            });
-                          }}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        >
-                          {item.products.map((p: any) => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                          ))}
-                        </select>
                       </div>
+                      {/* Actual invisible select dropdown overlays the box */}
+                      <select
+                        value={selectedProductId || ""}
+                        onChange={(e) => {
+                          const prodId = e.target.value;
+                          setSelectedProducts(prev => {
+                            const towerId = activeTower?.id || "";
+                            const towerProds = prev[towerId] || {};
+                            return {
+                              ...prev,
+                              [towerId]: {
+                                ...towerProds,
+                                [item.code || ""]: prodId
+                              }
+                            };
+                          });
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      >
+                        {item.products.map((p: any) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
                     </div>
                   ) : (
                     item.name
