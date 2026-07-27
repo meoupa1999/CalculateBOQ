@@ -201,6 +201,11 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
 
   const [templates, setTemplates] = React.useState<any[]>([]);
   const [isSavingTemplate, setIsSavingTemplate] = React.useState(false);
+  const [activeTemplateId, setActiveTemplateId] = React.useState<string>("");
+
+  React.useEffect(() => {
+    setActiveTemplateId("");
+  }, [activeTower]);
 
   const fetchTemplates = async () => {
     try {
@@ -880,18 +885,20 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                 <div className="flex items-center gap-2 flex-wrap">
                   {templates.length > 0 && (
                     <select
+                      value={activeTemplateId}
                       onChange={(e) => {
                         const templateId = e.target.value;
                         if (templateId) {
                           const t = templates.find((temp: any) => temp.id === templateId);
                           applyTemplate(t);
-                          e.target.value = ""; // reset dropdown
+                          setActiveTemplateId(templateId);
+                        } else {
+                          setActiveTemplateId("");
                         }
                       }}
                       className="bg-white border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 font-semibold focus:border-[#1A237E] focus:outline-none transition cursor-pointer"
-                      defaultValue=""
                     >
-                      <option value="" disabled>-- Áp dụng Cấu hình mẫu --</option>
+                      <option value="">-- Áp dụng Cấu hình mẫu --</option>
                       {templates.map((t: any) => (
                         <option key={t.id} value={t.id}>{t.name}</option>
                       ))}
