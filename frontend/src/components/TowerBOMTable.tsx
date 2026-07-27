@@ -2,6 +2,17 @@ import React from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Tower, DynamicCategory } from "../types";
 
+const formatLabor = (val: number) => {
+  if (val === undefined || val === null) return "0.0";
+  if (val === 0) return "0.0";
+  const str = val.toFixed(4);
+  let trimmed = str.replace(/0+$/, '');
+  if (trimmed.endsWith('.')) {
+    trimmed += '0';
+  }
+  return trimmed;
+};
+
 interface TowerBOMTableProps {
   activeTower: Tower;
   dynamicCategories: DynamicCategory[];
@@ -163,8 +174,8 @@ export const TowerBOMTable: React.FC<TowerBOMTableProps> = ({
                     quantity
                   )}
                 </td>
-                <td className="py-2.5 px-1 text-center font-mono">{(item.labor || 0).toFixed(1)}</td>
-                <td className="py-2.5 px-1 text-center font-mono">{((item.labor || 0) * quantity).toFixed(1)}</td>
+                <td className="py-2.5 px-1 text-center font-mono">{formatLabor(item.labor)}</td>
+                <td className="py-2.5 px-1 text-center font-mono">{formatLabor((item.labor || 0) * quantity)}</td>
                 <td className="py-2.5 px-2 text-slate-600">
                   <input
                     type="text"

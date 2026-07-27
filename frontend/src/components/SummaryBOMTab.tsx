@@ -2,6 +2,17 @@ import React from "react";
 import { Activity, RefreshCw, FileSpreadsheet } from "lucide-react";
 import { Project, DynamicCategory } from "../types";
 
+const formatLabor = (val: number) => {
+  if (val === undefined || val === null) return "0.0";
+  if (val === 0) return "0.0";
+  const str = val.toFixed(4);
+  let trimmed = str.replace(/0+$/, '');
+  if (trimmed.endsWith('.')) {
+    trimmed += '0';
+  }
+  return trimmed;
+};
+
 interface SummaryBOMTabProps {
   activeProject: Project;
   selectedTowersSummary: Record<string, boolean>;
@@ -201,8 +212,8 @@ export const SummaryBOMTab: React.FC<SummaryBOMTabProps> = ({
                           <td className="py-2.5 px-2 text-slate-600">{item.desc || ""}</td>
                           <td className={unitClass}>{item.unit || ""}</td>
                           <td className="py-2.5 px-1 text-center font-mono">{quantity}</td>
-                          <td className="py-2.5 px-1 text-center font-mono">{(item.labor || 0).toFixed(1)}</td>
-                          <td className="py-2.5 px-1 text-center font-mono">{((item.labor || 0) * quantity).toFixed(1)}</td>
+                          <td className="py-2.5 px-1 text-center font-mono">{formatLabor(item.labor)}</td>
+                          <td className="py-2.5 px-1 text-center font-mono">{formatLabor((item.labor || 0) * quantity)}</td>
                           <td className="py-2.5 px-2 text-slate-600">{leftTableNotes[noteKey] || item.note || ""}</td>
                         </tr>
                       );
