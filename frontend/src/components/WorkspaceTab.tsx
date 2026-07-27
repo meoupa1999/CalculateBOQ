@@ -199,6 +199,98 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
 }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
 
+  const [templates, setTemplates] = React.useState<any[]>([]);
+  const [isSavingTemplate, setIsSavingTemplate] = React.useState(false);
+
+  const fetchTemplates = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/towers/templates`);
+      if (res.ok) {
+        const data = await res.json();
+        setTemplates(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch templates", err);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchTemplates();
+  }, []);
+
+  const getTemplateProductIds = () => {
+    const ids: string[] = [];
+    const rows = flattenCategoryTree(dynamicCategories);
+    const towerId = activeTower?.id || "";
+    const towerSelected = selectedProducts[towerId] || {};
+    
+    rows.forEach(item => {
+      if (item.products && item.products.length > 0) {
+        const selectedId = towerSelected[item.code] || item.products[0]?.id;
+        if (selectedId) {
+          ids.push(selectedId);
+        }
+      }
+    });
+    return ids;
+  };
+
+  const handleSaveTemplate = async () => {
+    const name = prompt("Nhập tên Cấu hình mẫu (Template) mới:");
+    if (!name) return;
+    
+    const productIds = getTemplateProductIds();
+    if (productIds.length === 0) {
+      addToast("Không có thiết bị nào để lưu thành mẫu!", "error");
+      return;
+    }
+    
+    setIsSavingTemplate(true);
+    try {
+      const res = await fetch(`${API_BASE}/towers/templates`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          description: `Cấu hình mẫu lưu từ ${activeTower?.name} dự án ${activeProject.name}`,
+          productIds
+        })
+      });
+      if (res.ok) {
+        addToast("Lưu cấu hình mẫu thành công!", "success");
+        fetchTemplates();
+      } else {
+        addToast("Lỗi khi lưu cấu hình mẫu!", "error");
+      }
+    } catch (err) {
+      console.error("Failed to save template", err);
+      addToast("Lỗi kết nối khi lưu cấu hình mẫu!", "error");
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
+  const applyTemplate = (template: any) => {
+    if (!template || !template.products) return;
+    
+    setSelectedProducts(prev => {
+      const towerId = activeTower?.id || "";
+      const updatedTowerProds = { ...(prev[towerId] || {}) };
+      
+      template.products.forEach((p: any) => {
+        if (p.productTypeCode) {
+          updatedTowerProds[p.productTypeCode] = p.id;
+        }
+      });
+      
+      return {
+        ...prev,
+        [towerId]: updatedTowerProds
+      };
+    });
+    addToast(`Đã áp dụng mẫu "${template.name}" cho ${activeTower?.name}!`, "success");
+  };
+
   const startResize = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -775,7 +867,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
               className="bg-white border border-[#ECEFF1] rounded-lg shadow-xs w-full overflow-hidden"
               style={isXl ? { width: `calc(${leftWidth}% - 12px)`, flexShrink: 0 } : {}}
             >
-              <div className="px-6 py-4 border-b border-[#ECEFF1] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
+              <div className="px-6 py-4 border-b border-[#ECEFF1] flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-50/50">
                 <div>
                   <h3 className="font-sans font-bold text-base text-[#191c1e]">
                     Khung BOQ Thiết bị &amp; Vật tư (Mẫu Excel)
@@ -784,8 +876,40 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                     Khung sườn danh mục vật tư chính, phụ kiện và nhân công lắp đặt
                   </p>
                 </div>
-                <div className="text-xs font-mono text-[#1A237E] bg-[#E8EAF6] px-2.5 py-1 rounded font-bold border border-[#1A237E]/20">
-                  EXCEL SKELETON
+                
+                <div className="flex items-center gap-2 flex-wrap">
+                  {templates.length > 0 && (
+                    <select
+                      onChange={(e) => {
+                        const templateId = e.target.value;
+                        if (templateId) {
+                          const t = templates.find((temp: any) => temp.id === templateId);
+                          applyTemplate(t);
+                          e.target.value = ""; // reset dropdown
+                        }
+                      }}
+                      className="bg-white border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 font-semibold focus:border-[#1A237E] focus:outline-none transition cursor-pointer"
+                      defaultValue=""
+                    >
+                      <option value="" disabled>-- Áp dụng Cấu hình mẫu --</option>
+                      {templates.map((t: any) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  <button
+                    onClick={handleSaveTemplate}
+                    disabled={isSavingTemplate}
+                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded text-xs font-bold transition flex items-center justify-center gap-1 h-[26px]"
+                    title="Lưu cấu hình thiết bị hiện tại thành mẫu"
+                  >
+                    Lưu Mẫu (Template)
+                  </button>
+                  
+                  <div className="text-xs font-mono text-[#1A237E] bg-[#E8EAF6] px-2 py-1 rounded font-bold border border-[#1A237E]/20 h-[26px] flex items-center justify-center">
+                    EXCEL SKELETON
+                  </div>
                 </div>
               </div>
 

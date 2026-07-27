@@ -2,8 +2,10 @@ package com.sonnh.elv.controller;
 
 import com.sonnh.elv.dto.request.CreateTowerReqDto;
 import com.sonnh.elv.dto.request.UpdateTowerReqDto;
+import com.sonnh.elv.dto.request.CreateTemplateReqDto;
 import com.sonnh.elv.dto.response.PageImplResDto;
 import com.sonnh.elv.dto.response.TowerResponseDto;
+import com.sonnh.elv.dto.response.TemplateResponseDto;
 import com.sonnh.elv.service.TowerService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -25,6 +28,17 @@ public class TowerController {
     public ResponseEntity<Void> createTower(@RequestBody CreateTowerReqDto request) {
         towerService.createTower(request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PostMapping("/templates")
+    public ResponseEntity<Void> createTemplate(@RequestBody CreateTemplateReqDto request) {
+        towerService.createTemplate(request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("/templates")
+    public ResponseEntity<List<TemplateResponseDto>> getAllTemplates() {
+        return ResponseEntity.ok(towerService.getAllTemplates());
     }
 
     @GetMapping

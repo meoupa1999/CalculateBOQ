@@ -2,15 +2,21 @@ package com.sonnh.elv.service.impl;
 
 import com.sonnh.elv.data.domain.Config;
 import com.sonnh.elv.data.domain.Project;
+import com.sonnh.elv.data.domain.Template;
 import com.sonnh.elv.data.domain.Tower;
 import com.sonnh.elv.data.repository.ConfigRepository;
+import com.sonnh.elv.data.repository.ProductRepository;
 import com.sonnh.elv.data.repository.ProjectRepository;
+import com.sonnh.elv.data.repository.TemplateRepository;
 import com.sonnh.elv.data.repository.TowerRepository;
+import com.sonnh.elv.dto.request.CreateTemplateReqDto;
 import com.sonnh.elv.dto.request.CreateTowerReqDto;
 import com.sonnh.elv.dto.request.UpdateTowerReqDto;
 import com.sonnh.elv.dto.response.PageImplResDto;
 import com.sonnh.elv.dto.response.TowerResponseDto;
+import com.sonnh.elv.dto.response.TemplateResponseDto;
 import com.sonnh.elv.mapper.TowerMapper;
+import java.util.List;
 import com.sonnh.elv.service.TowerService;
 import com.sonnh.elv.data.specification.TowerSpecification;
 import org.springframework.data.domain.Page;
@@ -31,6 +37,8 @@ public class TowerServiceImpl implements TowerService {
     private final ProjectRepository projectRepository;
     private final ConfigRepository configRepository;
     private final TowerMapper towerMapper;
+    private final ProductRepository productRepository;
+    private final TemplateRepository templateRepository;
 
     @Override
     public PageImplResDto<TowerResponseDto> getAllTowers(Integer page, Integer size, String search, UUID projectId) {
@@ -86,5 +94,37 @@ public class TowerServiceImpl implements TowerService {
     @Override
     public TowerResponseDto getTower(UUID id) {
         return towerRepository.findById(id).map(towerMapper::toTowerResponseDto).orElseThrow();
+    }
+
+    @Override
+    @Transactional
+    public void createTemplate(CreateTemplateReqDto dto) {
+        Template template = Template.builder()
+                .name(dto.getName())
+                .description(dto.getDescription())
+                .build();
+        dto.getProductIds().forEach(id -> template.addProduct(productRepository.findById(id).orElseThrow()));
+        templateRepository.save(template);
+    }
+
+    @Override
+    public List<TemplateResponseDto> getAllTemplates() {
+        return templateRepository.findAll().stream().map(temp -> {
+            List<TemplateResponseDto.ProductDto> prodDtos = temp.getProducts().stream().map(p -> 
+                TemplateResponseDto.ProductDto.builder()
+                    .id(p.getId())
+                    .name(p.getName())
+                    .description(p.getDescription())
+                    .productTypeCode(p.getProductType() != null ? p.getProductType().getCode() : null)
+                    .build()
+            ).toList();
+
+            return TemplateResponseDto.builder()
+                .id(temp.getId())
+                .name(temp.getName())
+                .description(temp.getDescription())
+                .products(prodDtos)
+                .build();
+        }).toList();
     }
 }

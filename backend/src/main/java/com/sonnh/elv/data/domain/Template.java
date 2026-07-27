@@ -32,11 +32,7 @@ public class Template {
 
     @Builder.Default
     @ManyToMany
-    @JoinTable(
-        name = "template_product",
-        joinColumns = @JoinColumn(name = "template_id"),
-        inverseJoinColumns = @JoinColumn(name = "product_id")
-    )
+    @JoinTable(name = "template_product", joinColumns = @JoinColumn(name = "template_id"), inverseJoinColumns = @JoinColumn(name = "product_id"))
     private List<Product> products = new ArrayList<>();
 
     @Builder.Default
@@ -44,7 +40,7 @@ public class Template {
     private Audit audit = new Audit();
 
     public void addProduct(Product product) {
-        products.add(product);
+        this.getProducts().add(product);
         product.getTemplates().add(this);
     }
 
