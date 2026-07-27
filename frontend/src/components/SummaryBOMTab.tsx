@@ -13,6 +13,42 @@ const formatLabor = (val: number) => {
   return trimmed;
 };
 
+const SYSTEM_CODES = [
+  "CAMERA_DOME",
+  "CAMERA_BULLET",
+  "RECORDER_32",
+  "RECORDER_16",
+  "HARD_DISK_10T",
+  "SWITCH_24_POE",
+  "SWITCH_16_POE",
+  "SWITCH_16_CISCO",
+  "SWITCH_24_CISCO",
+  "OBSERVER_SCREEN_43",
+  "FIBER_CABLE_4FO",
+  "LAN_CABLE_CAT5E",
+  "CONVERTER_GIGABIT",
+  "RACK_CABINET_2U",
+  "RACK_CABINET_6U",
+  "RACK_CABINET_10U",
+  "RACK_CABINET_20U",
+  "RACK_CABINET_32U",
+  "RACK_CABINET_42U",
+  "ODF_12FO",
+  "ODF_24FO",
+  "ELECTRIC_CABLE_CVV",
+  "PDU_POWER_6",
+  "UPS_1000VA",
+  "UPS_3000VA",
+  "ACCESSORIES_PACKAGE",
+  "AMP_CAT5_CONNECTOR",
+  "FIBER_PATCH_CORD_3M",
+  "ODF_4FO",
+  "LAN_PATCH_CORD",
+  "CABLE_MANAGEMENT_19",
+  "CONDUIT_FLEXIBLE_D20",
+  "CONDUIT_RIGID_D20"
+];
+
 interface SummaryBOMTabProps {
   activeProject: Project;
   selectedTowersSummary: Record<string, boolean>;
@@ -25,6 +61,7 @@ interface SummaryBOMTabProps {
   dynamicCategories: DynamicCategory[];
   flattenCategoryTree: (cats: DynamicCategory[]) => any[];
   leftTableNotes: Record<string, string>;
+  customBOMOverrides: Record<string, Record<string, number>>;
 }
 
 export const SummaryBOMTab: React.FC<SummaryBOMTabProps> = ({
@@ -39,6 +76,7 @@ export const SummaryBOMTab: React.FC<SummaryBOMTabProps> = ({
   dynamicCategories,
   flattenCategoryTree,
   leftTableNotes,
+  customBOMOverrides,
 }) => {
   return (
     <div className="space-y-6 mt-6 font-sans">
@@ -185,7 +223,18 @@ export const SummaryBOMTab: React.FC<SummaryBOMTabProps> = ({
                         );
                       }
 
-                      const quantity = item.code ? (summaryBomData?.[item.code] ?? 0) : 0;
+                      let quantity = 0;
+                      if (item.code) {
+                        if (!SYSTEM_CODES.includes(item.code)) {
+                          activeProject.towers.forEach(t => {
+                            if (selectedTowersSummary[t.id]) {
+                              quantity += (customBOMOverrides[t.id]?.[item.code] ?? 0);
+                            }
+                          });
+                        } else {
+                          quantity = summaryBomData?.[item.code] ?? 0;
+                        }
+                      }
                       
                       const isYellow = item.stt === "1.1" || item.stt === "1.2" || item.name === "Vật tư phụ";
                       const rowClass = isYellow

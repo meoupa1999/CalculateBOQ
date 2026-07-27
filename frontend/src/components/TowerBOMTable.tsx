@@ -13,6 +13,42 @@ const formatLabor = (val: number) => {
   return trimmed;
 };
 
+const SYSTEM_CODES = [
+  "CAMERA_DOME",
+  "CAMERA_BULLET",
+  "RECORDER_32",
+  "RECORDER_16",
+  "HARD_DISK_10T",
+  "SWITCH_24_POE",
+  "SWITCH_16_POE",
+  "SWITCH_16_CISCO",
+  "SWITCH_24_CISCO",
+  "OBSERVER_SCREEN_43",
+  "FIBER_CABLE_4FO",
+  "LAN_CABLE_CAT5E",
+  "CONVERTER_GIGABIT",
+  "RACK_CABINET_2U",
+  "RACK_CABINET_6U",
+  "RACK_CABINET_10U",
+  "RACK_CABINET_20U",
+  "RACK_CABINET_32U",
+  "RACK_CABINET_42U",
+  "ODF_12FO",
+  "ODF_24FO",
+  "ELECTRIC_CABLE_CVV",
+  "PDU_POWER_6",
+  "UPS_1000VA",
+  "UPS_3000VA",
+  "ACCESSORIES_PACKAGE",
+  "AMP_CAT5_CONNECTOR",
+  "FIBER_PATCH_CORD_3M",
+  "ODF_4FO",
+  "LAN_PATCH_CORD",
+  "CABLE_MANAGEMENT_19",
+  "CONDUIT_FLEXIBLE_D20",
+  "CONDUIT_RIGID_D20"
+];
+
 interface TowerBOMTableProps {
   activeTower: Tower;
   dynamicCategories: DynamicCategory[];
@@ -90,7 +126,7 @@ export const TowerBOMTable: React.FC<TowerBOMTableProps> = ({
               "ELECTRIC_CABLE_CVV",
               "CONDUIT_FLEXIBLE_D20",
               "CONDUIT_RIGID_D20"
-            ].includes(item.code || "");
+            ].includes(item.code || "") || (item.code && !SYSTEM_CODES.includes(item.code));
             
             const isYellow = item.stt === "1.1" || item.stt === "1.2" || item.name === "Vật tư phụ";
             const rowClass = isYellow

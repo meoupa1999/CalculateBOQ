@@ -324,6 +324,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
           dynamicCategories={dynamicCategories}
           flattenCategoryTree={flattenCategoryTree}
           leftTableNotes={leftTableNotes}
+          customBOMOverrides={customBOMOverrides}
         />
       ) : !activeTower ? (
         /* No towers: show empty state */

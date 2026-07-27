@@ -87,7 +87,7 @@ public class ConfigServiceImpl implements ConfigService {
                 .build();
         Category category = categoryRepository.findById(dto.getCategoryId()).orElseThrow();
         productType.addCategory(category);
-        categoryRepository.save(category);
+        productTypeRepository.save(productType);
 
     }
 
