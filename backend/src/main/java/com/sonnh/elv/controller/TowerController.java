@@ -30,17 +30,6 @@ public class TowerController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @PostMapping("/templates")
-    public ResponseEntity<Void> createTemplate(@RequestBody CreateTemplateReqDto request) {
-        towerService.createTemplate(request);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
-
-    @GetMapping("/templates")
-    public ResponseEntity<List<TemplateResponseDto>> getAllTemplates() {
-        return ResponseEntity.ok(towerService.getAllTemplates());
-    }
-
     @GetMapping
     public ResponseEntity<PageImplResDto<TowerResponseDto>> getAllTowers(
             @RequestParam(defaultValue = "1") Integer page,

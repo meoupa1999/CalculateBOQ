@@ -204,7 +204,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
 
   const fetchTemplates = async () => {
     try {
-      const res = await fetch(`${API_BASE}/towers/templates`);
+      const res = await fetch(`${API_BASE}/templates`);
       if (res.ok) {
         const data = await res.json();
         setTemplates(data);
@@ -247,7 +247,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
     
     setIsSavingTemplate(true);
     try {
-      const res = await fetch(`${API_BASE}/towers/templates`, {
+      const res = await fetch(`${API_BASE}/templates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -906,10 +906,6 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                   >
                     Lưu Mẫu (Template)
                   </button>
-                  
-                  <div className="text-xs font-mono text-[#1A237E] bg-[#E8EAF6] px-2 py-1 rounded font-bold border border-[#1A237E]/20 h-[26px] flex items-center justify-center">
-                    EXCEL SKELETON
-                  </div>
                 </div>
               </div>
 
