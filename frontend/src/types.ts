@@ -178,3 +178,21 @@ export interface ProductTypeOption {
   code: string;
   name: string;
 }
+
+export type BasePreset = StandardPreset;
+export type ProductType = ProductTypeOption;
+
+export interface ManualGroup {
+  cabinetIndex: number;
+  cabinets: {
+    id: string;
+    type: string;
+    quantity2U?: number;
+    allocations: {
+      floorIndex: number;
+      domeCount: number;
+      bulletCount: number;
+    }[];
+  }[];
+}
+
