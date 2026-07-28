@@ -31,6 +31,7 @@ backend-sample/
 
 # Spreadsheets, archives, reports, and scratch files
 *.xlsx
+!backend/src/main/resources/templates/BOQ_TEMPLATE.xlsx
 *.zip
 baocao/
 scratch*
