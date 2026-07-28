@@ -556,9 +556,11 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newProductName,
-          description: newProductDesc,
-          productTypeId: selectedProductTypeId
+          productTypeId: selectedProductTypeId,
+          product: {
+            name: newProductName,
+            description: newProductDesc
+          }
         })
       });
       if (res.ok) {
@@ -1227,7 +1229,7 @@ export default function App() {
         cabinets: [
           {
             id: crypto.randomUUID(),
-            type: "2U",
+            type: "6U",
             quantity2U: 1,
             allocations: [
               {

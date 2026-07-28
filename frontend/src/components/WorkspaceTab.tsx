@@ -4,6 +4,7 @@ import { Project, Tower, DynamicCategory, FloorData, ManualGroup } from "../type
 import { TowerBOMTable } from "./TowerBOMTable";
 import { FloorCalculatorTable } from "./FloorCalculatorTable";
 import { SummaryBOMTab } from "./SummaryBOMTab";
+import { CableDetailsTable } from "./CableDetailsTable";
 
 interface WorkspaceTabProps {
   activeProject: Project;
@@ -987,6 +988,10 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
               />
             </div>
           </div>
+
+          <CableDetailsTable
+            activeTower={activeTower}
+          />
         </>
       )}
     </div>

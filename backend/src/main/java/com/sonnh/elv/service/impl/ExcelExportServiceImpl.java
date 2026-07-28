@@ -61,7 +61,11 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 Sheet sheet = workbook.getSheetAt(i);
                 if (sheet != null) {
-                    sheet.protectSheet(null);
+                    try {
+                        sheet.protectSheet(null);
+                    } catch (Exception e) {
+                        // Ignore XMLBeans / POI bugs when removing sheet protection
+                    }
                 }
             }
 
@@ -516,7 +520,16 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             // Populate data rows for this tower (top floor first, so reverse order)
             for (int i = 0; i < maxFloors; i++) {
                 int rowNum = 5 + i; // 1-indexed Excel row number
+
+                // Skip the summary row for this specific tower
+                if (i == boqResponse.size()) {
+                    continue;
+                }
+
                 Row row = sheet.getRow(rowNum - 1);
+                if (row == null) {
+                    row = sheet.createRow(rowNum - 1);
+                }
                 
                 CalculateBOQResponseDTO dto = i < boqResponse.size() ? boqResponse.get(boqResponse.size() - 1 - i) : null;
 
@@ -562,24 +575,31 @@ public class ExcelExportServiceImpl implements ExcelExportService {
                                 }
                                 break;
                             case 4: // Mét AutoCAD
-                                if (dto.getAutocadLength() != null && dto.getAutocadLength() > 0) {
+                                if (dto.getAutocadLength() != null) {
                                     cell.setCellValue(dto.getAutocadLength());
                                 } else {
-                                    cell.setCellValue("");
+                                    cell.setCellValue(0);
                                 }
                                 break;
                             case 5: // Thông tầng (Atrium)
                                 if (dto.getCabinetIndex() != null) {
-                                    cell.setCellFormula("ABS(" + dto.getFloorIndex() + "-" + dto.getCabinetIndex() + ")*" + vDist + "*E" + rowNum);
+                                    String colCam = CellReference.convertNumToColString(startCol + 3);
+                                    cell.setCellFormula("ABS(" + dto.getFloorIndex() + "-" + dto.getCabinetIndex() + ")*" + vDist + "*" + colCam + rowNum);
                                 } else {
                                     cell.setCellValue(0);
                                 }
                                 break;
                             case 6: // Xuống tủ (Down cabinet)
-                                cell.setCellFormula(vDist + "*E" + rowNum);
+                                {
+                                    String colCam = CellReference.convertNumToColString(startCol + 3);
+                                    cell.setCellFormula(vDist + "*" + colCam + rowNum);
+                                }
                                 break;
                             case 7: // Trong tủ (In cabinet)
-                                cell.setCellFormula("3*E" + rowNum);
+                                {
+                                    String colCam = CellReference.convertNumToColString(startCol + 3);
+                                    cell.setCellFormula("3*" + colCam + rowNum);
+                                }
                                 break;
                             case 8: // Tổng cáp/tầng (Total cable length)
                                 String colF = CellReference.convertNumToColString(startCol + 4);
@@ -591,8 +611,8 @@ public class ExcelExportServiceImpl implements ExcelExportService {
                 }
             }
 
-            // 4. Update summary row formulas at Row (4 + maxFloors) (index 4 + maxFloors)
-            int sumRowNum = 5 + maxFloors;
+            // 4. Update summary row formulas at Row (4 + boqResponse.size()) (index 4 + boqResponse.size())
+            int sumRowNum = 5 + boqResponse.size();
             Row sumRow = sheet.getRow(sumRowNum - 1);
             if (sumRow == null) {
                 sumRow = sheet.createRow(sumRowNum - 1);
@@ -681,12 +701,13 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             int colJ = t * 10 + 1 + 8; // Column J (index startCol + 8)
             String letterE = CellReference.convertNumToColString(colE);
             String letterJ = CellReference.convertNumToColString(colJ);
+            int towerSumRowNum = 5 + towersBOQ.get(t).size();
             if (t > 0) {
                 camFormula.append("+");
                 cableFormula.append("+");
             }
-            camFormula.append(letterE).append(sumRowNum);
-            cableFormula.append(letterJ).append(sumRowNum);
+            camFormula.append(letterE).append(towerSumRowNum);
+            cableFormula.append(letterJ).append(towerSumRowNum);
         }
         cellValBCam.setCellFormula(camFormula.toString());
         cellValBCable.setCellFormula(cableFormula.toString());

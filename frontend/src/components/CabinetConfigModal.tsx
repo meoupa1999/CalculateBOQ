@@ -72,7 +72,7 @@ export const CabinetConfigModal: React.FC<CabinetConfigModalProps> = ({
                   ...tempCabinets,
                   {
                     id: crypto.randomUUID(),
-                    type: "2U",
+                    type: "6U",
                     quantity2U: 1,
                     allocations: [
                       {
