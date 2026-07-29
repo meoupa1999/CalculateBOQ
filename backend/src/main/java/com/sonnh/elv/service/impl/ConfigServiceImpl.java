@@ -26,7 +26,18 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     @Transactional
     public void updateConfig(UUID id, UpdateConfigReqDto dto) {
-        Config config = configRepository.findById(id).orElseThrow();
+        Config config = configRepository.findById(id).orElseGet(() -> {
+            Config newConfig = Config.builder()
+                    .id(id)
+                    .conditionLength(30)
+                    .sw24ConditionQuanity(20)
+                    .sw16ConditionQuanity(12)
+                    .ups(1)
+                    .pdu(6)
+                    .converter(1)
+                    .build();
+            return configRepository.save(newConfig);
+        });
 
         if (dto.getConditionLength() != null) {
             config.setConditionLength(dto.getConditionLength());
@@ -51,8 +62,20 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
+    @Transactional
     public ConfigResponseDto getConfig(UUID id) {
-        Config config = configRepository.findById(id).orElseThrow();
+        Config config = configRepository.findById(id).orElseGet(() -> {
+            Config newConfig = Config.builder()
+                    .id(id)
+                    .conditionLength(30)
+                    .sw24ConditionQuanity(20)
+                    .sw16ConditionQuanity(12)
+                    .ups(1)
+                    .pdu(6)
+                    .converter(1)
+                    .build();
+            return configRepository.save(newConfig);
+        });
         return ConfigResponseDto.builder()
                 .id(config.getId())
                 .conditionLength(config.getConditionLength())
