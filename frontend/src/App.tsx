@@ -3091,7 +3091,7 @@ const handleAddGlobalInventory = () => {
 
       {/* Main Area layout */}
       <div className="flex-1 max-w-none w-full mx-auto px-6 py-6 flex gap-6">
-        {projects.length === 0 ? (
+        {projects.length === 0 && activeTab === "app" ? (
           <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] py-12">
             <div className="bg-white border border-[#ECEFF1] rounded-2xl p-8 max-w-md w-full shadow-lg text-center flex flex-col items-center gap-6">
               <div className="w-16 h-16 rounded-full bg-[#1A237E]/10 flex items-center justify-center text-[#1A237E]">

@@ -93,17 +93,6 @@ export const ProjectsTab: React.FC<ProjectsTabProps> = ({
               </div>
               <div>
                 <label className="block text-xs font-semibold text-[#455A64] uppercase tracking-wide mb-1.5">
-                  Số tầng thiết kế mặc định
-                </label>
-                <input
-                  type="number"
-                  value={newProjectFloors}
-                  onChange={(e) => setNewProjectFloors(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded px-3 py-2 text-sm focus:border-[#1A237E] focus:outline-none font-mono"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-[#455A64] uppercase tracking-wide mb-1.5">
                   Mô tả ngắn
                 </label>
                 <input
@@ -113,29 +102,6 @@ export const ProjectsTab: React.FC<ProjectsTabProps> = ({
                   placeholder="Thông tin thêm về địa điểm, tiến độ, hoặc ghi chú kỹ thuật..."
                   className="w-full bg-[#f8f9fb] border border-[#ECEFF1] rounded px-3 py-2 text-sm focus:border-[#1A237E] focus:outline-none"
                 />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-[#455A64] uppercase tracking-wide mb-1.5">
-                  Áp dụng tiêu chuẩn kỹ thuật ban đầu
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
-                  {BASE_PRESETS.map((pr) => (
-                    <label key={pr.id} className="flex items-start gap-3 p-3 border border-[#ECEFF1] rounded hover:bg-slate-50 cursor-pointer transition">
-                      <input
-                        type="radio"
-                        name="newProjectPreset"
-                        value={pr.id}
-                        checked={newProjectPreset === pr.id}
-                        onChange={() => setNewProjectPreset(pr.id)}
-                        className="mt-1 text-[#1A237E]"
-                      />
-                      <div>
-                        <div className="text-xs font-bold text-[#191c1e]">{pr.name}</div>
-                        <div className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{pr.description}</div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
               </div>
             </div>
 
