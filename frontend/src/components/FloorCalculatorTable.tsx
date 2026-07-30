@@ -363,7 +363,7 @@ export const FloorCalculatorTable: React.FC<FloorCalculatorTableProps> = ({
                     const group = manualGroups.find(g => g.cabinetIndex === f.floorIndex);
                     const cabinetsStr = group?.cabinets.map((c: any) => c.type).join(", ") || "2U";
                     return (
-                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold rounded border transition-all ${
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold rounded border transition-all whitespace-nowrap flex-shrink-0 ${
                         isActiveCabinet
                           ? "bg-emerald-600 text-white border-emerald-700 shadow-sm font-extrabold animate-pulse"
                           : "bg-emerald-100 text-emerald-800 border-emerald-200"
@@ -385,13 +385,13 @@ export const FloorCalculatorTable: React.FC<FloorCalculatorTableProps> = ({
                     });
                     if (associatedGroup) {
                       return (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold rounded bg-blue-100 text-blue-800 border border-blue-200">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold rounded bg-blue-100 text-blue-800 border border-blue-200 whitespace-nowrap flex-shrink-0">
                           Liên kết Tủ T.{associatedGroup.cabinetIndex + 1}
                         </span>
                       );
                     }
                     return (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-slate-100 text-slate-400 border border-slate-200 italic">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-slate-100 text-slate-400 border border-slate-200 italic whitespace-nowrap flex-shrink-0">
                         Tự động tối ưu
                       </span>
                     );
@@ -399,7 +399,7 @@ export const FloorCalculatorTable: React.FC<FloorCalculatorTableProps> = ({
                 )
               ) : (
                 isCabinetPlaced && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-[#1A237E]/10 text-[#1A237E] border border-[#1A237E]/20" title="Tầng đặt tủ rack">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-[#1A237E]/10 text-[#1A237E] border border-[#1A237E]/20 whitespace-nowrap flex-shrink-0" title="Tầng đặt tủ rack">
                     <svg className="w-3.5 h-3.5 text-[#1A237E]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
                     </svg>
@@ -418,7 +418,7 @@ export const FloorCalculatorTable: React.FC<FloorCalculatorTableProps> = ({
                     return floorCabs.map((c: any, cIdx: number) => {
                       const qty = isManualGroup ? (c.quantity2U || 1) : tempQuantity2U;
                       return (
-                        <span key={cIdx} className="inline-flex items-center gap-2 px-2 py-0.5 text-xs font-bold rounded-md bg-[#E8EAF6] text-[#1A237E] border border-[#C5CAE9] shadow-sm">
+                        <span key={cIdx} className="inline-flex items-center gap-2 px-2 py-0.5 text-xs font-bold rounded-md bg-[#E8EAF6] text-[#1A237E] border border-[#C5CAE9] shadow-sm whitespace-nowrap flex-shrink-0">
                           <span className="w-2 h-2 rounded-full bg-[#1A237E] animate-pulse"></span>
                           {c.cabinetType === "2U" && qty > 1 ? `${qty} ` : ""}Tủ {c.cabinetType || ""} ({c.cameraQuantityInCabinet ?? 0} Cam)
                         </span>
@@ -427,7 +427,7 @@ export const FloorCalculatorTable: React.FC<FloorCalculatorTableProps> = ({
                   }
                   const fallbackQty = isManualGroup ? (activeTower?.quantity2U || 1) : tempQuantity2U;
                   return (
-                    <span className="inline-flex items-center gap-2 px-2 py-0.5 text-xs font-bold rounded-md bg-[#E8EAF6] text-[#1A237E] border border-[#C5CAE9] shadow-sm">
+                    <span className="inline-flex items-center gap-2 px-2 py-0.5 text-xs font-bold rounded-md bg-[#E8EAF6] text-[#1A237E] border border-[#C5CAE9] shadow-sm whitespace-nowrap flex-shrink-0">
                       <span className="w-2 h-2 rounded-full bg-[#1A237E] animate-pulse"></span>
                       {f.cabinetType === "2U" && fallbackQty > 1 ? `${fallbackQty} ` : ""}Tủ {f.cabinetType || ""} ({f.cameraQuantityInCabinet ?? 0} Cam)
                     </span>
