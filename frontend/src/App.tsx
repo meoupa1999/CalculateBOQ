@@ -126,7 +126,10 @@ export default function App() {
 
   // Top header tabs state
   // "app" | "projects" | "inventory" | "standards" | "settings"
-  const [activeTab, setActiveTab] = useState<"app" | "projects" | "inventory" | "standards" | "settings">("app");
+  const [activeTab, setActiveTab] = useState<"app" | "projects" | "inventory" | "standards" | "settings">(() => {
+    const saved = localStorage.getItem("activeTab");
+    return (saved as any) || "app";
+  });
 
   // Inventory form states
   const [newItemCode, setNewItemCode] = useState("");
@@ -195,8 +198,29 @@ export default function App() {
 
   // Load projects from backend
   const [projects, setProjects] = useState<Project[]>([]);
-  const [activeProjectId, setActiveProjectId] = useState<string>("");
-  const [activeTowerId, setActiveTowerId] = useState<string>("");
+  const [activeProjectId, setActiveProjectId] = useState<string>(() => localStorage.getItem("activeProjectId") || "");
+  const [activeTowerId, setActiveTowerId] = useState<string>(() => localStorage.getItem("activeTowerId") || "");
+
+  useEffect(() => {
+    localStorage.setItem("activeTab", activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeProjectId) {
+      localStorage.setItem("activeProjectId", activeProjectId);
+    } else {
+      localStorage.removeItem("activeProjectId");
+    }
+  }, [activeProjectId]);
+
+  useEffect(() => {
+    if (activeTowerId) {
+      localStorage.setItem("activeTowerId", activeTowerId);
+    } else {
+      localStorage.removeItem("activeTowerId");
+    }
+  }, [activeTowerId]);
+
   const [isSummaryTabActive, setIsSummaryTabActive] = useState<boolean>(false);
   const [selectedTowersSummary, setSelectedTowersSummary] = useState<Record<string, boolean>>({});
   const [summaryBomData, setSummaryBomData] = useState<any>(null);
@@ -736,8 +760,9 @@ export default function App() {
         if (selectNewestId) {
           activeProjId = selectNewestId;
         } else {
-          activeProjId = activeProjectId && mappedList.some((item) => item.id === activeProjectId)
-            ? activeProjectId
+          const savedProjId = localStorage.getItem("activeProjectId") || activeProjectId;
+          activeProjId = savedProjId && mappedList.some((item) => item.id === savedProjId)
+            ? savedProjId
             : mappedList[0].id;
         }
         setActiveProjectId(activeProjId);
@@ -745,8 +770,9 @@ export default function App() {
         const activeProjObj = mappedList.find(p => p.id === activeProjId);
         if (activeProjObj && activeProjObj.towers.length > 0) {
           setActiveTowerId((prev) => {
-            if (prev && activeProjObj.towers.some((t) => t.id === prev)) {
-              return prev;
+            const savedTowerId = localStorage.getItem("activeTowerId") || prev;
+            if (savedTowerId && activeProjObj.towers.some((t) => t.id === savedTowerId)) {
+              return savedTowerId;
             }
             return activeProjObj.towers[0].id;
           });
