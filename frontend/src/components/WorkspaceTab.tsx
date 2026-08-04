@@ -917,7 +917,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                 </div>
               </div>
 
-              <div className="overflow-x-auto xl:overflow-visible p-4 bg-slate-50/30">
+              <div className="p-4 bg-slate-50/30 max-h-[680px] overflow-y-auto overflow-x-auto relative">
                 <TowerBOMTable
                   activeTower={activeTower}
                   dynamicCategories={dynamicCategories}
@@ -929,7 +929,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                   bomData={bomData}
                   leftTableNotes={leftTableNotes}
                   setLeftTableNotes={setLeftTableNotes}
-                  stickyHeaderStyle={stickyHeaderStyle}
+                  stickyHeaderStyle={{ ...stickyHeaderStyle, top: 0 }}
                 />
               </div>
             </div>
@@ -984,7 +984,7 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                 addToast={addToast}
                 isXl={isXl}
                 leftWidth={leftWidth}
-                stickyHeaderStyle={stickyHeaderStyle}
+                stickyHeaderStyle={{ ...stickyHeaderStyle, top: 0 }}
               />
             </div>
           </div>

@@ -45,7 +45,7 @@ export const CableDetailsTable: React.FC<CableDetailsTableProps> = ({
         </div>
       </div>
       
-      <div className="overflow-x-auto xl:overflow-visible p-4 bg-slate-50/30">
+      <div className="sticky-table-wrapper p-4 bg-slate-50/30">
         <table className="w-full text-xs text-center border-collapse font-sans border border-slate-200 min-w-[900px] bg-white rounded shadow-xs overflow-hidden">
           <thead className="bg-[#1A237E]">
             <tr className="bg-[#1A237E] text-white font-bold border-b border-slate-300 divide-x divide-slate-200 select-none uppercase tracking-wider text-[10px]">

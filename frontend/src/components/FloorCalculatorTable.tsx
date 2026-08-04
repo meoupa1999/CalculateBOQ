@@ -49,6 +49,74 @@ interface FloorCalculatorTableProps {
   stickyHeaderStyle?: React.CSSProperties;
 }
 
+interface CellInputProps {
+  value: string | number;
+  type: "text" | "number";
+  onUpdate: (val: any) => void;
+  className?: string;
+  placeholder?: string;
+  min?: string;
+}
+
+const CellInput: React.FC<CellInputProps> = ({
+  value,
+  type,
+  onUpdate,
+  className,
+  placeholder,
+  min,
+}) => {
+  const [localValue, setLocalValue] = React.useState<string>(
+    value === undefined || value === null || (type === "number" && value === 0) ? "" : String(value)
+  );
+
+  React.useEffect(() => {
+    setLocalValue(value === undefined || value === null || (type === "number" && value === 0) ? "" : String(value));
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalValue(e.target.value);
+  };
+
+  const handleBlur = () => {
+    if (type === "number") {
+      const parsed = Math.max(0, parseInt(localValue) || 0);
+      onUpdate(parsed);
+      setLocalValue(parsed === 0 ? "" : String(parsed));
+    } else {
+      onUpdate(localValue);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (type === "number") {
+        const parsed = Math.max(0, parseInt(localValue) || 0);
+        onUpdate(parsed);
+        setLocalValue(parsed === 0 ? "" : String(parsed));
+      } else {
+        onUpdate(localValue);
+      }
+      e.currentTarget.blur();
+    }
+  };
+
+  return (
+    <input
+      type={type}
+      min={min}
+      placeholder={placeholder}
+      value={localValue}
+      onFocus={(e) => type === "number" && e.target.select()}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      onClick={(e) => e.stopPropagation()}
+      className={className}
+    />
+  );
+};
+
 export const FloorCalculatorTable: React.FC<FloorCalculatorTableProps> = ({
   activeTower,
   calculationMode,
@@ -350,11 +418,10 @@ export const FloorCalculatorTable: React.FC<FloorCalculatorTableProps> = ({
         <td className="py-2 px-4 font-semibold text-[#191c1e]">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <input
+              <CellInput
                 type="text"
                 value={f.label}
-                onChange={(e) => handleUpdateFloorCell(f.floorIndex, "label", e.target.value)}
-                onClick={(e) => e.stopPropagation()}
+                onUpdate={(val) => handleUpdateFloorCell(f.floorIndex, "label", val)}
                 className="bg-transparent border-0 hover:bg-slate-200/80 focus:bg-white focus:ring-1 focus:ring-[#1A237E]/30 focus:border-[#1A237E] rounded px-1.5 py-0.5 font-semibold text-[#191c1e] text-sm focus:outline-none transition w-36 text-left"
               />
               {calculationMode === "manual" ? (
@@ -384,9 +451,11 @@ export const FloorCalculatorTable: React.FC<FloorCalculatorTableProps> = ({
                       );
                     });
                     if (associatedGroup) {
+                      const cabinetFloor = floors.find(fl => fl.floorIndex === associatedGroup.cabinetIndex);
+                      const cabinetLabel = cabinetFloor ? cabinetFloor.label : `T.${associatedGroup.cabinetIndex + 1}`;
                       return (
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold rounded bg-blue-100 text-blue-800 border border-blue-200 whitespace-nowrap flex-shrink-0">
-                          Liên kết Tủ T.{associatedGroup.cabinetIndex + 1}
+                          Liên kết Tủ {cabinetLabel}
                         </span>
                       );
                     }
@@ -462,36 +531,33 @@ export const FloorCalculatorTable: React.FC<FloorCalculatorTableProps> = ({
             })()}
           </div>
         </td>
-        <td className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
-          <input
+        <td className="py-2 px-3">
+          <CellInput
             type="number"
             min="0"
             placeholder="0"
             value={f.cableLengthInput === undefined ? "" : f.cableLengthInput}
-            onFocus={(e) => e.target.select()}
-            onChange={(e) => handleUpdateFloorCell(f.floorIndex, "cableLengthInput", Math.max(0, parseInt(e.target.value) || 0))}
+            onUpdate={(val) => handleUpdateFloorCell(f.floorIndex, "cableLengthInput", val)}
             className="w-20 bg-[#f8f9fb] border border-[#ECEFF1] hover:border-slate-300 focus:border-[#1A237E] rounded px-2 py-1 text-center font-mono font-semibold focus:outline-none transition"
           />
         </td>
-        <td className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
-          <input
+        <td className="py-2 px-3">
+          <CellInput
             type="number"
             min="0"
             placeholder="0"
-            value={f.domeCount === 0 ? "" : f.domeCount}
-            onFocus={(e) => e.target.select()}
-            onChange={(e) => handleUpdateFloorCell(f.floorIndex, "domeCount", Math.max(0, parseInt(e.target.value) || 0))}
+            value={f.domeCount === 0 ? 0 : f.domeCount}
+            onUpdate={(val) => handleUpdateFloorCell(f.floorIndex, "domeCount", val)}
             className="w-20 bg-[#f8f9fb] border border-[#ECEFF1] hover:border-slate-300 focus:border-[#1A237E] rounded px-2 py-1 text-center font-mono focus:outline-none transition"
           />
         </td>
-        <td className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
-          <input
+        <td className="py-2 px-3">
+          <CellInput
             type="number"
             min="0"
             placeholder="0"
-            value={f.bulletCount === 0 ? "" : f.bulletCount}
-            onFocus={(e) => e.target.select()}
-            onChange={(e) => handleUpdateFloorCell(f.floorIndex, "bulletCount", Math.max(0, parseInt(e.target.value) || 0))}
+            value={f.bulletCount === 0 ? 0 : f.bulletCount}
+            onUpdate={(val) => handleUpdateFloorCell(f.floorIndex, "bulletCount", val)}
             className="w-20 bg-[#f8f9fb] border border-[#ECEFF1] hover:border-slate-300 focus:border-[#1A237E] rounded px-2 py-1 text-center font-mono focus:outline-none transition"
           />
         </td>
@@ -621,7 +687,7 @@ export const FloorCalculatorTable: React.FC<FloorCalculatorTableProps> = ({
           </div>
         </div>
 
-        <div className="overflow-x-auto xl:overflow-visible">
+        <div className="max-h-[680px] overflow-y-auto overflow-x-auto relative">
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead className="bg-slate-50 shadow-xs">
               <tr className="bg-slate-50 border-b border-[#ECEFF1] text-[11px] font-bold text-[#455A64] uppercase tracking-wider">
